@@ -155,5 +155,8 @@
   "priv.senzaTesto": "The text is not in this edition's SRD.",
   "priv.nessuno": "No features with these filters.",
   "priv.suoi": "Theirs",
-  "priv.dellaClasse": "Of the class"
+  "priv.dellaClasse": "Of the class",
+  "cassetto.titolo": "Reference",
+  "cassetto.apri": "Open the reference",
+  "cassetto.indietro": "Back to the list"
 }

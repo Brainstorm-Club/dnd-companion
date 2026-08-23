@@ -529,7 +529,7 @@ Il compendio sempre incluso cambia i conti, e vanno scritti onestamente: cresce 
 | Metrica | Limite | Cosa protegge |
 |---|---|---|
 | **Avvio (soli import statici da `main.js`)** | **< 40 KB** | il tempo che passa prima che l'app sia usabile |
-| **La vista più grossa, da sola** | **< 12 KB** | che una vista non diventi un pezzo di app |
+| **La vista più grossa, da sola** | **< 20 KB** | che una vista non diventi un pezzo di app (tetto deciso dall'utente) |
 | Primo caricamento (avvio + CSS + lingua + registro) | < 115 KB | idem, misurato dalla rete |
 | JS applicativo, tutto compreso | < 200 KB | la tendenza, non la singola riga (tetto deciso dall'utente a fine fase 2) |
 | CSS totale, design system incluso | < 22 KB | |

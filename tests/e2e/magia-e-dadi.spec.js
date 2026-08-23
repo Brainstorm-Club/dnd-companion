@@ -145,10 +145,12 @@ test.describe('gli incantesimi si usano dalla scheda', () => {
     await expect(cura).toContainText('1°')
     await expect(cura.locator('button').filter({ hasText: /usa/i })).toHaveCount(1)
 
-    // «Guida» è un trucchetto: niente slot da spendere, niente bottone
+    // «Guida» è un trucchetto: niente slot da spendere, niente «usa». Il nome
+    // resta toccabile — apre la descrizione — quindi si conta quello giusto.
     const guida = page.locator('#principale .bsc-kv').filter({ hasText: 'Guida' }).first()
     await expect(guida).toContainText('trucchetto')
-    await expect(guida.locator('button')).toHaveCount(0)
+    await expect(guida.locator('button').filter({ hasText: /^usa$/i })).toHaveCount(0)
+    await expect(guida.locator('.dc-kv__link')).toHaveCount(1)
   })
 
   test('«usa» spende uno slot del livello giusto, e resta speso', async ({ page }) => {
@@ -181,12 +183,6 @@ test.describe('gli incantesimi si usano dalla scheda', () => {
     await expect(slot2.locator('.bsc-kv__value')).toHaveText(/^(\d+)\/\1$/)
   })
 
-  test('il nome apre la scheda dell\'incantesimo nel compendio', async ({ page }) => {
-    await page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' })
-      .first().locator('a').click()
-    await expect(page).toHaveURL(/#\/incantesimi\//)
-    await expect(page.locator('#principale')).toContainText('Cura ferite')
-  })
 })
 
 test.describe('privilegi', () => {
@@ -221,5 +217,55 @@ test.describe('privilegi', () => {
     await page.locator('#principale button[data-classe="barbarian"]').click()
     await expect(page.locator('#principale')).toContainText('Ira')
     await expect(page.locator('#principale button[data-classe="barbarian"]')).toHaveAttribute('aria-pressed', 'true')
+  })
+})
+
+test.describe('il cassetto di consultazione', () => {
+  test('si consulta senza perdere il posto', async ({ page }) => {
+    await importa(page)
+    await page.locator('#principale .dc-pg__testa').first().click()
+
+    // dallo zaino, come nell'esempio
+    await page.locator('#principale a, #principale button').filter({ hasText: /^zaino$/i }).first().click()
+    const dove = page.url()
+
+    // si apre il cassetto e si va sui privilegi
+    await page.locator('.dc-tray__maniglia').click()
+    await page.locator('.dc-tray__schede [data-scheda="privilegi"]').click()
+    await expect(page.locator('.dc-tray__pane[data-pane="compendio"]')).toContainText(/privilegi di classe/i)
+
+    // chiuso il cassetto si è ancora nello zaino, non altrove
+    await page.locator('.dc-tray__chiudi').click()
+    expect(page.url()).toBe(dove)
+  })
+
+  test('un incantesimo del personaggio si legge sopra la sua scheda', async ({ page }) => {
+    await importa(page)
+    await page.locator('#principale .dc-pg__testa').first().click()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^magia$/i }).first().click()
+    const dove = page.url()
+
+    await page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' })
+      .first().locator('.dc-kv__link').click()
+
+    const pane = page.locator('.dc-tray__pane[data-pane="compendio"]')
+    await expect(pane).toContainText(/cura ferite/i)
+    await expect(pane).toContainText(/tempo di lancio/i)
+
+    // e l'edizione è la sua, non quella di un altro personaggio aperto prima
+    await expect(pane).toContainText('D&D 2014')
+
+    await page.locator('.dc-tray__chiudi').click()
+    expect(page.url()).toBe(dove)
+    await expect(page.locator('#principale')).toContainText('CD incantesimi')
+  })
+
+  test('le tre schede ci sono tutte, e i dadi restano dov\'erano', async ({ page }) => {
+    await page.goto('/#/libreria')
+    await page.locator('.dc-tray__maniglia').click()
+    const schede = page.locator('.dc-tray__schede .bsc-tab')
+    await expect(schede).toHaveCount(3)
+    await expect(schede.first()).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.dc-tray .bsc-die').first()).toBeVisible()
   })
 })

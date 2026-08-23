@@ -1137,3 +1137,48 @@ ul.dc-elenco > li { min-width: 0; }
 .dc-priv > summary::-webkit-details-marker { display: none; }
 .dc-priv__nome { font-family: var(--bsc-font-display); }
 .dc-priv > p { margin-block-start: var(--bsc-space-2); }
+
+/* Le schede del cassetto: dadi, incantesimi, privilegi. */
+.dc-tray__schede {
+  display: flex;
+  gap: var(--bsc-space-2);
+  margin-block-end: var(--bsc-space-3);
+}
+
+.dc-tray__schede .bsc-tab {
+  flex: 1 1 0;
+  min-height: var(--dc-tap-min);
+  border: 1px solid var(--bsc-border);
+  border-radius: var(--bsc-radius-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dc-tray__schede .is-attiva {
+  background: var(--bsc-text);
+  color: var(--bsc-bg);
+  border-color: var(--bsc-text);
+}
+
+/* Il compendio dentro il cassetto scorre per conto suo: aprirlo non deve far
+   crescere il pannello fino a coprire tutto. */
+.dc-tray__pane[data-pane="compendio"] {
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Un nome che apre qualcosa, ma dentro una riga: sembra un collegamento,
+   perché è quello che fa. */
+.dc-kv__link {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: start;
+  font: inherit;
+  color: var(--bsc-text);
+  cursor: pointer;
+}
+
+.dc-kv__link:hover { text-decoration: underline; }
+.dc-kv__link:focus-visible { outline: 2px solid var(--bsc-focus); outline-offset: 2px; }

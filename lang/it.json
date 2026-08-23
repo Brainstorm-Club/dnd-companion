@@ -155,5 +155,8 @@
   "priv.senzaTesto": "Il testo non è nell'SRD di questa edizione.",
   "priv.nessuno": "Nessun privilegio con questi filtri.",
   "priv.suoi": "I suoi",
-  "priv.dellaClasse": "Della classe"
+  "priv.dellaClasse": "Della classe",
+  "cassetto.titolo": "Consultazione",
+  "cassetto.apri": "Apri la consultazione",
+  "cassetto.indietro": "Torna all'elenco"
 }

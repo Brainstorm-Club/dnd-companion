@@ -71,7 +71,7 @@ function grafoStatico(ingresso = 'src/main.js') {
 /** @type {Record<string, Budget>} */
 const BUDGET = {
   'Avvio (import statici)':    { kb: 40,   files: () => grafoStatico() },
-  'La vista piu grossa':       { kb: 12,   maxSingolo: 'src/views' },
+  'La vista piu grossa':       { kb: 20,   maxSingolo: 'src/views' },
   'JS applicativo':            { kb: 200,  glob: ['src'], ext: ['.js'] },
   'CSS (app + design system)': { kb: 22,   glob: ['app.css', 'design-system/tokens.css', 'design-system/components.css'], ext: ['.css'] },
   'Primo caricamento':         { kb: 115,  files: () => [

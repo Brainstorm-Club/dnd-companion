@@ -43,7 +43,7 @@ async function main() {
   ascoltaTiriRapidi()
   // Sul body, non su `#principale`: il router svuota quello a ogni navigazione,
   // e il vassoio dei dadi deve restare raggiungibile da qualunque vista.
-  montaVassoio(document.body, { state: stato, t })
+  montaVassoio(document.body, { state: stato, t, update: store.update })
   registraServiceWorker()
 }
 

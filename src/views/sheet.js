@@ -17,6 +17,7 @@ import {
 } from '../domain/character.js'
 import { loadBridge, loadIndex } from '../domain/spells.js'
 import { privilegiDiClasse } from '../domain/privilegi.js'
+import { apriCassetto } from '../components/dice-tray.js'
 import { kv, elenco, pips, pipsTappabili, stepper, tirabile, bottoneTiro, tira, gruppiDiPrivilegi } from './parti.js'
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
@@ -95,6 +96,14 @@ export default {
   async render(contenitore, ctx) {
     const id = ctx.route.params['id'] ?? ctx.state.activeId ?? ''
     const entry = id ? ctx.state.characters[id] : undefined
+
+    // Il personaggio che si sta guardando è quello attivo. Sembra ovvio, ma
+    // prima lo diventava solo passando dalla libreria: aprendo una scheda per
+    // collegamento diretto, il compendio mostrava gli incantesimi
+    // nell'edizione di qualcun altro.
+    if (entry && ctx.state.activeId !== id) {
+      ctx.update(['characters'], (st) => { st.activeId = id })
+    }
     if (!entry) {
       contenitore.appendChild(h('p', { class: 'bsc-lead' }, ctx.t('libreria.vuota')))
       contenitore.appendChild(h('a', { class: 'bsc-btn', href: '#/libreria' }, ctx.t('nav.libreria')))
@@ -119,37 +128,7 @@ export default {
   },
 }
 
-/**
- * I nomi italiani degli incantesimi, per edizione.
- *
- * Il builder salva gli id inglesi (`1-cure-wounds`); il ponte generato dal
- * compendio li traduce in id italiani (`cura-ferite`), e l'indice dà il nome
- * per esteso. Si carica una volta per edizione, prima di disegnare: la scheda
- * non deve passare da «Cure Wounds» a «Cura ferite» sotto gli occhi.
- * @type {Map<string, Record<string, {nome: string, livello: number}>>}
- */
-const NOMI_INCANTESIMO = new Map()
 
-/**
- * @param {import('../domain/edition.js').Edition} edizione
- * @returns {Promise<void>}
- */
-async function caricaNomiIncantesimo(edizione) {
-  if (NOMI_INCANTESIMO.has(edizione)) return
-  try {
-    const [ponte, indice] = await Promise.all([loadBridge(edizione), loadIndex(edizione)])
-    const perId = new Map(indice.map(s => [s.id, s]))
-    /** @type {Record<string, {nome: string, livello: number}>} */
-    const nomi = {}
-    for (const [idBuilder, idItaliano] of Object.entries(ponte)) {
-      const voce = perId.get(String(idItaliano))
-      if (voce) nomi[idBuilder] = { nome: voce.nome, livello: voce.livello }
-    }
-    NOMI_INCANTESIMO.set(edizione, nomi)
-  } catch {
-    NOMI_INCANTESIMO.set(edizione, {})   // niente compendio: si resta sull'id ripulito
-  }
-}
 
 /**
  * Il pacchetto regole dell'edizione del personaggio. Se non c'è ancora (i
@@ -789,7 +768,10 @@ function privilegi(ctx, entry, rules) {
     ...gruppiDiPrivilegi(ctx, suoi, (f) => testi.get(slugSemplice(f.nome)) ?? null),
     // Il compendio ha anche quelli che non ha ancora: utile quando si guarda
     // avanti, salendo di livello.
-    h('a', { class: 'bsc-btn bsc-btn--outline', href: '#/privilegi' }, ctx.t('priv.titolo')),
+    h('button', {
+      class: 'bsc-btn bsc-btn--outline', type: 'button',
+      onclick: () => apriCassetto('privilegi'),
+    }, ctx.t('priv.titolo')),
   ]
 }
 
@@ -797,6 +779,41 @@ function privilegi(ctx, entry, rules) {
 function slugSemplice(v) {
   return String(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+
+
+
+/**
+ * I nomi italiani degli incantesimi, per edizione.
+ *
+ * Il builder salva gli id inglesi (`1-cure-wounds`); il ponte generato dal
+ * compendio li traduce in id italiani (`cura-ferite`), e l'indice dà il nome
+ * per esteso. Si carica una volta per edizione, prima di disegnare: la scheda
+ * non deve passare da «Cure Wounds» a «Cura ferite» sotto gli occhi.
+ * @type {Map<string, Record<string, {nome: string, livello: number}>>}
+ */
+const NOMI_INCANTESIMO = new Map()
+
+/**
+ * @param {import('../domain/edition.js').Edition} edizione
+ * @returns {Promise<void>}
+ */
+async function caricaNomiIncantesimo(edizione) {
+  if (NOMI_INCANTESIMO.has(edizione)) return
+  try {
+    const [ponte, indice] = await Promise.all([loadBridge(edizione), loadIndex(edizione)])
+    const perId = new Map(indice.map(s => [s.id, s]))
+    /** @type {Record<string, {nome: string, livello: number}>} */
+    const nomi = {}
+    for (const [idBuilder, idItaliano] of Object.entries(ponte)) {
+      const voce = perId.get(String(idItaliano))
+      if (voce) nomi[idBuilder] = { nome: voce.nome, livello: voce.livello }
+    }
+    NOMI_INCANTESIMO.set(edizione, nomi)
+  } catch {
+    NOMI_INCANTESIMO.set(edizione, {})   // niente compendio: si resta sull'id ripulito
+  }
 }
 
 /**
@@ -823,9 +840,12 @@ function rigaIncantesimo(ctx, entry, id, preparati, massimi) {
     : ctx.t('magia.livello', { n: livello })
 
   return h('div', { class: ['bsc-kv', preparato && 'bsc-kv--preparato'] }, [
-    h('a', {
-      class: 'bsc-kv__label',
-      href: `#/incantesimi/${encodeURIComponent(id)}`,
+    // Il nome apre la descrizione **sopra** la scheda, non al posto suo: si
+    // legge cosa fa l'incantesimo e si torna esattamente dov'era, senza
+    // riaprire il personaggio.
+    h('button', {
+      class: 'bsc-kv__label dc-kv__link', type: 'button',
+      onclick: () => apriCassetto('incantesimi', id),
     }, nome),
     h('span', { class: 'bsc-kv__hint' }, etichetta),
     livello > 0
@@ -884,6 +904,20 @@ function livelloIncantesimo(id, edizione) {
   if (typeof dal === 'number') return dal
   const prefisso = /^(\d+)-/.exec(id)
   return prefisso ? Number(prefisso[1]) : 0
+}
+
+/**
+ * Il builder salva gli incantesimi con l'id inglese, a volte col livello in
+ * testa (`2-misty-step`). Il nome italiano arriva dal compendio (lotto M):
+ * finché non c'è, si mostra l'id ripulito invece di un vuoto.
+ * @param {string} id
+ * @param {import('../domain/edition.js').Edition} [edizione]
+ */
+function nomeIncantesimo(id, edizione) {
+  const italiano = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.nome : undefined
+  if (italiano) return italiano
+  const senzaLivello = id.replace(/^\d+-/, '')
+  return senzaLivello.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
 }
 
 /**
@@ -1048,19 +1082,6 @@ function rigaSlot(ctx, entry, livello, max) {
 
 
 
-/**
- * Il builder salva gli incantesimi con l'id inglese, a volte col livello in
- * testa (`2-misty-step`). Il nome italiano arriva dal compendio (lotto M):
- * finché non c'è, si mostra l'id ripulito invece di un vuoto.
- * @param {string} id
- * @param {import('../domain/edition.js').Edition} [edizione]
- */
-function nomeIncantesimo(id, edizione) {
-  const italiano = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.nome : undefined
-  if (italiano) return italiano
-  const senzaLivello = id.replace(/^\d+-/, '')
-  return senzaLivello.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
-}
 
 /** @param {number} cur @param {number} max */
 function quota(cur, max) {
