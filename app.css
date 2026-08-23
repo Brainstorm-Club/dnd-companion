@@ -942,6 +942,34 @@ a.bsc-wordmark:focus-visible {
 [data-crediti] .bsc-code {
   display: block;
   white-space: normal;
+  /* Il blocco di codice del design system scorre in orizzontale; qui il testo
+     va a capo, quindi lo scorrimento non serve — e una regione scorrevole che
+     la tastiera non raggiunge è una violazione WCAG, non un dettaglio. */
+  overflow: visible;
   font-size: var(--bsc-text-xs);
   margin-block-end: var(--bsc-space-3);
 }
+
+/* La lista è un <ul>: niente pallini, e le voci restano larghe quanto la riga. */
+ul.dc-elenco { list-style: none; margin: 0; padding: 0; }
+ul.dc-elenco > li { min-width: 0; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Contrasto del modificatore e dei valori d'azione.
+
+   `.bsc-stat__mod` del design system usa `--bsc-rosso-400`, che su quella
+   superficie **non raggiunge l'AA in nessuno dei due temi**: misurato 4,44 su
+   carbone e 3,63 su carta, contro il 4,5 richiesto per il testo normale. Non è
+   un caso limite: axe lo segnala come «serious» su ogni scheda.
+
+   Fra i token disponibili gli unici che passano su entrambi i temi sono
+   `--bsc-text` (15,17 / 17,74) e `--bsc-text-muted` (6,91 / 7,49). Si usa il
+   secondo: il modificatore resta distinguibile per corpo e posizione, che è
+   come lo si legge su una scheda di carta.
+
+   Da portare a monte: al design system serve un accento che tenga l'AA, e
+   `--bsc-rosso-400` non è quello. Qui non si può correggere, perché la regola
+   è che l'esistente non si tocca.
+   ────────────────────────────────────────────────────────────────────────── */
+.bsc-stat__mod { color: var(--bsc-text-muted); }
+.dc-vista .bsc-kv--azione .bsc-kv__value { color: var(--bsc-text); }

@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v1'
+const VERSION = 'v2'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -40,7 +40,8 @@ const SHELL = [
   'src/main.js', 'src/dom.js', 'src/router.js', 'src/store.js', 'src/storage.js', 'src/i18n.js',
   'src/views/index.js', 'src/views/library.js', 'src/views/sheet.js', 'src/views/dice.js',
   'src/views/checks.js', 'src/views/spells.js', 'src/views/progress.js', 'src/views/levelup.js',
-  'src/views/settings.js',
+  'src/views/settings.js', 'src/views/parti.js',
+  'src/gestures.js', 'src/anima-dadi.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
   'src/domain/session.js', 'src/domain/spells.js',
@@ -127,6 +128,12 @@ self.addEventListener('fetch', (e) => {
       if (res.ok && res.type === 'basic') c.put(req, res.clone())
       return res
     } catch (err) {
+      // Il ripiego su `index.html` vale **solo** per le navigazioni. Darlo
+      // anche a un modulo JavaScript o a un JSON significa rispondere HTML a
+      // chi aspetta codice: il browser rifiuta per MIME type, il modulo non
+      // carica, e l'app resta su «Caricamento…» senza dire perché. Meglio
+      // fallire pulito: chi chiama sa gestire una richiesta andata male.
+      if (req.mode !== 'navigate') throw err
       const fallback = await c.match('index.html')
       if (fallback) return fallback
       throw err

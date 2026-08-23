@@ -14,8 +14,8 @@ jobs:
       - run: npm ci
       - name: Tipi
         run: npm run check
-      - name: Test di unità
-        run: npm test
+      - name: Test di unità e copertura
+        run: npm run test:coverage
       - name: Budget
         # Senza `set -o pipefail` un `| head` a valle si mangia il codice
         # d'uscita, e un budget rosso passa per verde. È già successo.
@@ -24,5 +24,5 @@ jobs:
           npm run size
       - name: Browser
         run: npx playwright install --with-deps chromium
-      - name: Test end-to-end
+      - name: Test end-to-end (compresi accessibilità e rete spenta)
         run: npm run test:e2e

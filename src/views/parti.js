@@ -146,9 +146,15 @@ export function pips(totale, usati) {
 /** @param {ViewCtx} ctx @param {string} chiave @param {Array<Node|null>} voci */
 export function elenco(ctx, chiave, voci) {
   if (!voci.length) return null
+  // Un `<li>` dentro un `<div>` non è una voce di elenco per chi legge con uno
+  // screen reader: è testo sciolto in mezzo al niente, e axe lo segnala. Qui
+  // il contenitore è sempre una lista, e chi passa qualcosa che lista non è
+  // viene avvolto.
+  const righe = voci.filter(Boolean).map(v =>
+    v instanceof HTMLLIElement ? v : h('li', {}, [v]))
   return h('section', {}, [
     h('h2', { class: 'bsc-label' }, ctx.t(chiave)),
-    h('div', { class: 'dc-elenco' }, voci),
+    h('ul', { class: 'dc-elenco' }, righe),
   ])
 }
 
