@@ -1182,3 +1182,47 @@ ul.dc-elenco > li { min-width: 0; }
 
 .dc-kv__link:hover { text-decoration: underline; }
 .dc-kv__link:focus-visible { outline: 2px solid var(--bsc-focus); outline-offset: 2px; }
+
+/* Visibile solo ai lettori di schermo: la nota di un dado — «20 naturale»,
+   «scartato» — non deve stare nel numero, ma non può nemmeno essere affidata
+   al solo colore. */
+.dc-solo-lettori {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* Una riga dello storico: prima perché si è tirato, poi quanto è venuto, poi
+   com'è stato calcolato. Il numero è la cosa che si legge da lontano. */
+.dc-tiro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--bsc-space-2);
+  padding: var(--bsc-space-2) var(--bsc-space-3);
+}
+
+.dc-tiro__motivo {
+  flex: 1 1 100%;
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--bsc-tracking-label);
+  color: var(--bsc-text-muted);
+}
+
+.dc-tiro__totale {
+  font-family: var(--bsc-font-display);
+  font-size: var(--bsc-text-xl);
+  color: var(--bsc-text);
+}
+
+.dc-tiro__formula {
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-sm);
+  color: var(--bsc-text-muted);
+}
+
+.dc-nota { font-size: var(--bsc-text-sm); margin-block-start: var(--bsc-space-1); }

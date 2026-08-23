@@ -148,10 +148,15 @@ function pannello(ctx, ridisegna, risultato) {
   const etichettaA = t(modo === 'salvezza' ? 'prove.tiroSalvezza' : 'prove.abilita')
   // Nel contrapposto l'etichetta porta il nome del personaggio: «Vince
   // Furtività» non dice chi ha vinto, «Vince Brynn — Furtività» sì.
-  const nomeA = !scelto ? `${etichettaA} ${formatModifier(bonusManuale)}`
+  // Anche senza personaggio l'etichetta deve dire *che cosa* si è tirato:
+  // «Abilità +0», nello storico, non distingue una prova da un attacco.
+  const nomeA = !scelto
+    ? `${modo === 'salvezza' ? etichettaA : t('prove.prova')} ${formatModifier(bonusManuale)}`
     : modo === 'contrapposto' && attivo ? `${attivo.meta.name} — ${scelto.nome}`
     : modo === 'salvezza' ? `${etichettaA} — ${scelto.nome}`
-    : scelto.nome
+    // «Forza» da solo, nello storico, non dice se era una prova, un tiro
+    // salvezza o un attacco: fra dieci righe è un numero senza motivo.
+    : t('prove.provaDi', { nome: scelto.nome })
 
   /** @type {HTMLElement[]} */
   const out = []
@@ -433,10 +438,15 @@ function disegnaEsito(dove, ctx, r, nome) {
       'data-esito': r.riuscita ? 'riuscita' : 'fallita',
     }, t(r.riuscita ? 'prove.riuscita' : 'prove.fallita', { margine: Math.abs(r.margine) })))
   }
-  // Il 20 si festeggia, ma la riga dice a chiare lettere che non cambia l'esito:
-  // l'app non deve insegnare una regola che non esiste.
-  if (r.venti) dove.appendChild(h('p', { class: 'bsc-badge', 'data-naturale': '20' }, t('prove.naturale20')))
-  if (r.uno) dove.appendChild(h('p', { class: 'bsc-badge', 'data-naturale': '1' }, t('dadi.fallimento')))
+  // Il 20 si festeggia, ma con una parola: prima la riga intera in maiuscolo
+  // — «20 NATURALE (NELLE PROVE NON È SUCCESSO AUTOMATICO)» — copriva il
+  // totale, che è il numero che serve. La regola resta, sotto, e solo quando
+  // c'è una CD: è lì che il malinteso costa qualcosa.
+  if (r.venti) dove.appendChild(h('p', { class: 'bsc-badge bsc-badge--ok', 'data-naturale': '20' }, t('dadi.naturale20')))
+  if (r.uno) dove.appendChild(h('p', { class: 'bsc-badge bsc-badge--rosso', 'data-naturale': '1' }, t('dadi.fallimento')))
+  if ((r.venti || r.uno) && r.cd !== null) {
+    dove.appendChild(h('p', { class: 'bsc-lead dc-nota' }, t('prove.non20')))
+  }
   dove.appendChild(h('p', { class: 'bsc-code' },
     `${nome}: ${r.roll.groups[0]?.formula ?? ''} = ${r.totale}`))
   fermaAnimazione = animaDadi(dove.querySelectorAll('.dc-dado'))

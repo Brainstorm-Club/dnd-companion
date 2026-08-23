@@ -46,6 +46,11 @@ export function facciaDado(d, t) {
   if (critico) note.push(t('dadi.critico'))
   if (fallimento) note.push(t('dadi.fallimento'))
   if (d.dropped) note.push(t('dadi.scartato'))
+  // Il dado mostra **il numero**. La nota — «20 naturale», «scartato» — stava
+  // dentro il testo, e su una tessera piccola diventava «20 (20 naturale)»:
+  // il valore ripetuto dentro il proprio commento, e il numero che si perde.
+  // Ora la nota vive nel titolo e in un testo per i lettori di schermo, così
+  // non è affidata al solo colore.
   return h('span', {
     class: [
       'bsc-die', 'dc-dado',
@@ -57,7 +62,10 @@ export function facciaDado(d, t) {
     'data-valore': String(d.value),
     'data-scartato': d.dropped ? 'si' : null,
     title: note.join(' · '),
-  }, note.length ? `${d.value} (${note.join(', ')})` : String(d.value))
+  }, [
+    String(d.value),
+    note.length ? h('span', { class: 'dc-solo-lettori' }, ` (${note.join(', ')})`) : null,
+  ])
 }
 
 /** Vero se chi guarda ha chiesto meno movimento. */
@@ -78,8 +86,12 @@ export function animaDadi(nodi, opz = {}) {
   const casuale = opz.rng ?? Math.random
   if (!facce.length || ridotto) return () => {}
 
-  /** Il testo definitivo, messo da parte prima di cominciare a mentire. */
-  const veri = facce.map(el => el.textContent ?? '')
+  /**
+   * Il numero definitivo, messo da parte prima di cominciare a mentire.
+   * Si guarda `data-valore` e non il testo: dentro la tessera c'è anche la
+   * nota per i lettori di schermo, e riscrivendo tutto la si cancellerebbe.
+   */
+  const veri = facce.map(el => el.getAttribute('data-valore') ?? el.textContent ?? '')
   const scoperti = facce.map(() => false)
   const passo = Math.min(PASSO_MAX_MS, CODA_MS / facce.length)
 
@@ -89,7 +101,7 @@ export function animaDadi(nodi, opz = {}) {
     facce.forEach((el, i) => {
       if (scoperti[i]) return
       const facceDado = Number(el.getAttribute('data-facce')) || 20
-      el.textContent = String(Math.floor(casuale() * facceDado) + 1)
+      scriviNumero(el, String(Math.floor(casuale() * facceDado) + 1))
     })
   }, GIRO_MS)
 
@@ -98,7 +110,7 @@ export function animaDadi(nodi, opz = {}) {
   facce.forEach((el, i) => {
     attese.push(setTimeout(() => {
       scoperti[i] = true
-      el.textContent = veri[i] ?? ''
+      scriviNumero(el, veri[i] ?? '')
       el.classList.remove('dc-dado--gira')
       el.classList.add('dc-dado--scopre')
     }, PRIMA_MS + i * passo))
@@ -108,10 +120,21 @@ export function animaDadi(nodi, opz = {}) {
     clearInterval(giro)
     for (const a of attese) clearTimeout(a)
     facce.forEach((el, i) => {
-      el.textContent = veri[i] ?? ''
+      scriviNumero(el, veri[i] ?? '')
       el.classList.remove('dc-dado--gira')
     })
   }
   attese.push(setTimeout(ferma, PRIMA_MS + facce.length * passo + 200))
   return ferma
+}
+
+/**
+ * Cambia il numero della tessera lasciando in pace tutto il resto.
+ * @param {Element} el
+ * @param {string} valore
+ */
+function scriviNumero(el, valore) {
+  const primo = el.firstChild
+  if (primo && primo.nodeType === 3) primo.nodeValue = valore
+  else el.insertBefore(document.createTextNode(valore), el.firstChild)
 }

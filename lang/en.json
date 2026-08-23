@@ -158,5 +158,9 @@
   "priv.dellaClasse": "Of the class",
   "cassetto.titolo": "Reference",
   "cassetto.apri": "Open the reference",
-  "cassetto.indietro": "Back to the list"
+  "cassetto.indietro": "Back to the list",
+  "prove.provaDi": "{nome} check",
+  "dadi.naturale20": "natural 20",
+  "prove.non20": "On checks it is not an automatic success.",
+  "prove.prova": "Check"
 }

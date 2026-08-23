@@ -635,7 +635,7 @@ function prove(ctx, d) {
   return [
     h('div', { class: 'dc-caratteristiche' }, ABILITIES.map(ab => h('button', {
       class: 'bsc-stat', type: 'button',
-      onclick: (/** @type {Event} */ ev) => tira(ev, d.modificatori[ab], ABILITY_LABELS[ab].nome),
+      onclick: (/** @type {Event} */ ev) => tira(ev, d.modificatori[ab], ctx.t('prove.provaDi', { nome: ABILITY_LABELS[ab].nome })),
     }, [
       h('span', { class: 'bsc-stat__label' }, ABILITY_LABELS[ab].breve),
       h('span', { class: 'bsc-stat__value' }, String(d.punteggi[ab])),

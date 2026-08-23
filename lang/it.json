@@ -158,5 +158,9 @@
   "priv.dellaClasse": "Della classe",
   "cassetto.titolo": "Consultazione",
   "cassetto.apri": "Apri la consultazione",
-  "cassetto.indietro": "Torna all'elenco"
+  "cassetto.indietro": "Torna all'elenco",
+  "prove.provaDi": "Prova di {nome}",
+  "dadi.naturale20": "20 naturale",
+  "prove.non20": "Nelle prove non è un successo automatico.",
+  "prove.prova": "Prova"
 }

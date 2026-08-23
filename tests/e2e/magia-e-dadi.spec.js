@@ -269,3 +269,59 @@ test.describe('il cassetto di consultazione', () => {
     await expect(page.locator('.dc-tray .bsc-die').first()).toBeVisible()
   })
 })
+
+test.describe('come si legge un tiro', () => {
+  /** Tira finché non esce il naturale chiesto. Il d20 prima o poi lo dà. */
+  async function tiraFinoA(page, naturale) {
+    for (let i = 0; i < 120; i++) {
+      await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
+      if (await page.locator(`#principale [data-naturale="${naturale}"]`).count()) return true
+      await page.waitForTimeout(30)
+    }
+    return false
+  }
+
+  test('col 20 naturale il totale si vede lo stesso, e la regola non urla', async ({ page }) => {
+    // con un personaggio c'è un bonus vero: senza, 20 + 0 fa 20 e il test non
+    // distinguerebbe «totale calcolato» da «mostra solo il dado»
+    await importa(page)
+    await page.goto('/#/prove')
+    // una CD, così c'è anche l'esito da confrontare
+    for (const c of ['1', '2']) await page.locator('#principale button', { hasText: new RegExp(`^${c}$`) }).first().click()
+    expect(await tiraFinoA(page, '20')).toBe(true)
+
+    const esito = page.locator('#principale [data-totale]').first()
+    // il totale è calcolato: naturale più bonus, non «20 naturale» e basta
+    const totale = Number(await esito.getAttribute('data-totale'))
+    expect(totale).toBeGreaterThan(20)
+    await expect(page.locator('#principale [data-esito]')).toBeVisible()
+
+    // il dado mostra il numero, non il numero dentro il proprio commento
+    const dado = page.locator('#principale .dc-dado').first()
+    const visibile = await dado.evaluate(el =>
+      [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.nodeValue).join('').trim())
+    expect(visibile).toBe('20')
+
+    // la nota resta per chi non vede il colore, ma non occupa la tessera
+    const nota = dado.locator('.dc-solo-lettori')
+    await expect(nota).toHaveCount(1)
+    const r = await nota.boundingBox()
+    expect(r.width).toBeLessThan(3)
+  })
+
+  test('lo storico dice perché si è tirato, prima di dire quanto', async ({ page }) => {
+    await importa(page)
+    await page.goto('/#/prove')
+    await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
+    await page.locator('.dc-tray__maniglia').click()
+
+    const riga = page.locator('.dc-tray .dc-tiro').first()
+    await expect(riga.locator('.dc-tiro__motivo')).toContainText(/prova/i)
+    await expect(riga.locator('.dc-tiro__totale')).toHaveText(/^\d+$/)
+    await expect(riga.locator('.dc-tiro__formula')).toContainText(/\(1d20/)
+
+    // il motivo viene prima: è la domanda che ci si fa scorrendo lo storico
+    const ordine = await riga.evaluate(el => [...el.children].map(c => c.className.split(' ')[0]))
+    expect(ordine[0]).toBe('dc-tiro__motivo')
+  })
+})

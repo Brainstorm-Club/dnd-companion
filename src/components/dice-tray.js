@@ -236,11 +236,13 @@ export function mount(root, ctx) {
     }
 
     for (const v of voci) {
-      elenco.appendChild(h('li', { class: 'bsc-card' }, [
-        h('strong', { class: 'bsc-num' }, String(v.total)),
-        ' ',
-        h('span', { class: 'bsc-code' }, v.formula),
-        v.label ? h('span', { class: 'bsc-badge' }, v.label) : '',
+      // Prima l'ordine era numero, formula, motivo — e il motivo, in fondo,
+      // arrivava quando serviva meno. Scorrendo lo storico la domanda è
+      // «perché ho tirato», non «quanto fa 1d20+4»: il motivo va per primo.
+      elenco.appendChild(h('li', { class: 'bsc-card dc-tiro' }, [
+        v.label ? h('span', { class: 'dc-tiro__motivo' }, v.label) : null,
+        h('strong', { class: 'dc-tiro__totale' }, String(v.total)),
+        h('span', { class: 'dc-tiro__formula' }, `(${v.formula})`),
       ]))
     }
   }

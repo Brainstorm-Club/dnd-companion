@@ -51,7 +51,11 @@ export function bottoneTiro(etichetta, notazione, nome) {
   }, etichetta)
 }
 
-/** @param {Event} ev @param {number} bonus @param {string} nome */
+/**
+ * @param {Event} ev
+ * @param {number} bonus
+ * @param {string} nome  come si chiamerà nello storico
+ */
 export function tira(ev, bonus, nome) {
   emetti(ev.currentTarget, `1d20${diceModifier(bonus)}`, nome)
 }
