@@ -25,6 +25,10 @@ export async function setLang(lang, fetcher = fetch) {
   dict = lang === 'it' ? fallback : await carica(lang)
   corrente = lang
   document.documentElement.lang = lang
+  // Chi ha già disegnato qualcosa deve poterlo rifare: la barra di navigazione
+  // è disegnata una volta all'avvio, e senza questo restava nella lingua di
+  // prima mentre il resto cambiava.
+  dispatchEvent(new CustomEvent('dc:lingua', { detail: { lang } }))
 }
 
 export function getLang() { return corrente }

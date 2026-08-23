@@ -38,6 +38,8 @@ async function main() {
   disegnaTabbar()
   router.start(disegna)
 
+  // Cambiare lingua non deve lasciare indietro i pezzi disegnati una volta sola.
+  addEventListener('dc:lingua', () => { traduciMarcatori(); disegnaTabbar(); segnaTabAttiva() })
   ascoltaTiriRapidi()
   // Sul body, non su `#principale`: il router svuota quello a ogni navigazione,
   // e il vassoio dei dadi deve restare raggiungibile da qualunque vista.
@@ -129,6 +131,15 @@ function traduciMarcatori() {
   }
 }
 
+/** Quale rotta è aperta: serve a rimarcare la tab dopo un ridisegno. */
+let rottaCorrente = ''
+
+function segnaTabAttiva() {
+  for (const a of document.querySelectorAll('#tabbar a')) {
+    a.toggleAttribute('aria-current', a.getAttribute('href') === `#/${rottaCorrente}`)
+  }
+}
+
 function disegnaTabbar() {
   const nav = $('#tabbar')
   clear(nav)
@@ -153,9 +164,8 @@ async function disegna(route) {
   clear(main)
   main.appendChild(h('p', { class: 'dc-avvio' }, t('comune.caricamento')))
 
-  for (const a of document.querySelectorAll('#tabbar a')) {
-    a.toggleAttribute('aria-current', a.getAttribute('href') === `#/${route.nome}`)
-  }
+  rottaCorrente = route.nome
+  segnaTabAttiva()
 
   const carica = VISTE[route.nome]
   if (!carica) return
