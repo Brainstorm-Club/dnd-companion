@@ -133,5 +133,9 @@
   "opz.azzerato": "Cancellato tutto",
   "opz.spazio": "Spazio usato: {kb} KB",
   "opz.crediti": "Crediti e licenze",
-  "opz.privacy": "Niente esce da questo dispositivo: nessun account, nessun server, nessun tracciamento."
+  "opz.privacy": "Niente esce da questo dispositivo: nessun account, nessun server, nessun tracciamento.",
+  "opz.club": "Brainstorm Club",
+  "opz.clubNota": "Un'app dell'associazione ludica faentina.",
+  "opz.builder": "D&D Character Builder",
+  "opz.builderNota": "Da dove arrivano i personaggi."
 }

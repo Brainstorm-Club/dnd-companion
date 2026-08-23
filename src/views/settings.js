@@ -89,8 +89,13 @@ function disegna(contenitore, ctx) {
     }, t('opz.azzera')),
     h('p', { class: 'bsc-lead' }, t('opz.azzeraNota')),
 
-    // ── Crediti ───────────────────────────────────────────────────────────
+    // ── Chi l'ha fatta, e da dove arrivano i personaggi ───────────────────
     h('h2', { class: 'bsc-label' }, t('opz.crediti')),
+    h('ul', { class: 'dc-elenco' }, [
+      collegamento('https://www.brainstormclub.it/', t('opz.club'), t('opz.clubNota')),
+      collegamento('https://brainstorm-club.github.io/dnd-character-builder/',
+        t('opz.builder'), t('opz.builderNota')),
+    ]),
     h('div', { class: 'bsc-prose', 'data-crediti': 'true' }, attribuzioni()),
   ]))
 }
@@ -209,6 +214,25 @@ function azzera(ctx, poi) {
   })
   ctx.toast(ctx.t('opz.azzerato'))
   poi()
+}
+
+/**
+ * Un collegamento fuori dall'app.
+ *
+ * `target="_blank"` con `rel="noopener"`: al tavolo si sta giocando, e toccare
+ * un credito non deve portarsi via la scheda che si stava guardando.
+ * @param {string} href
+ * @param {string} titolo
+ * @param {string} nota
+ */
+function collegamento(href, titolo, nota) {
+  return h('li', {}, [
+    h('a', { class: 'bsc-kv', href, target: '_blank', rel: 'noopener' }, [
+      h('span', { class: 'bsc-kv__label' }, titolo),
+      h('span', { class: 'bsc-kv__hint' }, nota),
+      h('span', { class: 'bsc-kv__value', 'aria-hidden': 'true' }, '↗'),
+    ]),
+  ])
 }
 
 /**

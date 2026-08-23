@@ -72,3 +72,15 @@ test.describe('impostazioni', () => {
     await expect(page.locator('#principale')).not.toContainText('Ulric')
   })
 })
+
+test('i crediti portano al club e al builder, in una scheda nuova', async ({ page }) => {
+  await page.goto('/#/impostazioni')
+  const club = page.locator('#principale a[href="https://www.brainstormclub.it/"]')
+  await expect(club).toBeVisible()
+  await expect(club).toHaveAttribute('target', '_blank')
+  // senza `noopener` la pagina aperta può manomettere quella che l'ha aperta
+  await expect(club).toHaveAttribute('rel', /noopener/)
+
+  const builder = page.locator('#principale a[href*="dnd-character-builder"]')
+  await expect(builder).toBeVisible()
+})

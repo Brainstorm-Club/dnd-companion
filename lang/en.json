@@ -133,5 +133,9 @@
   "opz.azzerato": "Everything erased",
   "opz.spazio": "Space used: {kb} KB",
   "opz.crediti": "Credits and licences",
-  "opz.privacy": "Nothing leaves this device: no account, no server, no tracking."
+  "opz.privacy": "Nothing leaves this device: no account, no server, no tracking.",
+  "opz.club": "Brainstorm Club",
+  "opz.clubNota": "An app by the gaming club of Faenza.",
+  "opz.builder": "D&D Character Builder",
+  "opz.builderNota": "Where the characters come from."
 }
