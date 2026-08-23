@@ -297,3 +297,34 @@ describe('zaino', () => {
     expect(cambiaMonete(vuoto(), 'sp', 10).coins).toEqual({ gp: 5, sp: 10 })
   })
 })
+
+describe('slot che non esistevano ancora', () => {
+  const vuoto = () => ({
+    hp: { cur: 10, temp: 0 }, hitDice: { spent: 0 }, slots: {}, conditions: [],
+    inspiration: false, coins: {}, uses: {}, xp: 0,
+    deaths: { succ: 0, fail: 0 }, notes: '',
+  })
+
+  it('il primo incantesimo della partita consuma davvero', () => {
+    // Lo stato appena importato ha la mappa vuota: se `useSlot` pretendesse una
+    // voce già presente, il primo lancio non consumerebbe niente e non lo direbbe.
+    const dopo = useSlot(vuoto(), 1, 4)
+    expect(dopo.slots['1']).toEqual({ used: 1 })
+  })
+
+  it('ma solo se a quel livello gli slot ci sono', () => {
+    expect(useSlot(vuoto(), 9, 0).slots['9']).toBeUndefined()
+    expect(useSlot(vuoto(), 9).slots['9']).toBeUndefined()
+  })
+
+  it('non si spende più di quanto se ne ha', () => {
+    let p = vuoto()
+    for (let i = 0; i < 10; i++) p = useSlot(p, 1, 2)
+    expect(p.slots['1']).toEqual({ used: 2 })
+  })
+
+  it('livelli senza senso non creano niente', () => {
+    expect(useSlot(vuoto(), 0, 4).slots['0']).toBeUndefined()
+    expect(useSlot(vuoto(), -1, 4).slots['-1']).toBeUndefined()
+  })
+})

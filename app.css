@@ -902,3 +902,22 @@ a.bsc-wordmark:focus-visible {
   scroll-margin-block-start: calc(var(--dc-appbar-h, 4rem) + var(--bsc-space-3));
   scroll-margin-block-end: calc(var(--dc-tabbar-h, 4rem) + var(--bsc-space-3));
 }
+
+/* Una riga di incantesimo: nome, livello, e il bottone per segnarne l'uso.
+   Il nome si prende lo spazio, il resto no. */
+.bsc-kv--preparato .bsc-kv__label { font-weight: 700; }
+
+.dc-vista .bsc-kv > a.bsc-kv__label {
+  color: var(--bsc-text);
+  text-decoration: none;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dc-vista .bsc-kv > a.bsc-kv__label:hover { text-decoration: underline; }
+
+.dc-vista .bsc-kv > a.bsc-kv__label:focus-visible {
+  outline: 2px solid var(--bsc-focus);
+  outline-offset: 2px;
+  border-radius: var(--bsc-radius-sm);
+}

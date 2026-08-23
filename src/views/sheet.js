@@ -16,6 +16,7 @@ import {
   derive, features, formatModifier, diceModifier, ABILITIES, ABILITY_LABELS,
 } from '../domain/character.js'
 import { loadBridge, loadIndex } from '../domain/spells.js'
+import { kv, elenco, pips, pipsTappabili, stepper, tirabile, bottoneTiro, tira } from './parti.js'
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
   shortRest, longRest, slotsMassimi, aggiungiOggetto, togliOggetto, cambiaMonete, MONETE,
@@ -123,7 +124,7 @@ export default {
  * compendio li traduce in id italiani (`cura-ferite`), e l'indice dà il nome
  * per esteso. Si carica una volta per edizione, prima di disegnare: la scheda
  * non deve passare da «Cure Wounds» a «Cura ferite» sotto gli occhi.
- * @type {Map<string, Record<string, string>>}
+ * @type {Map<string, Record<string, {nome: string, livello: number}>>}
  */
 const NOMI_INCANTESIMO = new Map()
 
@@ -135,12 +136,12 @@ async function caricaNomiIncantesimo(edizione) {
   if (NOMI_INCANTESIMO.has(edizione)) return
   try {
     const [ponte, indice] = await Promise.all([loadBridge(edizione), loadIndex(edizione)])
-    const perId = new Map(indice.map(s => [s.id, s.nome]))
-    /** @type {Record<string, string>} */
+    const perId = new Map(indice.map(s => [s.id, s]))
+    /** @type {Record<string, {nome: string, livello: number}>} */
     const nomi = {}
     for (const [idBuilder, idItaliano] of Object.entries(ponte)) {
-      const nome = perId.get(String(idItaliano))
-      if (nome) nomi[idBuilder] = nome
+      const voce = perId.get(String(idItaliano))
+      if (voce) nomi[idBuilder] = { nome: voce.nome, livello: voce.livello }
     }
     NOMI_INCANTESIMO.set(edizione, nomi)
   } catch {
@@ -718,13 +719,8 @@ function magia(ctx, entry, d, rules) {
     d.attaccoIncantesimi !== null
       ? tirabile(`${ctx.t('scheda.attacco')} (${ctx.t('tab.incantesimi')})`, d.attaccoIncantesimi)
       : null,
-    elenco(ctx, 'nav.incantesimi', [...trucchetti, ...conosciuti].map(idIncantesimo => {
-      const preparato = preparati.includes(idIncantesimo)
-      return h('a', {
-        class: ['bsc-chip', preparato && 'bsc-chip--on'],
-        href: `#/incantesimi/${encodeURIComponent(idIncantesimo)}`,
-      }, nomeIncantesimo(idIncantesimo, entry.meta.edition))
-    })),
+    elenco(ctx, 'nav.incantesimi', [...trucchetti, ...conosciuti].map(
+      idIncantesimo => rigaIncantesimo(ctx, entry, idIncantesimo, preparati, massimi))),
   ]
 }
 
@@ -765,6 +761,93 @@ function zaino(ctx, entry) {
     elenco(ctx, 'zaino.iniziale', stringhe(entry.snapshot['equipment']).map(e => h('li', { class: 'bsc-kv' }, e))),
     testo(entry.snapshot['treasure']) ? h('p', { class: 'bsc-prose' }, testo(entry.snapshot['treasure'])) : null,
   ]
+}
+
+/**
+ * Una riga della lista incantesimi: nome, livello, e il modo di segnarne l'uso.
+ *
+ * Il nome apre la scheda dell'incantesimo nel compendio; «usa» spende uno slot
+ * del livello giusto. I trucchetti non hanno il bottone, e non è una
+ * dimenticanza: si lanciano a volontà, e un pulsante che non consuma niente
+ * insegnerebbe una regola sbagliata.
+ *
+ * @param {ViewCtx} ctx
+ * @param {CharacterEntry} entry
+ * @param {string} id
+ * @param {string[]} preparati
+ * @param {number[]} massimi  slot massimi per livello, indice 0 = 1° livello
+ */
+function rigaIncantesimo(ctx, entry, id, preparati, massimi) {
+  const nome = nomeIncantesimo(id, entry.meta.edition)
+  const livello = livelloIncantesimo(id, entry.meta.edition)
+  const preparato = preparati.includes(id)
+
+  const etichetta = livello === 0
+    ? ctx.t('magia.trucchetto')
+    : ctx.t('magia.livello', { n: livello })
+
+  return h('div', { class: ['bsc-kv', preparato && 'bsc-kv--preparato'] }, [
+    h('a', {
+      class: 'bsc-kv__label',
+      href: `#/incantesimi/${encodeURIComponent(id)}`,
+    }, nome),
+    h('span', { class: 'bsc-kv__hint' }, etichetta),
+    livello > 0
+      ? h('button', {
+        class: 'bsc-btn bsc-btn--sm', type: 'button',
+        'aria-label': ctx.t('magia.usaLungo', { nome, livello }),
+        onclick: () => usaIncantesimo(ctx, nome, livello, massimi),
+      }, ctx.t('magia.usa'))
+      : null,
+  ])
+}
+
+/**
+ * Spende uno slot del livello dell'incantesimo.
+ *
+ * Se a quel livello non ne restano, **non** ne prende uno più alto da sé: in
+ * gioco si può lanciare con uno slot superiore, ma è una scelta di chi gioca,
+ * non una comodità che l'app si prende. Quindi lo dice, e dice anche quali
+ * livelli sono ancora liberi.
+ *
+ * @param {ViewCtx} ctx
+ * @param {string} nome
+ * @param {number} livello
+ * @param {number[]} massimi
+ */
+function usaIncantesimo(ctx, nome, livello, massimi) {
+  if (!vista) return
+  const play = vista.entry.play
+  const liberi = massimi
+    .map((max, i) => ({ livello: i + 1, quanti: max - (play.slots?.[String(i + 1)]?.used ?? 0) }))
+    .filter(v => v.quanti > 0)
+
+  const suo = liberi.find(v => v.livello === livello)
+  if (suo) {
+    applica(useSlot(play, livello, massimi[livello - 1] ?? 0), { annullabile: true })
+    ctx.toast(ctx.t('magia.usato', { nome, livello }))
+    return
+  }
+  ctx.toast(liberi.length
+    ? ctx.t('magia.senzaSlot', { livello, liberi: liberi.map(v => `${v.livello}°`).join(', ') })
+    : ctx.t('magia.senzaSlotAffatto'))
+}
+
+/**
+ * Il livello di un incantesimo.
+ *
+ * Dal compendio quando c'è; altrimenti dal prefisso dell'id del builder
+ * (`2-locate-object`), che il livello ce l'ha scritto dentro. Senza né l'uno né
+ * l'altro è un trucchetto, che è il caso degli id senza prefisso.
+ * @param {string} id
+ * @param {import('../domain/edition.js').Edition} [edizione]
+ * @returns {number}
+ */
+function livelloIncantesimo(id, edizione) {
+  const dal = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.livello : undefined
+  if (typeof dal === 'number') return dal
+  const prefisso = /^(\d+)-/.exec(id)
+  return prefisso ? Number(prefisso[1]) : 0
 }
 
 /**
@@ -827,57 +910,10 @@ function storia(ctx, entry, rules) {
 
 // ── mattoni ───────────────────────────────────────────────────────────────
 
-/** @param {string} etichetta @param {string} valore */
-function kv(etichetta, valore) {
-  return h('div', { class: 'bsc-kv' }, [
-    h('span', { class: 'bsc-kv__label' }, etichetta),
-    h('span', { class: 'bsc-kv__value' }, valore),
-  ])
-}
 
-/**
- * Una riga che si tocca e tira. Il tap è il gesto, ma la riga è un `button`:
- * tastiera e lettore di schermo la trovano come tutto il resto.
- * @param {string} etichetta
- * @param {number} bonus
- * @param {string} [nome]  come chiamare il tiro nello storico
- * @param {Array<Node|null>} [extra]
- */
-function tirabile(etichetta, bonus, nome = etichetta, extra = []) {
-  return h('button', {
-    class: 'bsc-kv bsc-kv--azione', type: 'button',
-    onclick: (/** @type {Event} */ ev) => tira(ev, bonus, nome),
-  }, [
-    h('span', { class: 'bsc-kv__label' }, etichetta),
-    ...extra,
-    h('span', { class: 'bsc-kv__value' }, formatModifier(bonus)),
-  ])
-}
 
-/** @param {string} etichetta @param {string} notazione @param {string} nome */
-function bottoneTiro(etichetta, notazione, nome) {
-  return h('button', {
-    class: 'bsc-btn bsc-btn--sm', type: 'button',
-    onclick: (/** @type {Event} */ ev) => emetti(ev.currentTarget, notazione, nome),
-  }, etichetta)
-}
 
-/** @param {Event} ev @param {number} bonus @param {string} nome */
-function tira(ev, bonus, nome) {
-  emetti(ev.currentTarget, `1d20${diceModifier(bonus)}`, nome)
-}
 
-/**
- * La scheda non tira: dice cosa andrebbe tirato. Chi ascolta (il dice tray del
- * lotto A) decide vantaggio, svantaggio e storico.
- * @param {EventTarget|null} da
- * @param {string} notazione
- * @param {string} etichetta
- */
-function emetti(da, notazione, etichetta) {
-  if (!(da instanceof HTMLElement)) return
-  da.dispatchEvent(new CustomEvent('dc:tira', { detail: { notazione, etichetta }, bubbles: true }))
-}
 
 
 /**
@@ -969,98 +1005,24 @@ function rigaSlot(ctx, entry, livello, max) {
     pipsTappabili(max, usati, etichetta, (quanti) => {
       if (!vista) return
       let play = vista.entry.play
-      // si passa per useSlot/restoreSlot invece di scrivere il numero: il
-      // dominio resta l'unico posto che sa cosa vuol dire consumare uno slot
-      while (quanti > (play.slots?.[String(livello)]?.used ?? 0)) play = useSlot(play, livello)
-      while (quanti < (play.slots?.[String(livello)]?.used ?? 0)) play = restoreSlot(play, livello)
+      // Si passa per useSlot/restoreSlot invece di scrivere il numero: il
+      // dominio resta l'unico posto che sa cosa vuol dire consumare uno slot.
+      // Il conto dei passi è deciso prima e non si rilegge dallo stato: un ciclo
+      // che aspetta un numero prodotto dalla funzione che sta chiamando è un
+      // ciclo che, il giorno in cui quella funzione non fa niente, non finisce.
+      const adesso = Math.min(Math.max(0, quanti), max)
+      const passi = adesso - usati
+      for (let i = 0; i < Math.abs(passi); i++) {
+        play = passi > 0 ? useSlot(play, livello, max) : restoreSlot(play, livello)
+      }
       applica(play)
     }),
   ])
 }
 
-/**
- * Meno / valore / più, per i contatori che si muovono di uno alla volta.
- *
- * Il valore in mezzo è testo, non un campo: qui si tocca, non si digita — chi
- * deve battere un numero grande usa il tastierino dei punti ferita.
- * Il valore lo tiene lo stepper: `onDelta` restituisce la stringa nuova e il
- * nodo si aggiorna da sé, così chi chiama non deve tenere un riferimento a un
- * elemento e ricordarsi di scriverci dentro.
- * @param {string} valore
- * @param {(delta: number) => string|void} onDelta
- * @param {string} [etichetta]
- */
-function stepper(valore, onDelta, etichetta = '') {
-  const nodo = h('span', { class: 'bsc-stepper__valore' }, valore)
-  /** @param {number} delta */
-  const muovi = (delta) => {
-    const nuovo = onDelta(delta)
-    if (typeof nuovo === 'string') nodo.textContent = nuovo
-  }
-  return h('span', { class: 'bsc-stepper' }, [
-    h('button', {
-      class: 'bsc-stepper__btn', type: 'button',
-      'aria-label': `${etichetta} −1`.trim(),
-      onclick: () => muovi(-1),
-    }, '−'),
-    nodo,
-    h('button', {
-      class: 'bsc-stepper__btn', type: 'button',
-      'aria-label': `${etichetta} +1`.trim(),
-      onclick: () => muovi(1),
-    }, '+'),
-  ])
-}
 
-/**
- * Pallini che si consumano al tocco.
- *
- * A differenza di `pips`, che disegna e basta, questi sono pulsanti veri: si
- * tocca il primo libero per spenderlo e uno già speso per recuperarlo. Il
- * conteggio arriva a chi chiama, che decide cosa farne — la funzione non sa
- * se sta contando dadi vita, slot o usi di un privilegio.
- *
- * @param {number} totale
- * @param {number} usati
- * @param {string} etichetta
- * @param {(usati: number) => void} onCambio
- */
-function pipsTappabili(totale, usati, etichetta, onCambio) {
-  const n = Math.max(0, Math.trunc(totale))
-  const spesi = Math.min(Math.max(0, Math.trunc(usati)), n)
-  return h('span', {
-    class: 'bsc-pips', role: 'group',
-    'aria-label': `${etichetta}: ${n - spesi} su ${n}`,
-  }, Array.from({ length: n }, (_, i) => {
-    const speso = i < spesi
-    return h('button', {
-      class: ['bsc-pips__pip', speso && 'is-used'],
-      type: 'button',
-      'aria-pressed': speso ? 'true' : 'false',
-      // toccare un pallino speso lo restituisce, toccarne uno libero lo consuma
-      // insieme a tutti quelli che lo precedono: è come si segna sulla carta
-      'aria-label': `${etichetta} ${i + 1}`,
-      onclick: () => onCambio(speso ? i : i + 1),
-    })
-  }))
-}
 
-/** @param {number} totale @param {number} usati */
-function pips(totale, usati) {
-  return h('span', { class: 'bsc-pips', role: 'img', 'aria-label': `${totale - usati}/${totale}` },
-    Array.from({ length: Math.max(totale, 0) }, (_, i) => h('span', {
-      class: ['bsc-pips__pip', i < usati && 'is-used'], 'aria-hidden': 'true',
-    })))
-}
 
-/** @param {ViewCtx} ctx @param {string} chiave @param {Array<Node|null>} voci */
-function elenco(ctx, chiave, voci) {
-  if (!voci.length) return null
-  return h('section', {}, [
-    h('h2', { class: 'bsc-label' }, ctx.t(chiave)),
-    h('div', { class: 'dc-elenco' }, voci),
-  ])
-}
 
 /**
  * Il builder salva gli incantesimi con l'id inglese, a volte col livello in
@@ -1070,7 +1032,7 @@ function elenco(ctx, chiave, voci) {
  * @param {import('../domain/edition.js').Edition} [edizione]
  */
 function nomeIncantesimo(id, edizione) {
-  const italiano = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id] : undefined
+  const italiano = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.nome : undefined
   if (italiano) return italiano
   const senzaLivello = id.replace(/^\d+-/, '')
   return senzaLivello.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')

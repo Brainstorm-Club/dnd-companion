@@ -152,12 +152,30 @@ export function heal(play, cura, pfMax) {
  * Chi disegna i pallini conosce il tetto — glielo dà `slotsMassimi()` — e non
  * offre il tap su uno slot già speso. Vedi il rapporto del lotto: è l'unica
  * ambiguità del contratto che non si risolve dentro la firma.
- * @param {PlayState} play @param {number} livello @returns {PlayState}
+ * @param {PlayState} play
+ * @param {number} livello
+ * @param {number} [max]  quanti ne ha a quel livello: senza, non ne inventa
+ * @returns {PlayState}
  */
-export function useSlot(play, livello) {
+export function useSlot(play, livello, max = 0) {
   const out = copia(play)
-  const stato = out.slots[String(Math.trunc(livello))]
-  if (!stato) return out
+  const n = Math.trunc(livello)
+  if (!Number.isFinite(n) || n < 1) return out
+  const chiave = String(n)
+  const tetto = Math.max(0, intero(max))
+  const stato = out.slots[chiave]
+
+  // Uno stato appena importato ha la mappa degli slot vuota: se ci si limita a
+  // incrementare una voce che deve già esistere, il primo incantesimo della
+  // partita non consuma niente, e non lo dice a nessuno. Ma la voce si crea
+  // solo se a quel livello il personaggio gli slot ce li ha davvero — un mago
+  // senza slot di 9° non deve ritrovarsene uno speso.
+  if (!stato) {
+    if (tetto <= 0) return out
+    out.slots[chiave] = { used: 1 }
+    return out
+  }
+  if (tetto > 0 && stato.used >= tetto) return out
   stato.used += 1
   return out
 }

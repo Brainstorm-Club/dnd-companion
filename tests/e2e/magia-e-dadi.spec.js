@@ -132,3 +132,59 @@ test.describe('lo zaino si riempie giocando', () => {
     await expect(page.locator('#principale')).toContainText('un teschio di goblin')
   })
 })
+
+test.describe('gli incantesimi si usano dalla scheda', () => {
+  test.beforeEach(async ({ page }) => {
+    await importa(page)
+    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^magia$/i }).first().click()
+  })
+
+  test('ogni incantesimo mostra il suo livello, e i trucchetti lo dicono', async ({ page }) => {
+    const cura = page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' }).first()
+    await expect(cura).toContainText('1°')
+    await expect(cura.locator('button').filter({ hasText: /usa/i })).toHaveCount(1)
+
+    // «Guida» è un trucchetto: niente slot da spendere, niente bottone
+    const guida = page.locator('#principale .bsc-kv').filter({ hasText: 'Guida' }).first()
+    await expect(guida).toContainText('trucchetto')
+    await expect(guida.locator('button')).toHaveCount(0)
+  })
+
+  test('«usa» spende uno slot del livello giusto, e resta speso', async ({ page }) => {
+    const slot1 = page.locator('#principale .bsc-kv').filter({ hasText: /Slot 1/ }).first()
+    const prima = (await slot1.locator('.bsc-kv__value').textContent()) ?? ''
+
+    await page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' })
+      .first().locator('button').filter({ hasText: /usa/i }).click()
+
+    await expect(page.locator('.bsc-toast')).toContainText(/slot di 1/i)
+    await expect(slot1.locator('.bsc-kv__value')).not.toHaveText(prima)
+
+    // resta speso dopo la ricarica: è stato di gioco, non un'animazione
+    await page.reload()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^magia$/i }).first().click()
+    await expect(page.locator('#principale .bsc-kv').filter({ hasText: /Slot 1/ }).first()
+      .locator('.bsc-kv__value')).not.toHaveText(prima)
+  })
+
+  test('finiti gli slot di quel livello lo dice, e non ne prende uno più alto', async ({ page }) => {
+    const usa = page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' })
+      .first().locator('button').filter({ hasText: /usa/i })
+
+    // il chierico di 3° ha quattro slot di 1°: dopo quattro non ne restano
+    for (let i = 0; i < 5; i++) { await usa.click(); await page.waitForTimeout(150) }
+
+    await expect(page.locator('.bsc-toast')).toContainText(/niente slot di 1/i)
+    // gli slot di 2° sono ancora tutti lì: l'app non se n'è preso uno da sé
+    const slot2 = page.locator('#principale .bsc-kv').filter({ hasText: /Slot 2/ }).first()
+    await expect(slot2.locator('.bsc-kv__value')).toHaveText(/^(\d+)\/\1$/)
+  })
+
+  test('il nome apre la scheda dell\'incantesimo nel compendio', async ({ page }) => {
+    await page.locator('#principale .bsc-kv').filter({ hasText: 'Cura ferite' })
+      .first().locator('a').click()
+    await expect(page).toHaveURL(/#\/incantesimi\//)
+    await expect(page.locator('#principale')).toContainText('Cura ferite')
+  })
+})

@@ -90,5 +90,12 @@
   "zaino.nomeOggetto": "What did you pick up",
   "zaino.nessunOggetto": "Nothing yet. Loot goes here.",
   "zaino.monete": "Coins",
-  "zaino.togli": "Remove {cosa}"
+  "zaino.togli": "Remove {cosa}",
+  "magia.usa": "cast",
+  "magia.trucchetto": "cantrip",
+  "magia.livello": "lv {n}",
+  "magia.usato": "{nome}: level {livello} slot spent",
+  "magia.senzaSlot": "No level {livello} slots. Free: {liberi}.",
+  "magia.senzaSlotAffatto": "No free slots. You need a rest.",
+  "magia.usaLungo": "Cast {nome}, spends a level {livello} slot"
 }

@@ -90,5 +90,12 @@
   "zaino.nomeOggetto": "Cosa hai raccolto",
   "zaino.nessunOggetto": "Niente ancora. Il bottino si segna qui.",
   "zaino.monete": "Monete",
-  "zaino.togli": "Togli {cosa}"
+  "zaino.togli": "Togli {cosa}",
+  "magia.usa": "usa",
+  "magia.trucchetto": "trucchetto",
+  "magia.livello": "{n}°",
+  "magia.usato": "{nome}: slot di {livello}° speso",
+  "magia.senzaSlot": "Niente slot di {livello}°. Liberi: {liberi}.",
+  "magia.senzaSlotAffatto": "Niente slot liberi. Serve un riposo.",
+  "magia.usaLungo": "Usa {nome}, spende uno slot di {livello}°"
 }
