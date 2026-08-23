@@ -683,10 +683,9 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 | Compendio | 658 incantesimi, ricerca e filtri, selettore di edizione, «cosa cambia» |
 | Vassoio | maniglia trascinabile o toccabile, terza colonna fissa su tablet |
 
-**Da fare presto, e questa è tecnica**: `src/views/sheet.js` è arrivato **esattamente al tetto** dei 12 KB gz
-che vale per una singola vista. Il tetto sta facendo il suo mestiere: non dice «è troppo grosso», dice che sei
-sezioni in un file solo hanno smesso di essere una vista. La prossima aggiunta alla scheda va preceduta
-dall'estrazione delle sezioni in moduli propri — «Zaino» e «Storia» sono le più staccabili.
+**Fatto anche**: impostazioni (tema, lingua, PX, edizione, copia dei dati, crediti), copertura del dominio al
+92,55 % con soglia in CI, controllo axe su ogni vista e in entrambi i temi, end-to-end a rete spenta,
+pubblicazione su GitHub Pages e card sul sito del club.
 
 **Resta aperto**, e sono decisioni di chi possiede i repo, non lavoro tecnico:
 
@@ -697,3 +696,10 @@ dall'estrazione delle sezioni in moduli propri — «Zaino» e «Storia» sono l
 2. **La nota sull'SRD**: la voce «Incapacitato» dell'SRD 5.2.1 italiano ufficiale apre dicendo «ha la condizione
    "paralizzato"». È un errore della fonte, lasciato verbatim. Se va segnalato in app, va deciso.
 3. **La v3 dei pacchetti Acheron**, per cui l'architettura è già pronta (§ 6.4).
+4. **Un accento conforme nel design system.** `--bsc-rosso-400` non raggiunge l'AA su nessuno dei due temi
+   (4,44 su carbone, 3,63 su carta, contro 4,5): il companion lo aggira con `--bsc-text-muted`, ma la
+   correzione vera è un token nuovo a monte. Il marchio resta rosso: la 1.4.3 esenta i logotipi.
+5. **Wake Lock e vibrazione**, migliorie progressive del § 5.2.1 mai implementate. Al tavolo lo schermo si
+   spegne ancora da solo.
+6. **Ri-importa sopra** (§ 5.1): aggiornare lo snapshot conservando lo stato di gioco. Oggi «duplica» azzera.
+7. **Note di sessione e usi dei privilegi**: i campi ci sono nello stato, l'interfaccia no.
