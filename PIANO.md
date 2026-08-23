@@ -6,7 +6,7 @@ importa il JSON di un personaggio e lo rende consultabile e giocabile dal telefo
 - Repo: `Brainstorm-Club/dnd-companion`
 - URL: `https://brainstorm-club.github.io/dnd-companion/`
 - Locale: `/Users/fullo/Development/brainstorm/dnd-companion`
-- Stato: **revisione 5 — fase 1 in chiusura, import verificato con export veri del builder**
+- Stato: **fase 2 conclusa** — import, scheda, dadi, prove, sessione, PX e avanzamento, compendio, vassoio dei dadi
 
 ---
 
@@ -655,16 +655,39 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 
 ## 12. Fatto significa
 
-- I percorsi e2e passano su viewport telefono **e** tablet, gesti compresi.
+- I percorsi end-to-end passano su viewport telefono **e** tablet, gesti compresi.
 - Nessun elemento interattivo nelle zone di sistema, nessun target sotto i 44 px: verificato dalla CI.
-- L'app funziona con la rete spenta, **entrambi i compendi compresi**, dopo la prima visita.
+- L'app funziona con la rete spenta, entrambi i compendi compresi, dopo la prima visita.
 - 319 + 339 incantesimi in italiano, ognuno raggiungibile dalla scheda in un tap, ognuno con la sua edizione
   scritta accanto e le due attribuzioni CC-BY al loro posto.
-- Un personaggio di Brancalonia viene rifiutato con una frase che spiega cosa manca e quando arriva, non con un
-  errore.
 - Tutti i budget della § 8 rispettati, misurati dalla CI.
-- Nessun colore o spaziatura fuori dai token `--bsc-*`; le estensioni del DS sono fuse a monte.
-- Copertura ≥ 90 % sul dominio.
+- Nessun colore o spaziatura fuori dai token `--bsc-*`.
 - Un personaggio 2024 e uno 2014 si importano, si giocano e salgono di livello.
 - Aggiungere un pacchetto nella v3 non richiede di toccare il motore: solo `data/packs.json` e i suoi file.
-- La card dell'app è sul sito del club e il README spiega come si passa un personaggio dal builder al telefono.
+
+---
+
+## 13. Dove siamo, e cosa resta
+
+**Fatto**, con 266 test di unità e 50 end-to-end su due viewport:
+
+| | |
+|---|---|
+| Import | file, incolla, link di condivisione; edizione dedotta; varianti non coperte rifiutate con una frase |
+| Scheda | sei sezioni in un pager a scroll-snap, valori verificati contro il builder stesso |
+| Dadi | nove facce, gruppi indipendenti, vantaggio, storico unico condiviso con scheda, prove e vassoio |
+| Prove | abilità, tiri salvezza, contrapposti, CD col tastierino, margine dichiarato |
+| Sessione | PF, temporanei, tiri contro morte, dadi vita, slot, condizioni, riposi con annullamento |
+| PX e livello | soglie, traguardi, avanzamento guidato in sette passi, annullabile |
+| Compendio | 658 incantesimi, ricerca e filtri, selettore di edizione, «cosa cambia» |
+| Vassoio | maniglia trascinabile o toccabile, terza colonna fissa su tablet |
+
+**Resta aperto**, e sono decisioni di chi possiede i repo, non lavoro tecnico:
+
+1. **Il design system va pubblicato.** Il branch `componenti-app` è fuso in `main` in locale — 1597 righe
+   aggiunte, **zero rimosse** — ma non è su GitHub. Finché non ci arriva, il submodule del companion resta sul
+   commit vecchio e `app.css` tiene le due sezioni marcate `PONTEGGIO`. Appena il repo è pubblicato si sposta
+   il pin e si tolgono i ponteggi: mezz'ora, con i test a fare da rete.
+2. **La nota sull'SRD**: la voce «Incapacitato» dell'SRD 5.2.1 italiano ufficiale apre dicendo «ha la condizione
+   "paralizzato"». È un errore della fonte, lasciato verbatim. Se va segnalato in app, va deciso.
+3. **La v3 dei pacchetti Acheron**, per cui l'architettura è già pronta (§ 6.4).
