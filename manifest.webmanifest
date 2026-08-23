@@ -1,25 +1,54 @@
 {
   "id": "./",
-  "name": "D&D Companion — la scheda al tavolo",
+  "name": "Character Companion — la scheda al tavolo",
   "short_name": "Companion",
-  "description": "Scheda, dadi, prove e punti esperienza per D&D 2014 e 2024. Funziona senza rete.",
+  "description": "La scheda al tavolo: statistiche, dadi, prove e punti esperienza per D&D 2014 e 2024. Funziona senza rete.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#181617",
   "theme_color": "#181617",
   "orientation": "any",
   "lang": "it",
   "dir": "ltr",
-  "categories": ["games", "utilities"],
+  "categories": [
+    "games",
+    "utilities"
+  ],
   "icons": [
-    { "src": "design-system/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "design-system/assets/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "design-system/assets/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "design-system/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "design-system/assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "design-system/assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Dadi", "short_name": "Dadi", "url": "./#/dadi" },
-    { "name": "Personaggi", "short_name": "Schede", "url": "./#/libreria" }
+    {
+      "name": "Dadi",
+      "short_name": "Dadi",
+      "url": "./#/dadi"
+    },
+    {
+      "name": "Personaggi",
+      "short_name": "Schede",
+      "url": "./#/libreria"
+    }
   ]
 }

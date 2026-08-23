@@ -1,4 +1,4 @@
-# D&D Companion — la scheda al tavolo
+# Character Companion — la scheda al tavolo
 
 App compagna del [D&D Character Builder](https://brainstorm-club.github.io/dnd-character-builder/) del
 **Brainstorm Club**. Si importa il JSON di un personaggio e lo si gioca dal telefono: statistiche, inventario,

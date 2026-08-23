@@ -1,4 +1,4 @@
-# D&D Companion — piano di lavoro
+# Character Companion — piano di lavoro
 
 **La scheda al tavolo.** App compagna del [D&D Character Builder](https://github.com/Brainstorm-Club/dnd-character-builder):
 importa il JSON di un personaggio e lo rende consultabile e giocabile dal telefono.

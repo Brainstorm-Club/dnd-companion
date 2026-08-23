@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 
 test('la shell si carica e naviga', async ({ page }) => {
   await page.goto('/')
-  await expect(page).toHaveTitle(/D&D Companion/)
+  await expect(page).toHaveTitle(/Character Companion/)
   await expect(page.locator('#tabbar a')).toHaveCount(5)
 
   const tab = page.locator('#tabbar a', { hasText: 'Dadi' })

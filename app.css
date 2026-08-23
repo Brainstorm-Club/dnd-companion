@@ -861,3 +861,17 @@ button.bsc-kv:focus-visible, a.bsc-kv:focus-visible { outline: 3px solid var(--b
   gap: var(--bsc-space-2);
   margin-block-start: var(--bsc-space-2);
 }
+
+/* Il marchio è un collegamento alla libreria — toccare il titolo torna a casa —
+   ma nel design system è uno <span>, quindi da <a> prendeva il blu e la
+   sottolineatura predefiniti del browser. Candidato da portare a monte. */
+a.bsc-wordmark {
+  color: var(--bsc-text);
+  text-decoration: none;
+}
+
+a.bsc-wordmark:focus-visible {
+  outline: 2px solid var(--bsc-focus);
+  outline-offset: 2px;
+  border-radius: var(--bsc-radius-sm);
+}
