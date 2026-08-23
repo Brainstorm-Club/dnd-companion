@@ -17,7 +17,11 @@ jobs:
       - name: Test di unità
         run: npm test
       - name: Budget
-        run: npm run size
+        # Senza `set -o pipefail` un `| head` a valle si mangia il codice
+        # d'uscita, e un budget rosso passa per verde. È già successo.
+        run: |
+          set -o pipefail
+          npm run size
       - name: Browser
         run: npx playwright install --with-deps chromium
       - name: Test end-to-end

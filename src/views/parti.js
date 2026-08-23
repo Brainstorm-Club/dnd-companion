@@ -151,3 +151,56 @@ export function elenco(ctx, chiave, voci) {
     h('div', { class: 'dc-elenco' }, voci),
   ])
 }
+
+/** L'ordine in cui si guardano i privilegi: da dove viene il personaggio, poi cosa fa. */
+const ORDINE_ORIGINI = ['race', 'subrace', 'class', 'subclass', 'background', 'feat']
+
+/**
+ * I privilegi raggruppati per origine.
+ *
+ * Con lo schema 2 il builder dice da dove viene ogni voce e a che livello si
+ * ottiene: raggruppare non è decorazione, è la differenza fra una lista di
+ * sedici righe indistinte e una scheda in cui si trova quello che si cerca.
+ * Senza quell'informazione — export vecchi — restano un elenco solo, come prima.
+ *
+ * @param {ViewCtx} ctx
+ * @param {import('../domain/character.js').Feature[]} privilegi
+ * @returns {Array<Node|null>}
+ */
+export function gruppiDiPrivilegi(ctx, privilegi) {
+  if (!privilegi.length) return []
+
+  /** @type {Map<string|null, import('../domain/character.js').Feature[]>} */
+  const gruppi = new Map()
+  for (const f of privilegi) {
+    const chiave = f.origine ?? null
+    const lista = gruppi.get(chiave) ?? []
+    lista.push(f)
+    gruppi.set(chiave, lista)
+  }
+
+  const chiavi = [...gruppi.keys()].sort((a, b) => {
+    const ia = a === null ? 99 : ORDINE_ORIGINI.indexOf(a)
+    const ib = b === null ? 99 : ORDINE_ORIGINI.indexOf(b)
+    return ia - ib
+  })
+
+  return chiavi.map(chiave => {
+    const voci = (gruppi.get(chiave) ?? []).slice()
+      // dentro un gruppo, l'ordine è quello in cui si sono ottenuti
+      .sort((a, b) => (a.livello ?? 0) - (b.livello ?? 0))
+    return h('section', {}, [
+      h('h2', { class: 'bsc-label' }, ctx.t(chiave ? `privilegi.${chiave}` : 'privilegi.altro')),
+      h('ul', { class: 'dc-elenco' }, voci.map(f => h('li', {
+        class: 'bsc-kv',
+        // `risolto` resta nel DOM anche quando non si vede: dice chi ha ancora
+        // un nome di ripiego invece che quello del pacchetto regole.
+        dataset: { privilegio: f.id, risolto: String(f.risolto) },
+      }, [
+        h('span', { class: 'bsc-kv__label' }, f.nome),
+        f.volte > 1 ? h('span', { class: 'bsc-badge' }, `×${f.volte}`) : null,
+        f.livello ? h('span', { class: 'bsc-kv__hint' }, ctx.t('privilegi.alLivello', { n: f.livello })) : null,
+      ]))),
+    ])
+  })
+}
