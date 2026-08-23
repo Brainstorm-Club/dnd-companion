@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v2'
+const VERSION = 'v3'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -40,11 +40,11 @@ const SHELL = [
   'src/main.js', 'src/dom.js', 'src/router.js', 'src/store.js', 'src/storage.js', 'src/i18n.js',
   'src/views/index.js', 'src/views/library.js', 'src/views/sheet.js', 'src/views/dice.js',
   'src/views/checks.js', 'src/views/spells.js', 'src/views/progress.js', 'src/views/levelup.js',
-  'src/views/settings.js', 'src/views/parti.js',
+  'src/views/settings.js', 'src/views/parti.js', 'src/views/features.js',
   'src/gestures.js', 'src/anima-dadi.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
-  'src/domain/session.js', 'src/domain/spells.js',
+  'src/domain/session.js', 'src/domain/spells.js', 'src/domain/privilegi.js',
   'design-system/tokens.css', 'design-system/components.css',
   'design-system/theme.js', 'design-system/tokens.js',
   'design-system/assets/favicon.svg', 'design-system/assets/favicon.png',

@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 test('la shell si carica e naviga', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/Character Companion/)
-  await expect(page.locator('#tabbar a')).toHaveCount(5)
+  await expect(page.locator('#tabbar a')).toHaveCount(4)
 
   const tab = page.locator('#tabbar a', { hasText: 'Dadi' })
   await tab.click()
@@ -61,14 +61,17 @@ test('il corpo non scorre in orizzontale', async ({ page }) => {
   expect(scroll).toBeLessThanOrEqual(client)
 })
 
-test('la tab bar sta in basso, dentro la safe-area, con cinque voci intere', async ({ page }) => {
+test('la tab bar sta in basso, dentro la safe-area, con le voci intere', async ({ page }) => {
   await page.goto('/')
   const voci = page.locator('#tabbar a')
-  await expect(voci).toHaveCount(5)
+  // Quattro destinazioni dell'app: schede, dadi, magia, privilegi. Le
+  // impostazioni sono salite nell'app bar, perché non sono un posto dove si va
+  // durante una sessione.
+  await expect(voci).toHaveCount(4)
   const box = await page.locator('#tabbar').boundingBox()
   const vp = page.viewportSize()
   expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1)
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 4; i++) {
     const b = await voci.nth(i).boundingBox()
     expect(b.width, `voce ${i} larga ${b.width}`).toBeGreaterThan(0)
     expect(b.x + b.width).toBeLessThanOrEqual(vp.width + 1)
@@ -80,4 +83,17 @@ test('la tab bar sta in basso, dentro la safe-area, con cinque voci intere', asy
       .filter(a => a.scrollWidth > a.clientWidth + 1)
       .map(a => a.textContent))
   expect(tagliate).toEqual([])
+})
+
+test('i due menu si distinguono a colpo d\'occhio', async ({ page }) => {
+  // Il menu dell'app e quello del personaggio prima erano due file di parole
+  // quasi identiche: guardandoli non si capiva quale fosse quale.
+  await page.goto('/#/impostazioni')
+  await expect(page.locator('#tabbar')).toBeVisible()
+  await expect(page.locator('.bsc-tabs[data-sezioni]')).toHaveCount(0)
+
+  // le impostazioni si raggiungono dall'app bar, non dalla barra da pollice
+  await page.goto('/')
+  await expect(page.locator('#barra [data-azione="impostazioni"]')).toBeVisible()
+  await expect(page.locator('#tabbar')).not.toContainText(/opzioni|settings/i)
 })

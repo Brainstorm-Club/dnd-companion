@@ -27,8 +27,9 @@ test('un personaggio vero del builder si importa e si apre', async ({ page }) =>
   await expect(page.locator('#principale')).toContainText('D&D 2014')   // edizione dedotta, non chiesta
   await expect(page.locator('#principale')).toContainText('24 / 24')
 
-  // «apri» è un link, non un pulsante: si cercano entrambi i ruoli
-  await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+  // Aprire un personaggio è toccare la testa della sua scheda: il nome, la
+  // classe e il livello sono tutti dentro il collegamento.
+  await page.locator('#principale .dc-pg__testa').first().click()
   await expect(page).toHaveURL(/#\/scheda\/[^/]+/)
 
   // i numeri sono quelli che il builder stesso calcola (vedi oracolo-derive.json)
@@ -40,7 +41,7 @@ test('un personaggio vero del builder si importa e si apre', async ({ page }) =>
 
 test('dalla scheda si tira, e il tiro finisce nello storico', async ({ page }) => {
   await importa(page, CHIERICO)
-  await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+  await page.locator('#principale .dc-pg__testa').first().click()
   await page.locator('#principale a, #principale button').filter({ hasText: /^prove$/i }).first().click()
 
   const riga = page.locator('#principale button.bsc-kv', { hasText: /percezione/i }).first()
@@ -66,7 +67,7 @@ test('dalla scheda si tira, e il tiro finisce nello storico', async ({ page }) =
 
 test('gli incantesimi si vedono in italiano, dal compendio SRD', async ({ page }) => {
   await importa(page, CHIERICO)
-  await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+  await page.locator('#principale .dc-pg__testa').first().click()
   await page.locator('#principale a, #principale button').filter({ hasText: /^magia$/i }).first().click()
 
   const magia = page.locator('#principale')

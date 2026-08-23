@@ -95,7 +95,7 @@ test.describe('il compendio si apre sui tuoi incantesimi', () => {
 test.describe('lo zaino si riempie giocando', () => {
   test('si aggiungono oggetti e si cambiano le monete, e restano dopo la ricarica', async ({ page }) => {
     await importa(page)
-    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale .dc-pg__testa').first().click()
     await page.locator('#principale a, #principale button').filter({ hasText: /^zaino$/i }).first().click()
 
     // l'equipaggiamento iniziale c'è, e viene dallo snapshot
@@ -136,7 +136,7 @@ test.describe('lo zaino si riempie giocando', () => {
 test.describe('gli incantesimi si usano dalla scheda', () => {
   test.beforeEach(async ({ page }) => {
     await importa(page)
-    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale .dc-pg__testa').first().click()
     await page.locator('#principale a, #principale button').filter({ hasText: /^magia$/i }).first().click()
   })
 
@@ -186,5 +186,40 @@ test.describe('gli incantesimi si usano dalla scheda', () => {
       .first().locator('a').click()
     await expect(page).toHaveURL(/#\/incantesimi\//)
     await expect(page.locator('#principale')).toContainText('Cura ferite')
+  })
+})
+
+test.describe('privilegi', () => {
+  test('il personaggio ha una sezione sua, e i privilegi si aprono sul testo', async ({ page }) => {
+    await importa(page)
+    await page.locator('#principale .dc-pg__testa').first().click()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^privilegi$/i }).first().click()
+
+    // Il chierico è un export di schema 1: non porta l'origine dei privilegi,
+    // quindi restano un gruppo solo. Il raggruppamento per origine è coperto
+    // dai test di unità, sulla fixture di schema 2.
+    const sezione = page.locator('#principale')
+    await expect(sezione).toContainText('Privilegi e tratti')
+    await expect(sezione).toContainText('Dominio divino')
+
+    // e ogni privilegio si apre sul testo del pacchetto regole
+    const voce = page.locator('#principale details.dc-priv').first()
+    await expect(voce).toBeVisible()
+    await voce.locator('summary').click()
+    await expect(voce.locator('p')).not.toBeEmpty()
+  })
+
+  test('il compendio mostra i privilegi di ogni classe, non solo i propri', async ({ page }) => {
+    await importa(page)
+    await page.goto('/#/privilegi')
+
+    // parte dalla classe del personaggio aperto, segnata con una stella
+    await expect(page.locator('#principale button[data-classe="cleric"]')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('#principale')).toContainText('★')
+
+    // e si può guardare quella di qualcun altro
+    await page.locator('#principale button[data-classe="barbarian"]').click()
+    await expect(page.locator('#principale')).toContainText('Ira')
+    await expect(page.locator('#principale button[data-classe="barbarian"]')).toHaveAttribute('aria-pressed', 'true')
   })
 })

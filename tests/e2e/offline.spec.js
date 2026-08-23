@@ -37,7 +37,7 @@ test.describe('senza rete', () => {
     await expect(page.locator('#principale')).toContainText('Ulric')
 
     // la scheda si apre e i numeri ci sono
-    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale .dc-pg__testa').first().click()
     await expect(page.locator('#principale')).toContainText('16')   // CA
 
     // e si tira lo stesso: i dadi non hanno mai avuto bisogno della rete

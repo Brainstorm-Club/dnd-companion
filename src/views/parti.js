@@ -171,9 +171,11 @@ const ORDINE_ORIGINI = ['race', 'subrace', 'class', 'subclass', 'background', 'f
  *
  * @param {ViewCtx} ctx
  * @param {import('../domain/character.js').Feature[]} privilegi
+ * @param {(f: import('../domain/character.js').Feature) => string|null} [testoDi]
+ *   il testo del privilegio, quando il pacchetto ce l'ha: senza, restano righe
  * @returns {Array<Node|null>}
  */
-export function gruppiDiPrivilegi(ctx, privilegi) {
+export function gruppiDiPrivilegi(ctx, privilegi, testoDi) {
   if (!privilegi.length) return []
 
   /** @type {Map<string|null, import('../domain/character.js').Feature[]>} */
@@ -206,7 +208,17 @@ export function gruppiDiPrivilegi(ctx, privilegi) {
         h('span', { class: 'bsc-kv__label' }, f.nome),
         f.volte > 1 ? h('span', { class: 'bsc-badge' }, `×${f.volte}`) : null,
         f.livello ? h('span', { class: 'bsc-kv__hint' }, ctx.t('privilegi.alLivello', { n: f.livello })) : null,
-      ]))),
+      ]))
+        // col testo, la riga si apre; senza, resta una riga e basta
+        .map((riga, i) => {
+          const voce = voci[i]
+          const testo = voce ? testoDi?.(voce) : null
+          if (!testo) return riga
+          return h('li', {}, [h('details', { class: 'dc-priv' }, [
+            h('summary', {}, riga.childNodes.length ? [...riga.childNodes] : []),
+            h('p', { class: 'bsc-prose' }, testo),
+          ])])
+        })),
     ])
   })
 }

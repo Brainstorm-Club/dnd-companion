@@ -973,3 +973,167 @@ ul.dc-elenco > li { min-width: 0; }
    ────────────────────────────────────────────────────────────────────────── */
 .bsc-stat__mod { color: var(--bsc-text-muted); }
 .dc-vista .bsc-kv--azione .bsc-kv__value { color: var(--bsc-text); }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   La scheda di un personaggio in libreria.
+
+   Prima il nome stava in un maiuscoletto più piccolo della classe: al tavolo
+   si scorre la libreria per trovare *chi* si sta giocando, e il nome era la
+   cosa meno visibile della card. Adesso è il titolo, e classe, razza e livello
+   gli stanno sotto come sottotitolo.
+   ────────────────────────────────────────────────────────────────────────── */
+.dc-pg {
+  display: grid;
+  gap: var(--bsc-space-4);
+  padding: var(--bsc-space-5);
+}
+
+.dc-pg__testa {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  /* tutta la testa è il collegamento: il bersaglio è grande quanto serve */
+  min-height: var(--dc-tap-min);
+}
+
+.dc-pg__testa:focus-visible {
+  outline: 2px solid var(--bsc-focus);
+  outline-offset: var(--bsc-space-2);
+  border-radius: var(--bsc-radius-sm);
+}
+
+.dc-pg__nome {
+  margin: 0;
+  font-family: var(--bsc-font-display);
+  font-size: var(--bsc-text-2xl);
+  line-height: var(--bsc-leading-tight);
+  letter-spacing: var(--bsc-tracking-tight);
+  color: var(--bsc-text);
+}
+
+.dc-pg__testa:hover .dc-pg__nome { text-decoration: underline; }
+
+.dc-pg__sotto {
+  margin: var(--bsc-space-1) 0 0;
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-sm);
+  line-height: var(--bsc-leading-snug);
+  color: var(--bsc-text-muted);
+}
+
+.dc-pg__stato {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--bsc-space-2);
+}
+
+.dc-pg__pf {
+  font-family: var(--bsc-font-display);
+  font-size: var(--bsc-text-lg);
+  color: var(--bsc-text);
+}
+
+.dc-pg__pfEtichetta {
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--bsc-tracking-label);
+  color: var(--bsc-text-muted);
+  margin-inline-end: auto;
+}
+
+/* Le azioni secondarie non devono competere col nome: piccole, in fila, e
+   quando non ci stanno vanno a capo invece di allargare la card. */
+.dc-azioni--minori {
+  gap: var(--bsc-space-2);
+  margin: 0;
+}
+
+.dc-azioni--minori .bsc-btn {
+  font-size: var(--bsc-text-xs);
+  padding-inline: var(--bsc-space-3);
+}
+
+/* L'importazione è un'azione, non un pannello sempre aperto: con dei
+   personaggi in elenco sta chiusa in fondo, a un tocco di distanza. */
+.dc-import { margin-block-start: var(--bsc-space-6); }
+.dc-import > summary { display: inline-flex; align-items: center; cursor: pointer; list-style: none; }
+.dc-import > summary::-webkit-details-marker { display: none; }
+.dc-import[open] > summary { margin-block-end: var(--bsc-space-3); }
+
+.dc-conta {
+  margin: calc(var(--bsc-space-2) * -1) 0 var(--bsc-space-4);
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--bsc-tracking-label);
+  color: var(--bsc-text-muted);
+}
+
+/* Sotto il contenuto ci sono due cose sovrapposte: la barra di navigazione e
+   la presa del vassoio dei dadi. Senza contarle entrambe, l'ultima card
+   finisce sotto la presa — che è esattamente dove si tocca. */
+.dc-main {
+  padding-block-end: calc(
+    var(--dc-tabbar-h, 4rem) + var(--dc-maniglia-h, 2.75rem) + var(--bsc-space-5)
+    + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   I due menu non sono la stessa cosa e non devono somigliarsi.
+
+   Quello in basso è dell'**app**: dove sei, sempre lì, quattro destinazioni.
+   Quello dentro la scheda è del **personaggio**: cambia con lui, e sparisce
+   quando esci. Prima erano due file di parole quasi identiche, e a colpo
+   d'occhio non si capiva quale stavi guardando.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* App: piena, ancorata, con la voce attiva marcata da una barra piena. */
+.bsc-tabbar a[aria-current] {
+  background: var(--bsc-surface);
+  box-shadow: inset 0 2px 0 0 var(--bsc-primary);
+}
+
+/* Personaggio: pillole, sopra il contenuto, con il bordo che le tiene insieme
+   come le linguette di una scheda di carta. */
+.bsc-tabs[data-sezioni] a,
+.bsc-tabs[data-sezioni] button {
+  border: 1px solid var(--bsc-border);
+  border-radius: var(--bsc-radius-pill);
+  padding-inline: var(--bsc-space-3);
+  background: transparent;
+}
+
+.bsc-tabs[data-sezioni] [aria-current],
+.bsc-tabs[data-sezioni] .is-attiva {
+  background: var(--bsc-text);
+  color: var(--bsc-bg);
+  border-color: var(--bsc-text);
+}
+
+/* L'azione dell'app in cima, accanto al tema. */
+.dc-barra__azione {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--dc-tap-min);
+  min-height: var(--dc-tap-min);
+  color: var(--bsc-text);
+  text-decoration: none;
+  font-size: var(--bsc-text-lg);
+}
+
+.dc-barra__azione:focus-visible {
+  outline: 2px solid var(--bsc-focus);
+  outline-offset: 2px;
+  border-radius: var(--bsc-radius-sm);
+}
+
+/* Un privilegio che si apre sul suo testo. */
+.dc-priv { padding: var(--bsc-space-3) var(--bsc-space-4); }
+.dc-priv > summary { cursor: pointer; display: flex; gap: var(--bsc-space-2); align-items: baseline; }
+.dc-priv > summary::-webkit-details-marker { display: none; }
+.dc-priv__nome { font-family: var(--bsc-font-display); }
+.dc-priv > p { margin-block-start: var(--bsc-space-2); }

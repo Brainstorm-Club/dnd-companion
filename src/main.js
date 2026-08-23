@@ -22,9 +22,8 @@ import { cryptoRng } from './domain/rng.js'
 const SEZIONI = /** @type {const} */ ([
   { rotta: '#/libreria', chiave: 'tab.libreria' },
   { rotta: '#/dadi', chiave: 'tab.dadi' },
-  { rotta: '#/prove', chiave: 'tab.prove' },
   { rotta: '#/incantesimi', chiave: 'tab.incantesimi' },
-  { rotta: '#/impostazioni', chiave: 'tab.impostazioni' },
+  { rotta: '#/privilegi', chiave: 'tab.privilegi' },
 ])
 
 async function main() {
@@ -36,6 +35,7 @@ async function main() {
 
   traduciMarcatori()
   disegnaTabbar()
+  disegnaAzioniBarra()
   router.start(disegna)
 
   // Cambiare lingua non deve lasciare indietro i pezzi disegnati una volta sola.
@@ -138,6 +138,21 @@ function segnaTabAttiva() {
   for (const a of document.querySelectorAll('#tabbar a')) {
     a.toggleAttribute('aria-current', a.getAttribute('href') === `#/${rottaCorrente}`)
   }
+}
+
+/**
+ * Le azioni dell'app, in alto: le impostazioni non sono una destinazione di
+ * gioco e non devono occupare un quinto della barra da pollice, che serve a
+ * quello che si tocca durante una sessione.
+ */
+function disegnaAzioniBarra() {
+  const barra = document.querySelector('#barra .bsc-appbar__inner')
+  if (!barra || barra.querySelector('[data-azione="impostazioni"]')) return
+  const link = h('a', {
+    href: '#/impostazioni', class: 'dc-barra__azione',
+    'data-azione': 'impostazioni', 'aria-label': t('opz.titolo'), title: t('opz.titolo'),
+  }, '⚙')
+  barra.insertBefore(link, barra.querySelector('.bsc-theme-toggle'))
 }
 
 function disegnaTabbar() {

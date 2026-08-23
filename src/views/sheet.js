@@ -16,6 +16,7 @@ import {
   derive, features, formatModifier, diceModifier, ABILITIES, ABILITY_LABELS,
 } from '../domain/character.js'
 import { loadBridge, loadIndex } from '../domain/spells.js'
+import { privilegiDiClasse } from '../domain/privilegi.js'
 import { kv, elenco, pips, pipsTappabili, stepper, tirabile, bottoneTiro, tira, gruppiDiPrivilegi } from './parti.js'
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
@@ -50,6 +51,7 @@ const SEZIONI = /** @type {const} */ ([
   { id: 'prove', chiave: 'sezione.prove' },
   { id: 'azioni', chiave: 'sezione.azioni' },
   { id: 'magia', chiave: 'sezione.magia' },
+  { id: 'privilegi', chiave: 'sezione.privilegi' },
   { id: 'zaino', chiave: 'sezione.zaino' },
   { id: 'storia', chiave: 'sezione.storia' },
 ])
@@ -287,6 +289,7 @@ function contenuto(sezione, ctx, entry, d, rules) {
     case 'prove': return prove(ctx, d)
     case 'azioni': return azioni(ctx, entry, d)
     case 'magia': return magia(ctx, entry, d, rules)
+    case 'privilegi': return privilegi(ctx, entry, rules)
     case 'zaino': return zaino(ctx, entry)
     case 'storia': return storia(ctx, entry, rules)
     default: return gioco(ctx, entry, d, rules)
@@ -764,6 +767,39 @@ function zaino(ctx, entry) {
 }
 
 /**
+ * I privilegi del personaggio, con il testo del pacchetto regole.
+ *
+ * Stavano in fondo a «Storia», in mezzo a personalità e legami: due cose che
+ * non si consultano nello stesso momento — una la si legge una volta, l'altra
+ * ogni volta che si dichiara qualcosa. Adesso hanno una sezione loro.
+ *
+ * @param {ViewCtx} ctx
+ * @param {CharacterEntry} entry
+ * @param {unknown} rules
+ */
+function privilegi(ctx, entry, rules) {
+  const suoi = features(entry, rules)
+  if (!suoi.length) return [h('p', { class: 'bsc-lead' }, '—')]
+
+  const classeId = typeof entry.snapshot['className'] === 'string' ? entry.snapshot['className'] : ''
+  const testi = new Map(
+    privilegiDiClasse(rules, classeId).map(p => [slugSemplice(p.nome), p.testo]))
+
+  return [
+    ...gruppiDiPrivilegi(ctx, suoi, (f) => testi.get(slugSemplice(f.nome)) ?? null),
+    // Il compendio ha anche quelli che non ha ancora: utile quando si guarda
+    // avanti, salendo di livello.
+    h('a', { class: 'bsc-btn bsc-btn--outline', href: '#/privilegi' }, ctx.t('priv.titolo')),
+  ]
+}
+
+/** Confronto fra nomi che tollera maiuscole e accenti. @param {string} v */
+function slugSemplice(v) {
+  return String(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+/**
  * Una riga della lista incantesimi: nome, livello, e il modo di segnarne l'uso.
  *
  * Il nome apre la scheda dell'incantesimo nel compendio; «usa» spende uno slot
@@ -890,9 +926,7 @@ function campoOggetto(ctx) {
  */
 function storia(ctx, entry, rules) {
   const s = entry.snapshot
-  const privilegi = features(entry, rules)
   return [
-    ...gruppiDiPrivilegi(ctx, privilegi),
     ...['personalityTraits', 'ideals', 'bonds', 'flaws', 'backstory', 'allies']
       .map(k => testo(s[k]) ? h('p', { class: 'bsc-prose' }, testo(s[k])) : null),
   ]

@@ -34,5 +34,6 @@ export const VISTE = {
   px:           () => import('./progress.js').then(m => m.default),
   livello:      () => import('./levelup.js').then(m => m.default),
   incantesimi:  () => import('./spells.js').then(m => m.default),
+  privilegi:    () => import('./features.js').then(m => m.default),
   impostazioni: () => import('./settings.js').then(m => m.default),
 }

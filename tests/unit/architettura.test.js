@@ -68,11 +68,13 @@ describe('service worker', () => {
     return [...visti]
   }
 
-  it('precarica ogni modulo che serve ad avviarsi', () => {
-    // L'elenco della shell è scritto a mano: senza questo controllo un modulo
-    // nuovo resta fuori, e offline l'app si ferma su «Caricamento…».
+  it('precarica ogni modulo dell\'app, non solo quelli d\'avvio', () => {
+    // Prima questo controllo guardava soltanto il grafo statico da `main.js`, e
+    // i moduli caricati su richiesta — le viste e ciò che importano — restavano
+    // scoperti: offline la scheda si apriva su «Qualcosa non ha funzionato».
     const sw = readFileSync('sw.js', 'utf8')
-    const mancanti = grafoStatico().filter(f => !sw.includes(`'${f}'`))
+    const tutti = sorgenti('src')
+    const mancanti = tutti.filter(f => !sw.includes(`'${f}'`))
     expect(mancanti).toEqual([])
   })
 

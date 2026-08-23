@@ -64,12 +64,30 @@ export default {
 function disegna(contenitore, ctx) {
   clear(contenitore)
   const voci = Object.entries(ctx.state.characters)
+
+  // Con dei personaggi dentro, questa pagina parla di loro: il pannello
+  // d'importazione è una card grande quanto un personaggio, e in cima
+  // all'elenco competeva con quello che si era venuti a cercare. Resta a
+  // portata di un tocco, chiuso, in fondo.
+  const importa = pannelloImport(contenitore, ctx)
+  const zonaImport = voci.length
+    ? h('details', { class: 'dc-import' }, [
+      h('summary', { class: 'bsc-btn bsc-btn--outline' }, `+ ${ctx.t('libreria.importa')}`),
+      importa,
+    ])
+    : importa
+
   contenitore.appendChild(h('section', { class: 'dc-vista', 'data-vista': 'libreria' }, [
     h('h1', { class: 'bsc-display' }, ctx.t('nav.libreria')),
     voci.length
+      ? h('p', { class: 'dc-conta' }, voci.length === 1
+        ? ctx.t('libreria.uno')
+        : ctx.t('libreria.quanti', { n: voci.length }))
+      : null,
+    voci.length
       ? h('ul', { class: 'dc-elenco' }, voci.map(([id, entry]) => riga(id, entry, contenitore, ctx)))
       : h('p', { class: 'bsc-lead' }, ctx.t('libreria.vuota')),
-    pannelloImport(contenitore, ctx),
+    zonaImport,
   ]))
 }
 
@@ -85,17 +103,34 @@ function riga(id, entry, contenitore, ctx) {
   const s = entry.snapshot
   const livello = typeof s['level'] === 'number' ? s['level'] : 1
 
-  return h('li', { class: 'bsc-card', dataset: { id } }, [
-    h('h2', { class: 'bsc-label' }, entry.meta.name),
-    h('p', { class: 'bsc-kv' }, [
-      h('span', { class: 'bsc-kv__label' }, nomeClasse(s, entry?.meta?.edition)),
-      h('span', { class: 'bsc-kv__value' }, ctx.t('libreria.livello', { n: livello })),
+  const classe = nomeClasse(s, entry?.meta?.edition)
+  const razza = nomeRazza(s, entry?.meta?.edition)
+  const sottotitolo = razza
+    ? ctx.t('libreria.dettaglio', { classe, razza })
+    : classe
+
+  // Il nome è la cosa che si cerca: al tavolo si scorre la libreria per
+  // trovare *chi* si sta giocando, non di che classe è. Prima stava in un
+  // maiuscoletto più piccolo della classe, cioè l'esatto contrario.
+  return h('li', { class: 'bsc-card dc-pg', dataset: { id } }, [
+    h('a', {
+      class: 'dc-pg__testa',
+      href: `#/scheda/${encodeURIComponent(id)}/gioco`,
+      'aria-label': ctx.t('libreria.apriScheda', { nome: entry.meta.name }),
+    }, [
+      h('h2', { class: 'dc-pg__nome' }, entry.meta.name),
+      // Un'unica riga di testo, non tre pezzi in un flex: andando a capo, il
+      // separatore restava orfano in cima alla riga dopo.
+      h('p', { class: 'dc-pg__sotto' },
+        [sottotitolo, ctx.t('libreria.livello', { n: livello })].filter(Boolean).join(' · ')),
     ]),
-    h('p', { class: 'bsc-kv' }, [
-      h('span', { class: 'bsc-kv__label' }, ctx.t('scheda.pf')),
-      h('span', { class: 'bsc-kv__value' }, `${entry.play.hp.cur} / ${d.pfMax}`),
+
+    h('div', { class: 'dc-pg__stato' }, [
+      h('span', { class: 'dc-pg__pf' }, `${entry.play.hp.cur} / ${d.pfMax}`),
+      h('span', { class: 'dc-pg__pfEtichetta' }, ctx.t('scheda.pf')),
+      h('span', { class: 'bsc-badge' }, ctx.t(`edizione.${entry.meta.edition}`)),
     ]),
-    h('span', { class: 'bsc-badge' }, ctx.t(`edizione.${entry.meta.edition}`)),
+
     daEliminare === id ? confermaEliminazione(id, contenitore, ctx) : azioni(id, entry, contenitore, ctx),
   ])
 }
@@ -107,8 +142,9 @@ function riga(id, entry, contenitore, ctx) {
  * @param {ViewCtx} ctx
  */
 function azioni(id, entry, contenitore, ctx) {
-  return h('div', { class: 'dc-azioni' }, [
-    h('a', { class: 'bsc-btn bsc-btn--sm', href: `#/scheda/${encodeURIComponent(id)}/gioco` }, ctx.t('libreria.apri')),
+  // «Apri» non c'è più fra i bottoni: tutta la testa della scheda è il
+  // collegamento. Quel che resta sono azioni secondarie, e devono sembrarlo.
+  return h('div', { class: 'dc-azioni dc-azioni--minori' }, [
     h('button', {
       class: 'bsc-btn bsc-btn--outline bsc-btn--sm', type: 'button',
       onclick: () => { duplica(id, entry, ctx); disegna(contenitore, ctx) },
@@ -304,7 +340,7 @@ function nomeFile(nome) {
  * I nomi italiani delle classi, per edizione. Si caricano una volta sola dal
  * pacchetto regole; finché non sono arrivati si mostra l'id ripulito, che è
  * riconoscibile e non fa lampeggiare la pagina.
- * @type {Map<string, Record<string, string>>}
+ * @type {Map<string, {classi: Record<string, string>, razze: Record<string, string>}>}
  */
 const NOMI_CLASSE = new Map()
 
@@ -319,15 +355,20 @@ export async function caricaNomiClasse(edizioni) {
       const res = await fetch(`data/rules/${ed}.json`)
       if (!res.ok) throw new Error(String(res.status))
       const pack = await res.json()
-      /** @type {Record<string, string>} */
-      const nomi = {}
-      for (const [id, c] of Object.entries(pack.classes ?? {})) {
-        const nome = /** @type {any} */ (c)?.name
-        if (typeof nome === 'string') nomi[id] = nome
+      /** @param {Record<string, unknown>} da */
+      const nomiDi = (da) => {
+        /** @type {Record<string, string>} */
+        const out = {}
+        for (const [id, v] of Object.entries(da ?? {})) {
+          const nome = /** @type {any} */ (v)?.name
+          if (typeof nome === 'string') out[id] = nome
+        }
+        return out
       }
-      NOMI_CLASSE.set(ed, nomi)
+      NOMI_CLASSE.set(ed, { classi: nomiDi(pack.classes), razze: nomiDi(pack.races) })
     } catch {
-      NOMI_CLASSE.set(ed, {})   // niente pacchetto: si resta sull'id ripulito
+      // niente pacchetto: si resta sugli id ripuliti
+      NOMI_CLASSE.set(ed, { classi: {}, razze: {} })
     }
   }))
 }
@@ -340,9 +381,28 @@ export async function caricaNomiClasse(edizioni) {
  * @param {string} [edizione]
  */
 function nomeClasse(s, edizione) {
-  const v = typeof s['className'] === 'string' ? s['className'] : ''
-  if (!v) return '—'
-  const italiano = edizione ? NOMI_CLASSE.get(edizione)?.[v] : undefined
+  return nomeDi(s['className'], edizione, 'classi')
+}
+
+/**
+ * La razza, in italiano quando il pacchetto la conosce.
+ * @param {Record<string, unknown>} s
+ * @param {string} [edizione]
+ */
+function nomeRazza(s, edizione) {
+  return nomeDi(s['race'], edizione, 'razze')
+}
+
+/**
+ * @param {unknown} valore
+ * @param {string|undefined} edizione
+ * @param {'classi'|'razze'} dove
+ * @returns {string}
+ */
+function nomeDi(valore, edizione, dove) {
+  const v = typeof valore === 'string' ? valore : ''
+  if (!v) return ''
+  const italiano = edizione ? NOMI_CLASSE.get(edizione)?.[dove]?.[v] : undefined
   if (italiano) return italiano
   return v.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
 }

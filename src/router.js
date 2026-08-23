@@ -21,6 +21,7 @@ const ROTTE = [
   { re: /^#\/px\/([^/]+)$/,                         nome: 'px',           chiavi: ['id'] },
   { re: /^#\/livello\/([^/]+)$/,                    nome: 'livello',      chiavi: ['id'] },
   { re: /^#\/incantesimi(?:\/([^/]+))?$/,           nome: 'incantesimi',  chiavi: ['id'] },
+  { re: /^#\/privilegi$/,                           nome: 'privilegi',    chiavi: [] },
   { re: /^#\/impostazioni$/,                        nome: 'impostazioni', chiavi: [] },
 ]
 

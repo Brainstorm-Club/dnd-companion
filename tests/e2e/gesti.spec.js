@@ -136,7 +136,7 @@ test.describe('il vassoio dei dadi', () => {
     await apri(page, '/#/dadi')
     await vassoio(page)
     await page.locator('#tabbar a').last().click()
-    await expect(page).toHaveURL(/#\/impostazioni$/)
+    await expect(page).toHaveURL(/#\/privilegi$/)
   })
 
   test('a 1024 px non si apre: è già la terza colonna', async ({ page }) => {
@@ -217,11 +217,11 @@ test.describe('le zone che il sistema si è prenotato', () => {
     expect(await violazioni(page), 'a vassoio aperto').toEqual([])
   })
 
-  test('anche sulla scheda, dove il pager tiene fuori schermo cinque sezioni su sei', async ({ page }) => {
+  test('anche sulla scheda, dove il pager tiene fuori schermo sei sezioni su sette', async ({ page }) => {
     await page.goto('/#/libreria')
     await page.locator('#principale textarea').fill(CHIERICO)
     await page.locator('#principale button', { hasText: /importa/i }).first().click()
-    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale .dc-pg__testa').first().click()
     await expect(page).toHaveURL(/#\/scheda\/[^/]+/)
     await vassoio(page)
 
