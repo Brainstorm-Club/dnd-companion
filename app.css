@@ -816,3 +816,48 @@ button.bsc-kv:focus-visible, a.bsc-kv:focus-visible { outline: 3px solid var(--b
   gap: var(--bsc-space-2);
   margin-block-end: var(--bsc-space-4);
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Dadi che girano e si scoprono.
+   Stessa animazione del D&D Character Builder (`DiceRoller.vue`): le due app
+   del club devono tirare i dadi con lo stesso gesto. Il risultato è già
+   calcolato quando questa parte — qui si scopre, non si decide.
+   ────────────────────────────────────────────────────────────────────────── */
+.dc-dado {
+  transition: transform var(--bsc-dur-base) var(--bsc-ease);
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-dado--gira { animation: dc-dado-scuote .15s infinite alternate; }
+.dc-dado--scopre { animation: dc-dado-scatto .35s cubic-bezier(.34, 1.56, .64, 1) forwards; }
+
+@keyframes dc-dado-scuote {
+  0%   { transform: translateY(-2px) rotate(-3deg); }
+  100% { transform: translateY(2px) rotate(3deg); }
+}
+
+@keyframes dc-dado-scatto {
+  0%   { transform: scale(.8); opacity: .6; }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Chi ha chiesto meno movimento vede il numero e basta: l'informazione è la
+   stessa, il tiro era già deciso prima che l'animazione cominciasse. */
+@media (prefers-reduced-motion: reduce) {
+  .dc-dado, .dc-dado--gira, .dc-dado--scopre { animation: none; transition: none; }
+}
+
+.dc-dadi-esito {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bsc-space-2);
+  margin-block: var(--bsc-space-2);
+}
+
+.dc-chip-riga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bsc-space-2);
+  margin-block-start: var(--bsc-space-2);
+}

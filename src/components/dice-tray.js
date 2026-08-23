@@ -21,6 +21,7 @@
 import { h, clear } from '../dom.js'
 import { ALLOWED_FACES } from '../domain/dice.js'
 import { maniglia } from '../gestures.js'
+import { facciaDado, animaDadi } from '../anima-dadi.js'
 
 /**
  * Quel poco di contesto che serve: leggere lo storico e tradurre. Non è la
@@ -106,6 +107,12 @@ export function mount(root, ctx) {
   const suTiro = () => queueMicrotask(disegna)
   document.addEventListener('dc:tira', suTiro)
 
+  /** L'istante dell'ultimo tiro già mostrato: serve a distinguere un tiro
+   *  nuovo da un semplice ridisegno, perché i dadi girino solo la prima volta. */
+  let ultimoMostrato = ''
+  /** @type {() => void} */
+  let fermaAnimazione = () => {}
+
   function disegna() {
     const voci = /** @type {Voce[]} */ (ctx.state.diceLog ?? [])
     clear(risultato)
@@ -119,8 +126,14 @@ export function mount(root, ctx) {
     }
 
     risultato.appendChild(h('p', { class: 'bsc-display', 'data-totale': String(ultimo.total) }, `${t('dadi.totale')} ${ultimo.total}`))
-    risultato.appendChild(h('div', { class: 'dc-tray__facce' }, ultimo.dice.map(d => faccia(d, t))))
+    risultato.appendChild(h('div', { class: 'dc-tray__facce' }, ultimo.dice.map(d => facciaDado(d, t))))
     risultato.appendChild(h('p', { class: 'bsc-code' }, `${ultimo.formula} = ${ultimo.total}`))
+
+    if (ultimo.at !== ultimoMostrato) {
+      ultimoMostrato = ultimo.at
+      fermaAnimazione()
+      fermaAnimazione = animaDadi(risultato.querySelectorAll('.dc-dado'))
+    }
 
     for (const v of voci) {
       elenco.appendChild(h('li', { class: 'bsc-card' }, [
@@ -145,27 +158,3 @@ export function dispose() {
   montato = null
 }
 
-/**
- * Un dado singolo, nella stessa forma che disegna la vista dadi: il 20 e l'1
- * naturali si vedono, e chi non distingue i colori li legge lo stesso — c'è il
- * testo, non solo la classe.
- * @param {{faces: number, value: number, dropped: boolean}} d
- * @param {(chiave: string) => string} t
- * @returns {HTMLElement}
- */
-function faccia(d, t) {
-  const critico = d.faces === 20 && d.value === 20
-  const fallimento = d.faces === 20 && d.value === 1
-  /** @type {string[]} */
-  const note = []
-  if (critico) note.push(t('dadi.critico'))
-  if (fallimento) note.push(t('dadi.fallimento'))
-  if (d.dropped) note.push(t('dadi.scartato'))
-  return h('span', {
-    class: ['bsc-pill', critico && 'bsc-badge--ok', fallimento && 'bsc-badge--rosso', d.dropped && 'is-scartato'],
-    'data-facce': String(d.faces),
-    'data-valore': String(d.value),
-    'data-scartato': d.dropped ? 'si' : null,
-    title: note.join(' · '),
-  }, note.length ? `${d.value} (${note.join(', ')})` : String(d.value))
-}

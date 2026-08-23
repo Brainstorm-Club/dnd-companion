@@ -18,7 +18,7 @@
 
 import { h, clear } from '../dom.js'
 import { EDITIONS, EDITION_LABELS, otherEdition, resolveEdition } from '../domain/edition.js'
-import { loadIndex, getSpell, getSpellByBuilderId, search, counterpart } from '../domain/spells.js'
+import { loadIndex, loadBridge, getSpell, getSpellByBuilderId, search, counterpart } from '../domain/spells.js'
 import { loadRegistry } from '../domain/packs.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
@@ -52,6 +52,10 @@ const ETICHETTA = {
   no: 'no',
   cambia: 'cambia',
   nessuno: 'Nessun incantesimo con questi filtri.',
+  nessunoDeiMiei: 'Nessuno dei tuoi incantesimi con questi filtri.',
+  quali: 'Quali',
+  miei: 'I miei',
+  tutti: 'Tutti',
 }
 
 /**
@@ -88,6 +92,17 @@ const classi = new Set()
 const scuole = new Set()
 /** @type {Edition|null} */
 let scavalco = null
+
+/**
+ * Se mostrare solo gli incantesimi che il personaggio ha sulla scheda.
+ *
+ * Parte acceso, ed è la scelta giusta: chi apre il compendio in mezzo a una
+ * sessione quasi sempre vuole i propri, non tutti e 339. Chi cerca qualcos'altro
+ * lo spegne una volta e la scelta resta, come per gli altri filtri.
+ * Senza personaggio aperto, o con un personaggio che non lancia incantesimi,
+ * l'interruttore non compare e il compendio si mostra intero.
+ */
+let soloMiei = true
 
 /** @type {import('../domain/packs.js').PackRegistry|null} */
 let registro = null
@@ -164,14 +179,14 @@ function attribuzione(ed) {
  */
 async function elenco(contenitore, ctx) {
   const ed = edizione(ctx)
-  const index = await loadIndex(ed)
+  const [index, miei] = await Promise.all([loadIndex(ed), incantesimiDelPersonaggio(ctx, ed)])
 
   const risultati = h('div', { class: 'dc-elenco' })
   const filtri = h('div', { class: 'dc-gruppo' })
 
   const mostraRisultati = () => {
     clear(risultati)
-    for (const nodo of righe(ctx, index, ed)) risultati.appendChild(nodo)
+    for (const nodo of righe(ctx, index, ed, miei)) risultati.appendChild(nodo)
   }
   const mostraFiltri = () => {
     clear(filtri)
@@ -181,7 +196,20 @@ async function elenco(contenitore, ctx) {
     filtri.appendChild(gruppoChip(ETICHETTA.classe, distinti(index, s => s.classi, maiuscola), classi, poi))
     filtri.appendChild(gruppoChip(ETICHETTA.scuola, distinti(index, s => s.scuola, s => s), scuole, poi))
   }
-  const poi = () => { mostraFiltri(); mostraRisultati() }
+
+  const interruttoreMiei = miei ? h('div', { class: 'dc-gruppo' }) : null
+  const poi = () => { mostraQuali(); mostraFiltri(); mostraRisultati() }
+  const mostraQuali = () => {
+    if (!interruttoreMiei) return
+    clear(interruttoreMiei)
+    interruttoreMiei.append(
+      h('span', { class: 'bsc-label' }, ETICHETTA.quali),
+      h('div', { class: 'dc-chip-riga' }, [
+        chipQuali(ETICHETTA.miei, true, poi),
+        chipQuali(ETICHETTA.tutti, false, poi),
+      ]),
+    )
+  }
 
   /** @param {Event} ev */
   const digitato = (ev) => {
@@ -203,11 +231,13 @@ async function elenco(contenitore, ctx) {
         enterkeyhint: 'search', oninput: digitato,
       }),
     ]),
+    interruttoreMiei,
     filtri,
     risultati,
     attribuzione(ed),
   ]))
 
+  mostraQuali()
   mostraFiltri()
   mostraRisultati()
 }
@@ -216,16 +246,21 @@ async function elenco(contenitore, ctx) {
  * @param {ViewCtx} ctx
  * @param {SpellIndexEntry[]} index
  * @param {Edition} ed
+ * @param {Set<string>|null} [miei]  gli incantesimi del personaggio, se ce n'è uno
  * @returns {Array<Node>}
  */
-function righe(ctx, index, ed) {
-  const trovati = search(index, {
+function righe(ctx, index, ed, miei) {
+  let trovati = search(index, {
     testo,
     livelli: [...livelli],
     classi: [...classi],
     scuole: [...scuole],
   })
-  if (!trovati.length) return [h('p', { class: 'bsc-lead' }, ETICHETTA.nessuno)]
+  if (miei && soloMiei) trovati = trovati.filter(v => miei.has(v.id))
+  if (!trovati.length) {
+    return [h('p', { class: 'bsc-lead' },
+      miei && soloMiei ? ETICHETTA.nessunoDeiMiei : ETICHETTA.nessuno)]
+  }
 
   /** @type {Array<Node>} */
   const out = []
@@ -272,6 +307,57 @@ function segnale(ctx, voce, ed) {
   if (!cose.length) return ''
   const altra = EDITION_LABELS[otherEdition(ed)].titolo
   return `${ctx.t('edizione.confronta', { altra })}: ${cose.join(', ')}`
+}
+
+/**
+ * Gli id degli incantesimi che il personaggio aperto ha sulla scheda, tradotti
+ * negli id del compendio.
+ *
+ * Restituisce `null` — e non un insieme vuoto — quando non c'è un personaggio
+ * o quando non lancia incantesimi: sono i due casi in cui l'interruttore non
+ * deve nemmeno comparire, e un insieme vuoto li confonderebbe con «ha degli
+ * incantesimi, ma nessuno di questi».
+ *
+ * @param {ViewCtx} ctx
+ * @param {Edition} ed
+ * @returns {Promise<Set<string>|null>}
+ */
+async function incantesimiDelPersonaggio(ctx, ed) {
+  const s = ctx.state
+  const attivo = s.activeId ? s.characters[s.activeId] : undefined
+  if (!attivo) return null
+  const grezzi = [attivo.snapshot['cantrips'], attivo.snapshot['spellsKnown'], attivo.snapshot['spellsPrepared']]
+    .flatMap(v => (Array.isArray(v) ? v : []))
+    .filter(v => typeof v === 'string')
+  if (!grezzi.length) return null
+  try {
+    const ponte = await loadBridge(ed)
+    /** @type {Set<string>} */
+    const ids = new Set()
+    for (const id of grezzi) {
+      const italiano = ponte[id]
+      if (typeof italiano === 'string' && italiano) ids.add(italiano)
+    }
+    return ids.size ? ids : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Uno dei due chip dell'interruttore «i miei / tutti».
+ * @param {string} etichetta
+ * @param {boolean} valore
+ * @param {() => void} poi
+ */
+function chipQuali(etichetta, valore, poi) {
+  const acceso = soloMiei === valore
+  return h('button', {
+    class: ['bsc-chip', acceso && 'bsc-chip--on'],
+    type: 'button',
+    'aria-pressed': acceso ? 'true' : 'false',
+    onclick: () => { soloMiei = valore; poi() },
+  }, etichetta)
 }
 
 /* ── I filtri ─────────────────────────────────────────────────────────────── */

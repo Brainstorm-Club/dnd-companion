@@ -14,6 +14,7 @@ import { cryptoRng } from '../domain/rng.js'
 import { check, opposed } from '../domain/check.js'
 import { loadRegistry } from '../domain/packs.js'
 import { derive, formatModifier, ABILITIES, ABILITY_LABELS } from '../domain/character.js'
+import { facciaDado, animaDadi } from '../anima-dadi.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 /** @typedef {import('../storage.js').CharacterEntry} CharacterEntry */
@@ -40,6 +41,9 @@ const TAP = 'min-width: var(--dc-tap-min); min-height: var(--dc-tap-min)'
 /** 16 px di `.dc-main` + 12 px qui = 28 px: fuori dalla zona morta dei 24. */
 const VISTA = 'display: grid; gap: var(--bsc-space-4); padding-inline: var(--bsc-space-3)'
 const RIGA = 'display: flex; flex-wrap: wrap; gap: var(--bsc-space-2); align-items: center'
+
+/** @type {() => void} */
+let fermaAnimazione = () => {}
 
 /** Lo stato della vista è una scelta d'interfaccia, non un dato da conservare. */
 /** @type {Modo} */
@@ -413,9 +417,16 @@ function tastierino(ctx, ridisegna) {
  */
 function disegnaEsito(dove, ctx, r, nome) {
   clear(dove)
+  fermaAnimazione()
   const t = ctx.t
   dove.appendChild(h('p', { class: 'bsc-display', 'data-totale': String(r.totale) },
     r.cd === null ? `${t('dadi.totale')} ${r.totale}` : `${r.totale} · ${t('prove.cd')} ${r.cd}`))
+
+  // I dadi singoli: con vantaggio o svantaggio sono due, e vedere quale è stato
+  // scartato è metà del gusto — oltre che il modo di mostrare al master come è
+  // venuto fuori quel numero.
+  const dadi = r.roll.groups[0]?.dice ?? []
+  if (dadi.length) dove.appendChild(h('div', { class: 'dc-dadi-esito' }, dadi.map(d => facciaDado(d, t))))
   if (r.riuscita !== null && r.margine !== null) {
     dove.appendChild(h('p', {
       class: ['bsc-badge', r.riuscita ? 'bsc-badge--ok' : 'bsc-badge--rosso'],
@@ -428,6 +439,7 @@ function disegnaEsito(dove, ctx, r, nome) {
   if (r.uno) dove.appendChild(h('p', { class: 'bsc-badge', 'data-naturale': '1' }, t('dadi.fallimento')))
   dove.appendChild(h('p', { class: 'bsc-code' },
     `${nome}: ${r.roll.groups[0]?.formula ?? ''} = ${r.totale}`))
+  fermaAnimazione = animaDadi(dove.querySelectorAll('.dc-dado'))
 }
 
 /**

@@ -2,6 +2,7 @@
 import { h, clear } from '../dom.js'
 import { cryptoRng } from '../domain/rng.js'
 import { ALLOWED_FACES, MAX_DICE_PER_TERM, parse, roll } from '../domain/dice.js'
+import { facciaDado, animaDadi } from '../anima-dadi.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 /** @typedef {import('../domain/dice.js').Roll} Roll */
@@ -88,7 +89,8 @@ export default {
         const r = roll(parse(notazione), rng)
         ultima = notazione
         registra(ctx, r, notazione, etichetta)
-        disegnaRisultato(risultato, r, ctx)
+        fermaAnimazione()
+        disegnaRisultato(risultato, r, ctx, true)
         disegnaStorico(elencoStorico, ctx)
       } catch (e) {
         // Il messaggio del dominio è già scritto per essere letto da chi gioca:
@@ -196,6 +198,7 @@ export default {
   },
 
   dispose() {
+    fermaAnimazione()
     // Nessun listener fuori dal contenitore: rimuovendo i figli se ne vanno
     // anche i suoi. Qui si azzera solo ciò che non deve sopravvivere alla vista.
     ultima = ''
@@ -230,45 +233,23 @@ function registra(ctx, r, source, label) {
  * @param {Roll} r
  * @param {ViewCtx} ctx
  */
-function disegnaRisultato(dove, r, ctx) {
+function disegnaRisultato(dove, r, ctx, anima = false) {
   clear(dove)
   dove.appendChild(h('p', { class: 'bsc-display', 'data-totale': String(r.total) }, `${ctx.t('dadi.totale')} ${r.total}`))
   for (const g of r.groups) {
     dove.appendChild(h('div', { class: 'dc-gruppo' }, [
-      h('div', { style: RIGA }, g.dice.map(d => facciaDado(d, ctx))),
+      h('div', { style: RIGA }, g.dice.map(d => facciaDado(d, ctx.t))),
       h('p', { class: 'bsc-code' }, `${g.formula} = ${g.total}`),
     ]))
   }
+  // Solo su un tiro nuovo: riaprendo la vista si ritrova l'ultimo risultato,
+  // e rivederlo girare ogni volta sarebbe una bugia sul quando è stato tirato.
+  if (anima) fermaAnimazione = animaDadi(dove.querySelectorAll('.dc-dado'))
 }
 
-/**
- * Un dado singolo. Il 20 e l'1 naturali si vedono, e chi non distingue i colori
- * lo legge lo stesso: c'è il testo, non solo la classe.
- * @param {{faces: number, value: number, dropped: boolean}} d
- * @param {ViewCtx} ctx
- * @returns {HTMLElement}
- */
-function facciaDado(d, ctx) {
-  const critico = d.faces === 20 && d.value === 20
-  const fallimento = d.faces === 20 && d.value === 1
-  /** @type {string[]} */
-  const note = []
-  if (critico) note.push(ctx.t('dadi.critico'))
-  if (fallimento) note.push(ctx.t('dadi.fallimento'))
-  if (d.dropped) note.push(ctx.t('dadi.scartato'))
-  return h('span', {
-    class: [
-      'bsc-pill',
-      critico && 'bsc-badge--ok',
-      fallimento && 'bsc-badge--rosso',
-      d.dropped && 'is-scartato',
-    ],
-    'data-facce': String(d.faces),
-    'data-valore': String(d.value),
-    'data-scartato': d.dropped ? 'si' : null,
-    title: note.join(' · '),
-  }, note.length ? `${d.value} (${note.join(', ')})` : String(d.value))
-}
+/** @type {() => void} */
+let fermaAnimazione = () => {}
+
 
 /**
  * @param {HTMLElement} elenco
@@ -301,6 +282,6 @@ function disegnaStorico(elenco, ctx) {
 function disegnaVoce(dove, v, ctx) {
   clear(dove)
   dove.appendChild(h('p', { class: 'bsc-display', 'data-totale': String(v.total) }, `${ctx.t('dadi.totale')} ${v.total}`))
-  dove.appendChild(h('div', { style: RIGA }, v.dice.map(d => facciaDado(d, ctx))))
+  dove.appendChild(h('div', { style: RIGA }, v.dice.map(d => facciaDado(d, ctx.t))))
   dove.appendChild(h('p', { class: 'bsc-code' }, `${v.formula} = ${v.total}`))
 }
