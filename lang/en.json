@@ -83,5 +83,12 @@
   "px.mancano": "{n} XP to level {liv}",
   "px.sali": "Level up",
   "aggiornamento.pronto": "Update available",
-  "aggiornamento.ricarica": "Reload"
+  "aggiornamento.ricarica": "Reload",
+  "zaino.iniziale": "Starting equipment",
+  "zaino.raccolti": "Picked up at the table",
+  "zaino.aggiungi": "Add an item",
+  "zaino.nomeOggetto": "What did you pick up",
+  "zaino.nessunOggetto": "Nothing yet. Loot goes here.",
+  "zaino.monete": "Coins",
+  "zaino.togli": "Remove {cosa}"
 }

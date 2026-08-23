@@ -24,6 +24,7 @@ export const BACKUP_KEY = 'dndc.backup'
  * @property {string[]} conditions
  * @property {boolean} inspiration
  * @property {Record<string, number>} coins
+ * @property {string[]} [oggetti]  raccolti al tavolo, accanto all'equipaggiamento iniziale
  * @property {Record<string, number>} uses
  * @property {number} xp
  * @property {{succ: number, fail: number}} deaths

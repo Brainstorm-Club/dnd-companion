@@ -678,9 +678,15 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 | Dadi | nove facce, gruppi indipendenti, vantaggio, storico unico condiviso con scheda, prove e vassoio |
 | Prove | abilità, tiri salvezza, contrapposti, CD col tastierino, margine dichiarato |
 | Sessione | PF, temporanei, tiri contro morte, dadi vita, slot, condizioni, riposi con annullamento |
+| Zaino | monete che si muovono, oggetti raccolti al tavolo, equipaggiamento iniziale in sola lettura |
 | PX e livello | soglie, traguardi, avanzamento guidato in sette passi, annullabile |
 | Compendio | 658 incantesimi, ricerca e filtri, selettore di edizione, «cosa cambia» |
 | Vassoio | maniglia trascinabile o toccabile, terza colonna fissa su tablet |
+
+**Da fare presto, e questa è tecnica**: `src/views/sheet.js` è arrivato **esattamente al tetto** dei 12 KB gz
+che vale per una singola vista. Il tetto sta facendo il suo mestiere: non dice «è troppo grosso», dice che sei
+sezioni in un file solo hanno smesso di essere una vista. La prossima aggiunta alla scheda va preceduta
+dall'estrazione delle sezioni in moduli propri — «Zaino» e «Storia» sono le più staccabili.
 
 **Resta aperto**, e sono decisioni di chi possiede i repo, non lavoro tecnico:
 

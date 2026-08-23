@@ -18,7 +18,7 @@ import {
 import { loadBridge, loadIndex } from '../domain/spells.js'
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
-  shortRest, longRest, slotsMassimi,
+  shortRest, longRest, slotsMassimi, aggiungiOggetto, togliOggetto, cambiaMonete, MONETE,
 } from '../domain/session.js'
 import { rollNotation } from '../domain/dice.js'
 import { cryptoRng } from '../domain/rng.js'
@@ -299,7 +299,7 @@ function contenuto(sezione, ctx, entry, d, rules) {
  * che si rifanno: il resto viene dallo snapshot, che è congelato e non cambia
  * mai. Il pager non si tocca, quindi la sezione in vista resta quella.
  * @param {PlayState} nuovo
- * @param {{annullabile?: boolean}} [opz]  un riposo si può annullare, un tap sui PF no
+ * @param {{annullabile?: boolean, mantieniFuoco?: boolean}} [opz]  un riposo si può annullare, un tap sui PF no
  */
 function applica(nuovo, opz = {}) {
   if (!vista) return
@@ -310,6 +310,13 @@ function applica(nuovo, opz = {}) {
     if (e) e.play = nuovo
   })
   ridisegna()
+  // Il ridisegno rifà la sezione da capo e si porta via il fuoco: chi sta
+  // segnando il bottino deve poter scrivere la riga dopo senza ritoccare il
+  // campo. Si rimette dov'era, non altrove.
+  if (opz.mantieniFuoco) {
+    const campo = document.querySelector('.dc-aggiungi input')
+    if (campo instanceof HTMLInputElement) campo.focus()
+  }
 }
 
 /** Le tre sezioni che dipendono dallo stato di gioco, ridisegnate in posto. */
@@ -726,12 +733,71 @@ function magia(ctx, entry, d, rules) {
  * @param {CharacterEntry} entry
  */
 function zaino(ctx, entry) {
-  const monete = entry.play.coins
+  const play = entry.play
+  const raccolti = play.oggetti ?? []
+
   return [
-    h('div', { class: 'dc-monete' }, ['pp', 'gp', 'ep', 'sp', 'cp'].map(k => kv(k.toUpperCase(), String(monete[k] ?? 0)))),
-    elenco(ctx, 'sezione.zaino', stringhe(entry.snapshot['equipment']).map(e => h('li', { class: 'bsc-kv' }, e))),
+    h('h2', { class: 'bsc-label' }, ctx.t('zaino.monete')),
+    h('div', { class: 'dc-monete' }, MONETE.map(k => h('div', { class: 'bsc-kv' }, [
+      h('span', { class: 'bsc-kv__label' }, k.toUpperCase()),
+      h('span', { class: 'bsc-kv__value' }, String(play.coins?.[k] ?? 0)),
+      stepper(String(play.coins?.[k] ?? 0),
+        (delta) => { applica(cambiaMonete(play, k, delta)); return undefined },
+        k.toUpperCase()),
+    ]))),
+
+    campoOggetto(ctx),
+
+    // Quello che si è raccolto giocando: è l'unico che si può togliere.
+    elenco(ctx, 'zaino.raccolti', raccolti.length
+      ? raccolti.map((o, i) => h('div', { class: 'bsc-kv' }, [
+        h('span', { class: 'bsc-kv__label' }, o),
+        h('button', {
+          class: 'bsc-btn bsc-btn--ghost bsc-btn--sm', type: 'button',
+          'aria-label': ctx.t('zaino.togli', { cosa: o }),
+          onclick: () => applica(togliOggetto(entry.play, i), { annullabile: true }),
+        }, '✕'),
+      ]))
+      : [h('p', { class: 'dc-avvio' }, ctx.t('zaino.nessunOggetto'))]),
+
+    // L'equipaggiamento iniziale viene dallo snapshot, che non si tocca mai:
+    // si legge e basta, ed è giusto che si veda che sono due liste diverse.
+    elenco(ctx, 'zaino.iniziale', stringhe(entry.snapshot['equipment']).map(e => h('li', { class: 'bsc-kv' }, e))),
     testo(entry.snapshot['treasure']) ? h('p', { class: 'bsc-prose' }, testo(entry.snapshot['treasure'])) : null,
   ]
+}
+
+/**
+ * Il campo per segnare quello che si è appena raccolto.
+ *
+ * Invio aggiunge: al tavolo si scrive «tre torce» e si torna a giocare, non si
+ * cerca un bottone. Il bottone c'è lo stesso, perché il gesto non può essere
+ * l'unico modo.
+ * @param {ViewCtx} ctx
+ */
+function campoOggetto(ctx) {
+  const campo = /** @type {HTMLInputElement} */ (h('input', {
+    class: 'bsc-input', type: 'text', autocomplete: 'off',
+    enterkeyhint: 'done', maxlength: '120',
+    placeholder: ctx.t('zaino.nomeOggetto'),
+  }))
+  const aggiungi = () => {
+    if (!vista) return
+    const valore = campo.value.trim()
+    if (!valore) return
+    campo.value = ''
+    applica(aggiungiOggetto(vista.entry.play, valore), { annullabile: true, mantieniFuoco: true })
+  }
+  campo.addEventListener('keydown', (ev) => {
+    if (/** @type {KeyboardEvent} */ (ev).key === 'Enter') { ev.preventDefault(); aggiungi() }
+  })
+  return h('div', { class: 'dc-aggiungi' }, [
+    h('label', { class: 'bsc-field' }, [
+      h('span', { class: 'bsc-field-label' }, ctx.t('zaino.aggiungi')),
+      campo,
+    ]),
+    h('button', { class: 'bsc-btn', type: 'button', onclick: aggiungi }, '+'),
+  ])
 }
 
 /**

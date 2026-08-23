@@ -810,12 +810,17 @@ button.bsc-kv:focus-visible, a.bsc-kv:focus-visible { outline: 3px solid var(--b
 
 .dc-caratteristiche > * { min-width: 0; }
 
+/* Le monete non sono più tessere da leggere: ognuna ha un −/+ accanto, quindi
+   la riga vuole lo spazio di una riga. Con la traccia stretta di prima le celle
+   si sovrapponevano e i bottoni finivano sotto la riga vicina. */
 .dc-monete {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: var(--bsc-space-2);
   margin-block-end: var(--bsc-space-4);
 }
+
+.dc-monete .bsc-kv { min-width: 0; }
 
 /* ──────────────────────────────────────────────────────────────────────────
    Dadi che girano e si scoprono.
@@ -874,4 +879,26 @@ a.bsc-wordmark:focus-visible {
   outline: 2px solid var(--bsc-focus);
   outline-offset: 2px;
   border-radius: var(--bsc-radius-sm);
+}
+
+/* Il campo per segnare il bottino: campo e bottone sulla stessa riga, con il
+   bottone che non si stringe mai sotto il minimo tattile. */
+.dc-aggiungi {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--bsc-space-2);
+  margin-block: var(--bsc-space-3);
+}
+
+.dc-aggiungi .bsc-field { flex: 1 1 auto; min-width: 0; }
+.dc-aggiungi .bsc-btn { flex: 0 0 auto; min-width: var(--dc-tap-min); }
+
+/* L'app bar è appiccicata in cima: senza questo, ciò a cui si scorre finisce
+   sotto di lei — e un bottone coperto non si può premere, né a mano né in un
+   test. */
+.dc-vista .bsc-kv,
+.dc-vista .bsc-field,
+.dc-vista button {
+  scroll-margin-block-start: calc(var(--dc-appbar-h, 4rem) + var(--bsc-space-3));
+  scroll-margin-block-end: calc(var(--dc-tabbar-h, 4rem) + var(--bsc-space-3));
 }

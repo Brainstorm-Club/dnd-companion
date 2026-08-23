@@ -33,11 +33,75 @@ function copia(play) {
     conditions: [...(play.conditions ?? [])],
     inspiration: play.inspiration === true,
     coins: { ...(play.coins ?? {}) },
+    // Solo se c'era: un campo facoltativo che si materializza da solo farebbe
+    // risultare «cambiato» uno stato che nessuno ha toccato.
+    ...(play.oggetti ? { oggetti: [...play.oggetti] } : {}),
     uses: { ...(play.uses ?? {}) },
     xp: intero(play.xp),
     deaths: { succ: intero(play.deaths?.succ), fail: intero(play.deaths?.fail) },
     notes: typeof play.notes === 'string' ? play.notes : '',
   }
+}
+
+/** Le cinque monete, dalla più preziosa alla meno. */
+export const MONETE = /** @type {const} */ (['pp', 'gp', 'ep', 'sp', 'cp'])
+
+/** Un oggetto raccolto non può essere una riga vuota né un romanzo. */
+export const MAX_OGGETTO = 120
+/** Tetto sullo zaino: al tavolo si segna il bottino, non si tiene un magazzino. */
+export const MAX_OGGETTI = 200
+
+/**
+ * Aggiunge un oggetto a quelli raccolti.
+ *
+ * L'equipaggiamento iniziale sta nello snapshot e non si tocca: quello che si
+ * raccoglie giocando vive qui accanto, ed è l'unico che si può togliere. Le due
+ * liste restano distinte perché sono due cose diverse — una dice da dove parte
+ * il personaggio, l'altra cosa gli è successo.
+ *
+ * @param {PlayState} play
+ * @param {string} testo
+ * @returns {PlayState}
+ */
+export function aggiungiOggetto(play, testo) {
+  const pulito = String(testo ?? '').trim().slice(0, MAX_OGGETTO)
+  const out = copia(play)
+  if (!pulito || (out.oggetti?.length ?? 0) >= MAX_OGGETTI) return out
+  out.oggetti = [...(out.oggetti ?? []), pulito]
+  return out
+}
+
+/**
+ * Toglie l'oggetto in quella posizione. Fuori dai margini non fa niente:
+ * un indice sbagliato non deve cancellare l'ultimo della lista.
+ * @param {PlayState} play
+ * @param {number} indice
+ * @returns {PlayState}
+ */
+export function togliOggetto(play, indice) {
+  const out = copia(play)
+  const lista = out.oggetti ?? []
+  if (!Number.isInteger(indice) || indice < 0 || indice >= lista.length) return out
+  out.oggetti = lista.filter((_, i) => i !== indice)
+  return out
+}
+
+/**
+ * Aggiunge (o toglie, con delta negativo) monete di un taglio.
+ *
+ * Non converte fra tagli: chi cambia dieci argenti in un oro lo fa da sé,
+ * perché le regole del cambio non sono le stesse a ogni tavolo.
+ * @param {PlayState} play
+ * @param {string} taglio
+ * @param {number} delta
+ * @returns {PlayState}
+ */
+export function cambiaMonete(play, taglio, delta) {
+  const out = copia(play)
+  if (!MONETE.includes(/** @type {any} */ (taglio))) return out
+  const attuale = intero(out.coins?.[taglio])
+  out.coins = { ...out.coins, [taglio]: Math.max(0, attuale + intero(delta)) }
+  return out
 }
 
 /**

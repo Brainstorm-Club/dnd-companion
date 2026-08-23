@@ -91,3 +91,44 @@ test.describe('il compendio si apre sui tuoi incantesimi', () => {
     await expect.poll(() => page.locator('#principale .dc-elenco > *').count()).toBeGreaterThan(200)
   })
 })
+
+test.describe('lo zaino si riempie giocando', () => {
+  test('si aggiungono oggetti e si cambiano le monete, e restano dopo la ricarica', async ({ page }) => {
+    await importa(page)
+    await page.locator('#principale a, #principale button').filter({ hasText: /^apri$/i }).first().click()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^zaino$/i }).first().click()
+
+    // l'equipaggiamento iniziale c'è, e viene dallo snapshot
+    await expect(page.locator('#principale')).toContainText('Equipaggiamento iniziale')
+    await expect(page.locator('#principale')).toContainText('holy symbol')
+
+    const campo = page.locator('#principale .dc-aggiungi input')
+    await campo.fill('tre torce')
+    await campo.press('Enter')
+    await expect(page.locator('#principale')).toContainText('tre torce')
+
+    // il fuoco resta nel campo: si segna il bottino una riga dopo l'altra
+    await expect(campo).toBeFocused()
+    await campo.fill('un teschio di goblin')
+    await campo.press('Enter')
+    await expect(page.locator('#principale')).toContainText('un teschio di goblin')
+
+    // le monete si muovono. Si punta all'etichetta accessibile, che è precisa:
+    // «GP» da solo compare anche in righe che non sono quella delle monete.
+    const riga = page.locator('#principale .dc-monete .bsc-kv').filter({ hasText: 'GP' }).first()
+    await page.getByLabel('GP +1').click()
+    await expect(riga).toContainText('39')
+
+    // e tutto sopravvive alla ricarica
+    await page.reload()
+    await page.locator('#principale a, #principale button').filter({ hasText: /^zaino$/i }).first().click()
+    await expect(page.locator('#principale')).toContainText('tre torce')
+    await expect(page.locator('#principale .dc-monete')).toContainText('39')
+
+    // togliere leva quello giusto
+    const daTogliere = page.locator('#principale .bsc-kv').filter({ hasText: 'tre torce' }).first()
+    await daTogliere.locator('button').click()
+    await expect(page.locator('#principale')).not.toContainText('tre torce')
+    await expect(page.locator('#principale')).toContainText('un teschio di goblin')
+  })
+})

@@ -83,5 +83,12 @@
   "px.mancano": "Mancano {n} PX al livello {liv}",
   "px.sali": "Sali di livello",
   "aggiornamento.pronto": "Aggiornamento disponibile",
-  "aggiornamento.ricarica": "Ricarica"
+  "aggiornamento.ricarica": "Ricarica",
+  "zaino.iniziale": "Equipaggiamento iniziale",
+  "zaino.raccolti": "Raccolti al tavolo",
+  "zaino.aggiungi": "Aggiungi un oggetto",
+  "zaino.nomeOggetto": "Cosa hai raccolto",
+  "zaino.nessunOggetto": "Niente ancora. Il bottino si segna qui.",
+  "zaino.monete": "Monete",
+  "zaino.togli": "Togli {cosa}"
 }

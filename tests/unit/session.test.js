@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest'
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
   shortRest, longRest, slotsMassimi,
+  aggiungiOggetto, togliOggetto, cambiaMonete, MAX_OGGETTO, MAX_OGGETTI,
 } from '../../src/domain/session.js'
 
 /** @returns {import('../../src/storage.js').PlayState} */
@@ -239,5 +240,60 @@ describe('slotsMassimi', () => {
 
   it('senza pacchetto non inventa niente', () => {
     expect(slotsMassimi(null, { className: 'cleric', level: 3 })).toEqual([])
+  })
+})
+
+describe('zaino', () => {
+  /** Uno stato di partenza minimo, con solo ciò che serve qui. */
+  const vuoto = () => ({
+    hp: { cur: 10, temp: 0 }, hitDice: { spent: 0 }, slots: {}, conditions: [],
+    inspiration: false, coins: { gp: 5 }, uses: {}, xp: 0,
+    deaths: { succ: 0, fail: 0 }, notes: '',
+  })
+
+  it('aggiunge un oggetto raccolto, senza toccare lo stato di partenza', () => {
+    const prima = vuoto()
+    const dopo = aggiungiOggetto(prima, 'tre torce')
+    expect(dopo.oggetti).toEqual(['tre torce'])
+    expect(prima.oggetti).toBeUndefined()
+  })
+
+  it('accumula nell\'ordine in cui le cose sono state raccolte', () => {
+    let p = aggiungiOggetto(vuoto(), 'corda')
+    p = aggiungiOggetto(p, 'un teschio')
+    expect(p.oggetti).toEqual(['corda', 'un teschio'])
+  })
+
+  it('ignora righe vuote e taglia quelle chilometriche', () => {
+    expect(aggiungiOggetto(vuoto(), '   ').oggetti).toBeUndefined()
+    const lungo = aggiungiOggetto(vuoto(), 'x'.repeat(500)).oggetti?.[0] ?? ''
+    expect(lungo.length).toBe(MAX_OGGETTO)
+  })
+
+  it('non cresce oltre il tetto', () => {
+    let p = vuoto()
+    for (let i = 0; i < MAX_OGGETTI + 10; i++) p = aggiungiOggetto(p, `oggetto ${i}`)
+    expect(p.oggetti).toHaveLength(MAX_OGGETTI)
+  })
+
+  it('toglie quello giusto, e un indice sbagliato non cancella niente', () => {
+    let p = aggiungiOggetto(aggiungiOggetto(aggiungiOggetto(vuoto(), 'a'), 'b'), 'c')
+    expect(togliOggetto(p, 1).oggetti).toEqual(['a', 'c'])
+    expect(togliOggetto(p, 9).oggetti).toEqual(['a', 'b', 'c'])
+    expect(togliOggetto(p, -1).oggetti).toEqual(['a', 'b', 'c'])
+  })
+
+  it('somma e sottrae monete, senza scendere sotto zero', () => {
+    const p = vuoto()
+    expect(cambiaMonete(p, 'gp', 3).coins.gp).toBe(8)
+    expect(cambiaMonete(p, 'gp', -100).coins.gp).toBe(0)
+    expect(cambiaMonete(p, 'cp', 7).coins.cp).toBe(7)
+  })
+
+  it('non conosce tagli che non esistono, e non converte fra tagli', () => {
+    const p = cambiaMonete(vuoto(), 'lire', 10)
+    expect(p.coins).toEqual({ gp: 5 })
+    // dieci argenti restano dieci argenti: il cambio non è uguale a ogni tavolo
+    expect(cambiaMonete(vuoto(), 'sp', 10).coins).toEqual({ gp: 5, sp: 10 })
   })
 })
