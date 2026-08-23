@@ -1,0 +1,26 @@
+{
+  "name": "dnd-companion",
+  "private": true,
+  "type": "module",
+  "description": "La scheda al tavolo — app compagna del D&D Character Builder del Brainstorm Club",
+  "license": "MIT",
+  "scripts": {
+    "check": "tsc --noEmit -p jsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "size": "node scripts/size-check.mjs",
+    "build:rules": "node scripts/build-rules.mjs",
+    "build:spells": "node scripts/build-spells.mjs",
+    "build:bridge": "node scripts/build-bridge.mjs",
+    "audit:a11y": "lhci autorun",
+    "serve": "node scripts/serve.mjs"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^26.2.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

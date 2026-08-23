@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover: senza, le safe-area di iPhone non esistono.
+     Nessun user-scalable=no: lo zoom non si disabilita (WCAG 1.4.4). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="La scheda al tavolo: statistiche, dadi, prove e punti esperienza per D&amp;D 2014 e 2024. Funziona senza rete.">
+<meta name="theme-color" content="#181617">
+<meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<title>D&amp;D Companion — la scheda al tavolo</title>
+
+<!-- anti-flash del tema: prima del CSS, risolve anche 'auto'. Allinea anche la
+     barra di sistema del browser al tema effettivo, all'avvio e a ogni cambio. -->
+<script>try{var p=localStorage.getItem('bsc-theme-pref')||localStorage.getItem('bsc-theme')||'dark',e=p==='auto'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):p,d=document.documentElement;d.setAttribute('data-theme',e);d.setAttribute('data-theme-pref',p);var m=function(t){var q=document.querySelector('meta[name=theme-color]');if(q)q.setAttribute('content',t==='light'?'#EFEAE1':'#181617')};m(e);document.addEventListener('bsc:themechange',function(ev){m(ev.detail&&ev.detail.theme)})}catch(e){}</script>
+
+<link rel="icon" type="image/svg+xml" href="design-system/assets/favicon.svg">
+<link rel="icon" type="image/png" href="design-system/assets/favicon.png">
+<link rel="apple-touch-icon" href="design-system/assets/favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="design-system/tokens.css">
+<link rel="stylesheet" href="design-system/components.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="bsc-body">
+
+<a class="bsc-skip" href="#principale">Salta al contenuto</a>
+
+<header class="bsc-appbar bsc-appbar--app" id="barra">
+  <div class="bsc-appbar__inner">
+    <span class="bsc-wordmark"><span class="bsc-brandmark" aria-hidden="true"></span><span class="bsc-r">brainstorm</span>club</span>
+    <button class="bsc-theme-toggle" type="button" data-bsc-theme-toggle aria-label="Cambia tema"></button>
+  </div>
+</header>
+
+<main id="principale" class="dc-main" tabindex="-1">
+  <p class="dc-avvio">Caricamento…</p>
+</main>
+
+<nav class="bsc-tabbar" id="tabbar" aria-label="Sezioni principali"></nav>
+
+<div class="bsc-toast bsc-toast--app" role="status" aria-live="polite"></div>
+
+<!-- L'aggiornamento non si subisce a metà di un tiro: si chiede. -->
+<div class="dc-aggiorna" id="aggiornamento" role="status" aria-live="polite" hidden>
+  <span data-i18n="aggiornamento.pronto">Aggiornamento disponibile</span>
+  <button class="bsc-btn bsc-btn--outline" type="button" data-azione="aggiorna" data-i18n="aggiornamento.ricarica">Ricarica</button>
+</div>
+
+<!-- ─── template delle viste, clonati da dom.js ─────────────────────────── -->
+<template id="tpl-libreria">
+  <section class="dc-vista" data-vista="libreria">
+    <h1 class="bsc-display">Personaggi</h1>
+    <ul class="dc-elenco" data-elenco></ul>
+    <button class="bsc-btn" type="button" data-azione="importa">Importa un personaggio</button>
+  </section>
+</template>
+
+<template id="tpl-scheda">
+  <section class="dc-vista" data-vista="scheda">
+    <div class="bsc-pager" data-pager></div>
+    <ul class="bsc-pager__punti" data-pager-punti></ul>
+  </section>
+</template>
+
+<template id="tpl-dadi">
+  <section class="dc-vista" data-vista="dadi">
+    <div class="dc-dadi" data-dadi></div>
+    <div class="bsc-roll" data-risultato hidden></div>
+  </section>
+</template>
+
+<script type="module" src="src/main.js"></script>
+
+<!-- Ciclo di vita del service worker: sta qui e non in src/main.js perché
+     riguarda la pagina, non l'app — e perché main.js appartiene a un altro
+     lotto. Su localhost main.js non registra nulla (a meno di `?sw=1`), quindi
+     qui non succede niente e va bene così. -->
+<script type="module">
+if ('serviceWorker' in navigator) {
+  const sw = navigator.serviceWorker
+  const banner = document.getElementById('aggiornamento')
+  const bottone = banner && banner.querySelector('button')
+  // Se una pagina è già controllata all'avvio, il prossimo cambio di
+  // controllore è l'aggiornamento che abbiamo chiesto noi: allora si ricarica.
+  const eraControllata = !!sw.controller
+  let ricaricato = false
+
+  sw.addEventListener('controllerchange', () => {
+    if (!eraControllata || ricaricato) return
+    ricaricato = true
+    location.reload()
+  })
+
+  const proponi = (reg) => {
+    if (!reg.waiting || !banner || !bottone) return
+    banner.hidden = false
+    bottone.onclick = () => { banner.hidden = true; reg.waiting && reg.waiting.postMessage('skip-waiting') }
+  }
+
+  sw.ready.then((reg) => {
+    proponi(reg)
+    reg.addEventListener('updatefound', () => {
+      const nuovo = reg.installing
+      if (!nuovo) return
+      nuovo.addEventListener('statechange', () => { if (nuovo.state === 'installed') proponi(reg) })
+    })
+
+    // Tempi 2 e 3 del precache (PIANO.md § 7): l'edizione in uso per prima,
+    // l'altra in coda. Il service worker non può leggere localStorage: glielo
+    // diciamo noi, e se non lo sappiamo decide lui un ordine.
+    let edizione = null
+    try {
+      const s = JSON.parse(localStorage.getItem('dndc') || '{}')
+      const pref = s && s.settings && s.settings.edition
+      const attivo = s && s.characters && s.activeId && s.characters[s.activeId]
+      edizione = (pref && pref !== 'auto') ? pref : (attivo && attivo.meta && attivo.meta.edition) || null
+    } catch { /* stato illeggibile: l'ordine di default va benissimo */ }
+    const dest = reg.active || sw.controller
+    if (dest) dest.postMessage({ tipo: 'precarica', edizione })
+  })
+}
+</script>
+</body>
+</html>

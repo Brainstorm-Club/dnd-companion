@@ -1,0 +1,108 @@
+{
+  "id": "fx-2014-guerriero",
+  "variant": "dnd5e",
+  "name": "Baldo di Faenza",
+  "playerName": "Fulvio",
+  "race": "dwarf",
+  "subrace": "hill-dwarf",
+  "feat": "",
+  "className": "fighter",
+  "subclass": "champion",
+  "level": 3,
+  "background": "soldier",
+  "alignment": "lawful-neutral",
+  "experiencePoints": 1200,
+  "abilityScores": {
+    "str": 16,
+    "dex": 12,
+    "con": 15,
+    "int": 10,
+    "wis": 13,
+    "cha": 8
+  },
+  "racialBonuses": {
+    "con": 2,
+    "wis": 1
+  },
+  "skillProficiencies": [
+    "athletics",
+    "intimidation"
+  ],
+  "skillExpertise": [],
+  "savingThrowProficiencies": [
+    "str",
+    "con"
+  ],
+  "languages": [
+    "common",
+    "dwarvish"
+  ],
+  "proficienciesOther": [],
+  "weapons": [
+    {
+      "name": "Spadone",
+      "attackBonus": 5,
+      "damage": "2d6+3"
+    },
+    {
+      "name": "Balestra leggera",
+      "attackBonus": 3,
+      "damage": "1d8+1"
+    }
+  ],
+  "armor": "chain-mail",
+  "shield": false,
+  "equipment": [
+    "Zaino da avventuriero",
+    "Corda di canapa",
+    "Razioni (10)"
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 22,
+    "pp": 0
+  },
+  "personalityTraits": "",
+  "ideals": "",
+  "bonds": "",
+  "flaws": "",
+  "featuresTraits": [
+    "Stile di Combattimento",
+    "Recuperare Energie",
+    "Azione Impetuosa",
+    "Critico Migliorato"
+  ],
+  "backstory": "",
+  "age": "",
+  "height": "",
+  "weight": "",
+  "eyes": "",
+  "hair": "",
+  "skin": "",
+  "allies": "",
+  "treasure": "",
+  "spellcastingClass": "",
+  "spellcastingAbility": "",
+  "cantrips": [],
+  "spellsKnown": [],
+  "spellsKnownLimit": 0,
+  "spellsPrepared": [],
+  "hitDie": 10,
+  "maxHp": 28,
+  "currentHp": 28,
+  "tempHp": 0,
+  "speed": 25,
+  "brawlingMoves": [],
+  "misdeeds": "",
+  "size": "medium",
+  "whacksLevel": 0,
+  "mark": "",
+  "markSpirit": "",
+  "virtue": "",
+  "sin": "",
+  "humanity": 0,
+  "sessionNotes": "",
+  "classes": []
+}

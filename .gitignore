@@ -1,0 +1,7 @@
+node_modules/
+test-results/
+playwright-report/
+.lighthouseci/
+.DS_Store
+# I PDF degli SRD non entrano nel repo: si committa solo il JSON generato.
+*.pdf

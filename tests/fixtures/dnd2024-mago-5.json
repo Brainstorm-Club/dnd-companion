@@ -1,0 +1,126 @@
+{
+  "id": "fx-2024-mago",
+  "variant": "dnd2024",
+  "name": "Vittoria Sacchi",
+  "playerName": "Fulvio",
+  "race": "human",
+  "subrace": "",
+  "feat": "",
+  "className": "wizard",
+  "subclass": "evoker",
+  "level": 5,
+  "background": "sage",
+  "alignment": "neutral-good",
+  "experiencePoints": 6800,
+  "abilityScores": {
+    "str": 8,
+    "dex": 14,
+    "con": 14,
+    "int": 17,
+    "wis": 12,
+    "cha": 10
+  },
+  "racialBonuses": {
+    "int": 1,
+    "con": 1
+  },
+  "skillProficiencies": [
+    "arcana",
+    "history",
+    "investigation",
+    "insight"
+  ],
+  "skillExpertise": [],
+  "savingThrowProficiencies": [
+    "int",
+    "wis"
+  ],
+  "languages": [
+    "common"
+  ],
+  "proficienciesOther": [],
+  "weapons": [
+    {
+      "name": "Bastone ferrato",
+      "attackBonus": 1,
+      "damage": "1d6-1"
+    },
+    {
+      "name": "Dardo",
+      "attackBonus": 4,
+      "damage": "1d4+2"
+    }
+  ],
+  "armor": "",
+  "shield": false,
+  "equipment": [
+    "Libro degli incantesimi",
+    "Componenti",
+    "Zaino da studioso"
+  ],
+  "coins": {
+    "cp": 0,
+    "sp": 5,
+    "ep": 0,
+    "gp": 48,
+    "pp": 0
+  },
+  "personalityTraits": "",
+  "ideals": "",
+  "bonds": "",
+  "flaws": "",
+  "featuresTraits": [
+    "Incantesimi",
+    "Recupero Arcano",
+    "Tradizione Arcana",
+    "Scrivere Incantesimi"
+  ],
+  "backstory": "",
+  "age": "",
+  "height": "",
+  "weight": "",
+  "eyes": "",
+  "hair": "",
+  "skin": "",
+  "allies": "",
+  "treasure": "",
+  "spellcastingClass": "wizard",
+  "spellcastingAbility": "int",
+  "cantrips": [
+    "fire-bolt",
+    "mage-hand",
+    "prestidigitation",
+    "light"
+  ],
+  "spellsKnown": [
+    "1-magic-missile",
+    "1-shield",
+    "1-burning-hands",
+    "2-misty-step",
+    "3-fireball",
+    "3-counterspell"
+  ],
+  "spellsKnownLimit": 0,
+  "spellsPrepared": [
+    "1-magic-missile",
+    "1-shield",
+    "2-misty-step",
+    "3-fireball"
+  ],
+  "hitDie": 6,
+  "maxHp": 32,
+  "currentHp": 32,
+  "tempHp": 0,
+  "speed": 30,
+  "brawlingMoves": [],
+  "misdeeds": "",
+  "size": "medium",
+  "whacksLevel": 0,
+  "mark": "",
+  "markSpirit": "",
+  "virtue": "",
+  "sin": "",
+  "humanity": 0,
+  "sessionNotes": "",
+  "classes": []
+}

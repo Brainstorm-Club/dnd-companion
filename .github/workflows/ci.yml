@@ -1,0 +1,24 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: true }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Tipi
+        run: npm run check
+      - name: Test di unità
+        run: npm test
+      - name: Budget
+        run: npm run size
+      - name: Browser
+        run: npx playwright install --with-deps chromium
+      - name: Test end-to-end
+        run: npm run test:e2e

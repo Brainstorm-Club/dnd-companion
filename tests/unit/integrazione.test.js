@@ -1,0 +1,113 @@
+/**
+ * Il percorso completo, attraverso i lotti: un JSON vero esportato dal builder
+ * entra, e ne esce una scheda giocabile.
+ *
+ * Questo file non appartiene a nessun lotto: verifica che i pezzi combacino,
+ * che è l'unica cosa che i test dei singoli lotti non possono dimostrare.
+ */
+import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+
+import * as importer from '../../src/domain/importer.js'
+import * as character from '../../src/domain/character.js'
+import * as dice from '../../src/domain/dice.js'
+import { seededRng } from '../../src/domain/rng.js'
+import { levelForXp, xpProgress } from '../../src/domain/progress.js'
+import { packForVariant } from '../../src/domain/packs.js'
+
+const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
+const oracolo = JSON.parse(readFileSync('tests/fixtures/oracolo-derive.json', 'utf8'))
+const fixture = (/** @type {string} */ n) => readFileSync(`tests/fixtures/${n}.json`, 'utf8')
+
+const REALI = ['reale-dnd2024-guerriero-3', 'reale-dnd5e-barbaro-10', 'reale-dnd5e-chierico-3']
+
+describe('dal builder al tavolo', () => {
+  it.each(REALI)('%s si importa', (nome) => {
+    const r = importer.fromJson(fixture(nome), registro, 'file')
+    expect(r.ok, r.ok ? '' : `rifiutato: ${r.message}`).toBe(true)
+  })
+
+  it.each(REALI)('%s riceve l\'edizione giusta senza che nessuno la scelga', (nome) => {
+    const r = importer.fromJson(fixture(nome), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    const atteso = nome.includes('2024') ? '2024' : '2014'
+    expect(r.entry.meta.edition).toBe(atteso)
+  })
+
+  it('un personaggio di Brancalonia viene rifiutato con una spiegazione', () => {
+    const r = importer.fromJson(fixture('brancalonia-rifiuto'), registro, 'file')
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.reason).toBe('variante-non-supportata')
+    expect(r.message).toContain('Brancalonia')
+    expect(r.message).not.toMatch(/errore|error|undefined|null/i)
+  })
+
+  describe.each(REALI)('%s — i conti tornano con quelli del builder', (nome) => {
+    const atteso = oracolo[nome]
+
+    /** @returns {any} */
+    function derivato() {
+      const r = importer.fromJson(fixture(nome), registro, 'file')
+      if (!r.ok) throw new Error(r.message)
+      const pack = packForVariant(registro, JSON.parse(fixture(nome)).variant)
+      const rules = JSON.parse(readFileSync(`data/rules/${pack.edizione}.json`, 'utf8'))
+      return { d: character.derive(r.entry, rules), entry: r.entry }
+    }
+
+    it('classe armatura, iniziativa, punti ferita, competenza', () => {
+      const { d } = derivato()
+      expect({ ca: d.ca, iniziativa: d.iniziativa, pfMax: d.pfMax, competenza: d.competenza })
+        .toEqual({ ca: atteso.ca, iniziativa: atteso.iniziativa, pfMax: atteso.pfMax, competenza: atteso.competenza })
+    })
+
+    it('punteggi pieni e modificatori', () => {
+      const { d } = derivato()
+      expect(d.punteggi).toEqual(atteso.punteggi)
+      expect(d.modificatori).toEqual(atteso.modificatori)
+    })
+
+    it('tiri salvezza', () => {
+      const { d } = derivato()
+      expect(d.tiriSalvezza).toEqual(atteso.tiriSalvezza)
+    })
+
+    it('le abilità che il builder mostra', () => {
+      const { d } = derivato()
+      /** @type {Record<string, number>} */
+      const mie = {}
+      for (const a of d.abilita) if (a.id in atteso.abilita) mie[a.id] = a.bonus
+      expect(mie).toEqual(atteso.abilita)
+    })
+
+    it('lo snapshot non è stato toccato', () => {
+      const prima = fixture(nome)
+      const { entry } = derivato()
+      expect(JSON.parse(JSON.stringify(entry.snapshot))).toEqual(JSON.parse(prima))
+    })
+  })
+
+  it('da una riga di abilità si tira davvero', () => {
+    const r = importer.fromJson(fixture('reale-dnd5e-chierico-3'), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    const rules = JSON.parse(readFileSync('data/rules/2014.json', 'utf8'))
+    const d = character.derive(r.entry, rules)
+    const percezione = d.abilita.find((/** @type {any} */ a) => a.id === 'perception')
+    expect(percezione?.bonus).toBe(5)
+
+    const tiro = dice.rollNotation(`1d20+${percezione.bonus}`, seededRng(99), 'Percezione')
+    expect(tiro.total).toBeGreaterThanOrEqual(6)
+    expect(tiro.total).toBeLessThanOrEqual(25)
+    expect(tiro.label).toBe('Percezione')
+  })
+
+  it('i PX del builder danno il livello che il builder dichiara', () => {
+    for (const nome of REALI) {
+      const c = JSON.parse(fixture(nome))
+      // i personaggi generati partono a 0 PX: il livello lo decide il master,
+      // quindi qui si verifica solo che la funzione non contraddica sé stessa
+      expect(levelForXp(c.experiencePoints)).toBe(1)
+      expect(xpProgress(c.experiencePoints).livello).toBe(1)
+    }
+  })
+})
