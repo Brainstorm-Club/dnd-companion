@@ -19,7 +19,8 @@ const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
 const oracolo = JSON.parse(readFileSync('tests/fixtures/oracolo-derive.json', 'utf8'))
 const fixture = (/** @type {string} */ n) => readFileSync(`tests/fixtures/${n}.json`, 'utf8')
 
-const REALI = ['reale-dnd2024-guerriero-3', 'reale-dnd5e-barbaro-10', 'reale-dnd5e-chierico-3']
+const REALI = ['reale-dnd2024-guerriero-3', 'reale-dnd5e-barbaro-10', 'reale-dnd5e-chierico-3',
+  'reale-dnd2024-schema2-guerriero-8']
 
 describe('dal builder al tavolo', () => {
   it.each(REALI)('%s si importa', (nome) => {
@@ -109,5 +110,44 @@ describe('dal builder al tavolo', () => {
       expect(levelForXp(c.experiencePoints)).toBe(1)
       expect(xpProgress(c.experiencePoints).livello).toBe(1)
     }
+  })
+})
+
+
+describe('lo schema 2 del builder', () => {
+  const nome = 'reale-dnd2024-schema2-guerriero-8'
+
+  it('i campi nuovi arrivano fin dentro lo snapshot, invece di essere buttati', () => {
+    const r = importer.fromJson(fixture(nome), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    const s = /** @type {any} */ (r.entry.snapshot)
+    expect(s.armorId).toBe('ring-mail')
+    expect(s.schemaVersion).toBe(2)
+    expect(Array.isArray(s.featureEntries)).toBe(true)
+    // e portano quello che serviva a smettere di indovinare: da dove viene una
+    // voce, e a che livello è stata ottenuta
+    const stile = s.featureEntries.find((/** @type {any} */ f) => f.id === 'fighting-style')
+    expect(stile).toMatchObject({ source: 'class', sourceId: 'fighter', level: 1 })
+    const tratto = s.featureEntries.find((/** @type {any} */ f) => f.source === 'race')
+    expect(tratto).toBeDefined()
+  })
+
+  it('la classe armatura si calcola dallo slug, non dal nome di visualizzazione', () => {
+    const grezzo = JSON.parse(fixture(nome))
+    // stesso personaggio, ma col nome scritto in un altro modo: se contasse
+    // quello, la corazza sparirebbe e la CA scenderebbe a 12
+    const storto = { ...grezzo, armor: 'ring mail (usata)' }
+    const r = importer.fromJson(JSON.stringify(storto), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    const rules = JSON.parse(readFileSync('data/rules/2024.json', 'utf8'))
+    expect(character.derive(r.entry, rules).ca).toBe(16)
+  })
+
+  it('i privilegi strutturati contano le ripetizioni invece di ripetersi', () => {
+    const r = importer.fromJson(fixture(nome), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    const asi = /** @type {any} */ (r.entry.snapshot).featureEntries
+      .find((/** @type {any} */ f) => f.id === 'ability-score-improvement')
+    expect(asi.count).toBe(3)
   })
 })

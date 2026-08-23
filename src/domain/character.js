@@ -290,7 +290,10 @@ function leggibile(v) {
  */
 function classeArmatura(s, mod, rules) {
   const scudo = s['shield'] === true
-  const indossata = trovaArmatura(stringa(s['armor']), rules)
+  // Lo slug quando c'è (schema 2 del builder), il nome quando non c'è: uno
+  // slug è stabile, un nome di visualizzazione può essere scritto in dieci modi
+  // — ed è così che una cotta di maglia diventava «nessuna armatura».
+  const indossata = trovaArmatura(stringa(s['armorId']) || stringa(s['armor']), rules)
   let ca
   if (!indossata) {
     const classi = idClasse(s)

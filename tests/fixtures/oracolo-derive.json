@@ -1,27 +1,162 @@
 {
   "_nota": "Valori derivati calcolati dal BUILDER stesso, letti dal suo passo 9 «Riepilogo» col personaggio caricato. Servono a verificare derive() del companion contro l'implementazione di riferimento, non contro l'aritmetica di chi scrive il test. Se i due divergono, uno dei due ha torto — e va capito quale prima di cambiare i numeri qui dentro.",
   "reale-dnd5e-chierico-3": {
-    "ca": 16, "iniziativa": 1, "pfMax": 24, "dadoVita": "3d8", "competenza": 2,
-    "punteggi": { "str": 14, "dex": 13, "con": 15, "int": 12, "wis": 17, "cha": 14 },
-    "modificatori": { "str": 2, "dex": 1, "con": 2, "int": 1, "wis": 3, "cha": 2 },
-    "tiriSalvezza": { "str": 2, "dex": 1, "con": 2, "int": 1, "wis": 5, "cha": 4 },
-    "abilita": { "athletics": 4, "history": 3, "insight": 3, "perception": 5, "persuasion": 4, "arcana": 1, "acrobatics": 1 },
+    "ca": 16,
+    "iniziativa": 1,
+    "pfMax": 24,
+    "dadoVita": "3d8",
+    "competenza": 2,
+    "punteggi": {
+      "str": 14,
+      "dex": 13,
+      "con": 15,
+      "int": 12,
+      "wis": 17,
+      "cha": 14
+    },
+    "modificatori": {
+      "str": 2,
+      "dex": 1,
+      "con": 2,
+      "int": 1,
+      "wis": 3,
+      "cha": 2
+    },
+    "tiriSalvezza": {
+      "str": 2,
+      "dex": 1,
+      "con": 2,
+      "int": 1,
+      "wis": 5,
+      "cha": 4
+    },
+    "abilita": {
+      "athletics": 4,
+      "history": 3,
+      "insight": 3,
+      "perception": 5,
+      "persuasion": 4,
+      "arcana": 1,
+      "acrobatics": 1
+    },
     "_perche": "Mezza Armatura 15 + Des massimo 2 → 16. Sag e Car competenti: +3+2 e +2+2."
   },
   "reale-dnd5e-barbaro-10": {
-    "ca": 14, "iniziativa": 1, "pfMax": 85, "dadoVita": "10d12", "competenza": 4,
-    "punteggi": { "str": 15, "dex": 12, "con": 13, "int": 12, "wis": 11, "cha": 11 },
-    "modificatori": { "str": 2, "dex": 1, "con": 1, "int": 1, "wis": 0, "cha": 0 },
-    "tiriSalvezza": { "str": 6, "dex": 1, "con": 5, "int": 1, "wis": 0, "cha": 0 },
-    "abilita": { "arcana": 5, "athletics": 6, "history": 5, "nature": 5, "perception": 0, "acrobatics": 1 },
+    "ca": 14,
+    "iniziativa": 1,
+    "pfMax": 85,
+    "dadoVita": "10d12",
+    "competenza": 4,
+    "punteggi": {
+      "str": 15,
+      "dex": 12,
+      "con": 13,
+      "int": 12,
+      "wis": 11,
+      "cha": 11
+    },
+    "modificatori": {
+      "str": 2,
+      "dex": 1,
+      "con": 1,
+      "int": 1,
+      "wis": 0,
+      "cha": 0
+    },
+    "tiriSalvezza": {
+      "str": 6,
+      "dex": 1,
+      "con": 5,
+      "int": 1,
+      "wis": 0,
+      "cha": 0
+    },
+    "abilita": {
+      "arcana": 5,
+      "athletics": 6,
+      "history": 5,
+      "nature": 5,
+      "perception": 0,
+      "acrobatics": 1
+    },
     "_perche": "Senza armatura ma con scudo: Difesa Senza Armatura 10 + Des 1 + Cos 1 = 12, più lo scudo = 14. È il caso che fa sbagliare la CA."
   },
   "reale-dnd2024-guerriero-3": {
-    "ca": 16, "iniziativa": 1, "pfMax": 25, "dadoVita": "3d10", "competenza": 2,
-    "punteggi": { "str": 13, "dex": 12, "con": 12, "int": 7, "wis": 11, "cha": 11 },
-    "modificatori": { "str": 1, "dex": 1, "con": 1, "int": -2, "wis": 0, "cha": 0 },
-    "tiriSalvezza": { "str": 3, "dex": 1, "con": 3, "int": -2, "wis": 0, "cha": 0 },
-    "abilita": { "animal-handling": 2, "history": 0, "insight": 2, "religion": 0, "athletics": 1, "arcana": -2 },
+    "ca": 16,
+    "iniziativa": 1,
+    "pfMax": 25,
+    "dadoVita": "3d10",
+    "competenza": 2,
+    "punteggi": {
+      "str": 13,
+      "dex": 12,
+      "con": 12,
+      "int": 7,
+      "wis": 11,
+      "cha": 11
+    },
+    "modificatori": {
+      "str": 1,
+      "dex": 1,
+      "con": 1,
+      "int": -2,
+      "wis": 0,
+      "cha": 0
+    },
+    "tiriSalvezza": {
+      "str": 3,
+      "dex": 1,
+      "con": 3,
+      "int": -2,
+      "wis": 0,
+      "cha": 0
+    },
+    "abilita": {
+      "animal-handling": 2,
+      "history": 0,
+      "insight": 2,
+      "religion": 0,
+      "athletics": 1,
+      "arcana": -2
+    },
     "_perche": "Cotta di Maglia 16, nessun bonus di Destrezza. Intelligenza 7 dà -2: le abilità competenti su Int tornano a 0."
+  },
+  "reale-dnd2024-schema2-guerriero-8": {
+    "ca": 16,
+    "iniziativa": 2,
+    "pfMax": 68,
+    "dadoVita": "8d10",
+    "competenza": 3,
+    "punteggi": {
+      "str": 18,
+      "dex": 15,
+      "con": 15,
+      "int": 10,
+      "wis": 12,
+      "cha": 9
+    },
+    "modificatori": {
+      "str": 4,
+      "dex": 2,
+      "con": 2,
+      "int": 0,
+      "wis": 1,
+      "cha": -1
+    },
+    "tiriSalvezza": {
+      "str": 7,
+      "dex": 2,
+      "con": 5,
+      "int": 0,
+      "wis": 1,
+      "cha": -1
+    },
+    "abilita": {
+      "athletics": 7,
+      "history": 3,
+      "perception": 4,
+      "intimidation": 2
+    },
+    "_perche": "Schema 2 del builder: porta `armorId` accanto ad `armor`. Corazza ad anelli 14 (pesante, la Destrezza non conta) piu' lo scudo = 16. Valori presi dal passo 9 del builder modificato."
   }
 }

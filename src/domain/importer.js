@@ -49,6 +49,12 @@ export const COMPACT_KEYS = {
   hitDie: 'hd',
   maxHp: 'hp',
   armor: 'ar',
+  // Aggiunte dal builder con lo schema 2: lo slug dell'armatura e i privilegi
+  // in forma strutturata. Se non si accettano, il link e il file le portano
+  // fin qui e noi le buttiamo — proprio i due dati chiesti per smettere di
+  // indovinare.
+  armorId: 'ai',
+  featureEntries: 'fx',
   shield: 'sh',
   weapons: 'wp',
   cantrips: 'ct',
@@ -98,7 +104,12 @@ const CHIAVI_INVERSE = /** @type {Record<string, string>} */ (
  * ricostruibili o poco interessanti in un link) ma che lo snapshot pieno ha.
  * Elencate qui perché la normalizzazione accetti anche loro senza scartarle.
  */
-const CHIAVI_EXTRA = ['id', 'experiencePoints', 'skillExpertise', 'spellsPrepared', 'tempHp', 'allies', 'treasure']
+const CHIAVI_EXTRA = [
+  'id', 'experiencePoints', 'skillExpertise', 'spellsPrepared', 'tempHp', 'allies', 'treasure',
+  // La versione dello schema del builder: non serve a calcolare niente, ma dice
+  // con che forma è stato salvato, e un domani a quale migrazione appellarsi.
+  'schemaVersion',
+]
 
 /** L'insieme di tutto ciò che può entrare in uno snapshot. */
 const CHIAVI_AMMESSE = new Set([...Object.keys(COMPACT_KEYS), ...CHIAVI_EXTRA])
