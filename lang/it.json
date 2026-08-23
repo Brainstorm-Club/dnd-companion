@@ -97,5 +97,13 @@
   "magia.usato": "{nome}: slot di {livello}° speso",
   "magia.senzaSlot": "Niente slot di {livello}°. Liberi: {liberi}.",
   "magia.senzaSlotAffatto": "Niente slot liberi. Serve un riposo.",
-  "magia.usaLungo": "Usa {nome}, spende uno slot di {livello}°"
+  "magia.usaLungo": "Usa {nome}, spende uno slot di {livello}°",
+  "privilegi.race": "Dalla razza",
+  "privilegi.subrace": "Dalla sottorazza",
+  "privilegi.class": "Dalla classe",
+  "privilegi.subclass": "Dalla sottoclasse",
+  "privilegi.background": "Dal background",
+  "privilegi.feat": "Dai talenti",
+  "privilegi.altro": "Privilegi e tratti",
+  "privilegi.alLivello": "al {n}°"
 }

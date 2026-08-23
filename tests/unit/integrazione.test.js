@@ -151,3 +151,43 @@ describe('lo schema 2 del builder', () => {
     expect(asi.count).toBe(3)
   })
 })
+
+describe('i privilegi, quando il builder dice da dove vengono', () => {
+  const nome = 'reale-dnd2024-schema2-guerriero-8'
+  const rules = JSON.parse(readFileSync('data/rules/2024.json', 'utf8'))
+
+  /** @returns {any[]} */
+  function privilegi(file = nome) {
+    const r = importer.fromJson(fixture(file), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    return character.features(r.entry, rules)
+  }
+
+  it('ogni voce porta origine e livello, non solo un nome', () => {
+    const stile = privilegi().find(f => f.id === 'fighting-style')
+    expect(stile).toMatchObject({ origine: 'class', origineId: 'fighter', livello: 1 })
+    const tratto = privilegi().find(f => f.origine === 'race')
+    expect(tratto).toBeDefined()
+  })
+
+  it('le ripetizioni si contano invece di ripetersi', () => {
+    const asi = privilegi().filter(f => /ability-score/i.test(f.id))
+    expect(asi).toHaveLength(1)
+    expect(asi[0].volte).toBe(3)
+  })
+
+  it('un id ripetuto nel campo nome non diventa il nome mostrato', () => {
+    // il builder scrive `name: "draconic-ancestry"` per i tratti razziali:
+    // stamparlo così com'è vorrebbe dire mostrare un id a chi gioca
+    const tratto = privilegi().find(f => f.id === 'draconic-ancestry')
+    expect(tratto.nome).not.toBe('draconic-ancestry')
+    expect(tratto.nome).toMatch(/^[A-Z]/)
+  })
+
+  it('gli export vecchi continuano a funzionare, senza origine', () => {
+    // il chierico è di schema 1: nessun `featureEntries`, quindi lista piatta
+    const vecchi = privilegi('reale-dnd5e-chierico-3')
+    expect(vecchi.length).toBeGreaterThan(0)
+    expect(vecchi.every(f => f.origine === null)).toBe(true)
+  })
+})

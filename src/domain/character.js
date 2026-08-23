@@ -185,6 +185,9 @@ export function derive(entry, rules) {
  * @property {string} nome     l'etichetta da mostrare
  * @property {number} volte    quante volte compare (il barbaro di 10° ha due ASI)
  * @property {boolean} risolto vero se il nome viene dal pacchetto regole, falso se l'abbiamo solo ripulito
+ * @property {'race'|'subrace'|'class'|'subclass'|'background'|'feat'|null} origine  da dove viene, se lo snapshot lo dice
+ * @property {string|null} origineId  quale razza, quale classe
+ * @property {number|null} livello    a che livello si ottiene (0 = da subito)
  */
 
 /**
@@ -208,6 +211,13 @@ export function derive(entry, rules) {
  */
 export function features(entry, rules) {
   const dizionario = dizionarioPrivilegi(rules, entry.snapshot)
+
+  // Dallo schema 2 il builder manda `featureEntries`: id, nome, origine e
+  // livello, con le ripetizioni già contate. Quando c'è si usa quello — è la
+  // stessa informazione, ma detta invece che indovinata.
+  const strutturati = lista(entry.snapshot['featureEntries'])
+  if (strutturati.length) return daVociStrutturate(strutturati, dizionario)
+
   /** @type {Feature[]} */
   const out = []
   /** @type {Map<string, Feature>} */
@@ -224,9 +234,52 @@ export function features(entry, rules) {
       nome: dalPacchetto ?? leggibile(id),
       volte: 1,
       risolto: dalPacchetto !== undefined,
+      origine: null,
+      origineId: null,
+      livello: null,
     }
     visti.set(chiave, voce)
     out.push(voce)
+  }
+  return out
+}
+
+/** Le origini che lo snapshot può dichiarare. Il resto diventa `null`. */
+const ORIGINI = ['race', 'subrace', 'class', 'subclass', 'background', 'feat']
+
+/**
+ * Le voci strutturate del builder, rese stampabili.
+ *
+ * Il nome lo dà il pacchetto regole quando lo conosce: `featureEntries` porta
+ * spesso l'id anche nel campo `name` (`darkvision`), quindi fidarsi di quello
+ * a occhi chiusi vorrebbe dire mostrare id all'utente.
+ *
+ * @param {unknown[]} voci
+ * @param {Map<string, string>} dizionario
+ * @returns {Feature[]}
+ */
+function daVociStrutturate(voci, dizionario) {
+  /** @type {Feature[]} */
+  const out = []
+  for (const grezza of voci) {
+    const v = oggetto(grezza)
+    const id = stringa(v['id']) || stringa(v['name'])
+    if (!id) continue
+    const dalPacchetto = dizionario.get(slug(id)) ?? dizionario.get(slug(stringa(v['name'])))
+    const proprio = stringa(v['name'])
+    const origine = ORIGINI.includes(stringa(v['source'])) ? stringa(v['source']) : null
+    const livello = typeof v['level'] === 'number' ? v['level'] : null
+    const volte = typeof v['count'] === 'number' && v['count'] > 0 ? Math.trunc(v['count']) : 1
+    out.push({
+      id,
+      // se il builder ha ripetuto l'id nel nome, quel nome non è un nome
+      nome: dalPacchetto ?? (proprio && slug(proprio) !== slug(id) ? proprio : leggibile(id)),
+      volte,
+      risolto: dalPacchetto !== undefined,
+      origine: /** @type {any} */ (origine),
+      origineId: stringa(v['sourceId']) || null,
+      livello,
+    })
   }
   return out
 }
@@ -261,6 +314,27 @@ function dizionarioPrivilegi(rules, s) {
           const k = slug(stringa(chiave))
           if (k && !mappa.has(k)) mappa.set(k, nome)
         }
+      }
+    }
+  }
+
+  // Razza, sottorazza e background: il pacchetto li porta dallo schema del
+  // lotto C, e senza di loro un tratto razziale resta col nome inglese ripulito
+  // accanto a privilegi di classe tradotti — la scheda sembra fatta a metà.
+  const razze = oggetto(leggi(rules, 'races'))
+  const razza = oggetto(razze[stringa(s['race'])])
+  const sottorazze = oggetto(razza['subraces'])
+  const sottorazza = oggetto(sottorazze[stringa(s['subrace'])])
+  const background = oggetto(oggetto(leggi(rules, 'backgrounds'))[stringa(s['background'])])
+
+  for (const gruppo of [razza['traits'], sottorazza['traits'], background['features']]) {
+    for (const f of lista(gruppo)) {
+      const o = oggetto(f)
+      const nome = stringa(o['nome']) || stringa(o['name'])
+      if (!nome) continue
+      for (const chiave of [o['id'], o['nameEn'], o['name'], o['nome']]) {
+        const k = slug(stringa(chiave))
+        if (k && !mappa.has(k)) mappa.set(k, nome)
       }
     }
   }

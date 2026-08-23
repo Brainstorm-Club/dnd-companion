@@ -97,5 +97,13 @@
   "magia.usato": "{nome}: level {livello} slot spent",
   "magia.senzaSlot": "No level {livello} slots. Free: {liberi}.",
   "magia.senzaSlotAffatto": "No free slots. You need a rest.",
-  "magia.usaLungo": "Cast {nome}, spends a level {livello} slot"
+  "magia.usaLungo": "Cast {nome}, spends a level {livello} slot",
+  "privilegi.race": "From your species",
+  "privilegi.subrace": "From your lineage",
+  "privilegi.class": "From your class",
+  "privilegi.subclass": "From your subclass",
+  "privilegi.background": "From your background",
+  "privilegi.feat": "From feats",
+  "privilegi.altro": "Features and traits",
+  "privilegi.alLivello": "at level {n}"
 }

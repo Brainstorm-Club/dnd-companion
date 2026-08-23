@@ -228,8 +228,10 @@ describe('lotto B — privilegi stampabili', () => {
     expect(f.find(v => v.id === 'Unarmored Defense')?.nome).toBe('Difesa senza armatura')
     // «Frenesia» sta nella sottoclasse, non fra i privilegi di classe
     expect(f.find(v => v.id === 'Frenzy')).toMatchObject({ nome: 'Frenesia', risolto: true })
-    // i tratti razziali il pacchetto non li ha: restano ripieghi, e lo dicono
-    expect(f.find(v => v.id === 'extra-language')).toMatchObject({ nome: 'Extra Language', risolto: false })
+    // Anche i tratti razziali, da quando il pacchetto porta razze e background:
+    // prima restavano in inglese accanto a privilegi tradotti, e la scheda
+    // sembrava fatta a metà.
+    expect(f.find(v => v.id === 'extra-language')).toMatchObject({ nome: 'Linguaggio Extra', risolto: true })
   })
 
   it('quando il pacchetto regole conosce il privilegio, vince il suo nome', () => {
