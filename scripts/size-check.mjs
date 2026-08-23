@@ -54,6 +54,21 @@ function grafoStatico(ingresso = 'src/main.js') {
  * lavoro, serve a vedere la tendenza. I due tetti che fermano davvero sono
  * quelli sopra, e sono stretti apposta.
  */
+/**
+ * Un budget si misura in tre modi diversi, e i campi non sono gli stessi:
+ * per elenco di file, per il pezzo peggiore, o per percorsi ed estensioni.
+ * Dichiararli tutti facoltativi è ciò che permette a un solo oggetto di
+ * contenerli — e a `tsc` di non protestare.
+ *
+ * @typedef {object} Budget
+ * @property {number} kb
+ * @property {() => string[]} [files]
+ * @property {string} [maxSingolo]
+ * @property {string[]} [glob]
+ * @property {string[]} [ext]
+ */
+
+/** @type {Record<string, Budget>} */
 const BUDGET = {
   'Avvio (import statici)':    { kb: 40,   files: () => grafoStatico() },
   'La vista piu grossa':       { kb: 12,   maxSingolo: 'src/views' },
@@ -92,7 +107,7 @@ for (const [nome, b] of Object.entries(BUDGET)) {
     console.log(`${ok2 ? '  ok ' : ' FAIL'} ${nome.padEnd(26)} ${peggiore.kb.toFixed(1).padStart(7)} KB   ${String(b.kb).padStart(5)} KB   (${peggiore.f})`)
     continue
   }
-  const files = b.files ? b.files() : b.glob.flatMap(g => file(g, b.ext))
+  const files = b.files ? b.files() : (b.glob ?? []).flatMap(g => file(g, b.ext ?? []))
   const bytes = files.reduce((n, f) => n + gzipSync(readFileSync(f)).length, 0)
   const kb = bytes / 1024
   const ok = kb <= b.kb
