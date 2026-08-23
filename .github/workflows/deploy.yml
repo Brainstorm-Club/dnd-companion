@@ -1,0 +1,39 @@
+name: pubblica
+
+# Il repo *è* il sito: non c'è niente da compilare, si pubblica quello che c'è.
+# Ma non si pubblica niente che non sia verde — il deploy aspetta la CI.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una pubblicazione alla volta, e senza interrompere quella in corso: a metà
+# strada il sito sarebbe un misto di due versioni.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pubblica:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: true }
+      - name: Fuori quello che non serve a chi apre l'app
+        run: rm -rf tests node_modules .github scripts PIANO.md AGENTS.md
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: . }
+      - id: deploy
+        uses: actions/deploy-pages@v4
