@@ -78,6 +78,8 @@
   "scheda.slot": "Slot",
   "scheda.cd": "CD incantesimi",
   "scheda.attacco": "Attacco",
+  "errata.fonte": "Errore della fonte",
+  "errata.incapacitato": "L’SRD 5.2.1 italiano ufficiale apre questa voce dicendo «paralizzato»; l’originale inglese dice «incapacitato». Il testo qui sopra è riportato tale e quale.",
   "scheda.senzaTesto": "Testo non disponibile: non è materiale SRD.",
   "px.totale": "{n} PX",
   "px.mancano": "Mancano {n} PX al livello {liv}",

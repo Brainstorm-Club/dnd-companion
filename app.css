@@ -1131,6 +1131,48 @@ ul.dc-elenco > li { min-width: 0; }
   border-radius: var(--bsc-radius-sm);
 }
 
+/* Il nome di chi si sta giocando, nella barra: è la voce più grossa lassù,
+   perché è l'unica che cambia da personaggio a personaggio.
+
+   `min-width: 0` non è di contorno: senza, un nome lungo allarga la riga
+   invece di troncarsi e spinge fuori l'ingranaggio. */
+.dc-barra__pg {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dc-tap-min);
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-lg);
+  font-weight: 700;
+  color: var(--bsc-text);
+  text-decoration: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* `display: inline-flex` batte in specificità la regola del browser per
+   `[hidden]`: senza questa riga il nome resta a schermo anche da nascosto. */
+.dc-barra__pg[hidden] { display: none; }
+
+.dc-barra__pg:focus-visible {
+  outline: 2px solid var(--bsc-focus);
+  outline-offset: 2px;
+  border-radius: var(--bsc-radius-sm);
+}
+
+/* Col nome grosso lo spazio è conteso: la barra stringe le distanze invece di
+   mangiarsi le lettere. */
+.dc-barra.is-pg .bsc-appbar__inner { gap: var(--bsc-space-3); }
+
+/* Col nome in barra il marchio si stringe in «cc»: le lettere in più spariscono
+   alla vista ma restano nel DOM, e l'`aria-label` resta intero per chi legge
+   con uno screen reader. */
+.dc-barra.is-pg .dc-marchio__coda { display: none; }
+
+/* La nota su un errore della fonte: si legge, non urla. */
+.dc-errata { margin-top: var(--bsc-space-2); font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); }
+
 /* Un privilegio che si apre sul suo testo. */
 .dc-priv { padding: var(--bsc-space-3) var(--bsc-space-4); }
 .dc-priv > summary { cursor: pointer; display: flex; gap: var(--bsc-space-2); align-items: baseline; }

@@ -95,3 +95,58 @@ test('il personaggio sopravvive alla ricarica', async ({ page }) => {
   await page.reload()
   await expect(page.locator('#principale')).toContainText('Ulric')
 })
+
+/**
+ * La barra dice sempre di chi è la scheda aperta.
+ *
+ * Con tre personaggi importati, «character companion» in alto non serve a
+ * nessuno: serve sapere chi si sta giocando. Il marchio si stringe in «cc» e
+ * cede il posto al nome.
+ */
+test.describe('il nome in barra', () => {
+  test('compare aprendo una scheda e sparisce tornando alla libreria', async ({ page }) => {
+    await importa(page, CHIERICO)
+    await page.locator('.dc-pg__testa').first().click()
+
+    const nome = page.locator('#barra-pg')
+    await expect(nome).toBeVisible()
+    const atteso = JSON.parse(CHIERICO).name
+    await expect(nome).toHaveText(atteso)
+
+    // il marchio si è stretto, ma solo alla vista
+    await expect(page.locator('.dc-marchio__coda').first()).toBeHidden()
+    await expect(page.locator('.bsc-wordmark')).toHaveAttribute('aria-label', 'Character Companion')
+    // e il nome non deve allargare la barra oltre lo schermo
+    const largo = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+    expect(largo).toBe(true)
+
+    // e porta a casa: dai punti esperienza si torna alla scheda toccandolo
+    await page.goto(`/#/px/${await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('dndc') ?? '{}').characters ?? {})[0])}`)
+    await expect(nome).toBeVisible()
+    await nome.click()
+    await expect(page).toHaveURL(/#\/scheda\/[^/]+\/gioco$/)
+
+    await page.locator('.bsc-wordmark').click()
+    await expect(nome).toBeHidden()
+    await expect(page.locator('.dc-marchio__coda').first()).toBeVisible()
+  })
+})
+
+/**
+ * L'SRD 5.2.1 italiano ufficiale apre «Incapacitato» dicendo «paralizzato».
+ * Il testo resta com'è — è la fonte, si riporta tale e quale — ma l'errore
+ * si dichiara: al tavolo quella riga fa prendere la decisione sbagliata.
+ */
+test('la voce sbagliata dell’SRD porta la sua nota', async ({ page }) => {
+  await importa(page, readFileSync('tests/fixtures/reale-dnd2024-guerriero-3.json', 'utf8'))
+  await page.locator('.dc-pg__testa').first().click()
+  await page.locator('.dc-condizioni button').last().click()
+
+  const voce = page.locator('[data-condizione="incapacitated"]')
+  await voce.scrollIntoViewIfNeeded()
+  await expect(voce.locator('.bsc-prose')).toContainText('paralizzato')
+  await expect(voce.locator('.dc-errata')).toContainText('incapacitato')
+
+  // e nessun'altra condizione si porta dietro una nota che non le spetta
+  await expect(page.locator('.dc-errata')).toHaveCount(1)
+})

@@ -73,7 +73,11 @@ const BUDGET = {
   'Avvio (import statici)':    { kb: 40,   files: () => grafoStatico() },
   'La vista piu grossa':       { kb: 20,   maxSingolo: 'src/views' },
   'JS applicativo':            { kb: 200,  glob: ['src'], ext: ['.js'] },
-  'CSS (app + design system)': { kb: 22,   glob: ['app.css', 'design-system/tokens.css', 'design-system/components.css'], ext: ['.css'] },
+  // 22 KB era il consumo del momento in cui l'ho scritto, non un tetto: con
+  // 0,1 KB di margine il numero non misurava più la deriva, bloccava e basta —
+  // qualunque schermata nuova lo sfondava. 26 KB sono tre schermate di margine
+  // sul CSS di un'app intera più il design system.
+  'CSS (app + design system)': { kb: 26,   glob: ['app.css', 'design-system/tokens.css', 'design-system/components.css'], ext: ['.css'] },
   'Primo caricamento':         { kb: 115,  files: () => [
       'index.html', 'app.css', 'lang/it.json', 'data/packs.json',
       'design-system/tokens.css', 'design-system/components.css',

@@ -23,6 +23,7 @@ import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
   shortRest, longRest, slotsMassimi, aggiungiOggetto, togliOggetto, cambiaMonete, MONETE,
 } from '../domain/session.js'
+import { errataDi } from '../domain/errata.js'
 import { rollNotation } from '../domain/dice.js'
 import { cryptoRng } from '../domain/rng.js'
 
@@ -609,8 +610,26 @@ function apriCondizioni(ctx, rules) {
           h('span', { class: 'bsc-badge bsc-badge--warn' }, srd ? `SRD ${srd}` : 'SRD'),
           ` ${ctx.t('scheda.senzaTesto')}`,
         ]),
+      // Quando la fonte sbaglia il testo resta com'è e l'errore si dichiara:
+      // riscriverlo di nascosto sarebbe peggio del refuso.
+      nota(ctx, srd, c),
     ])
   }))
+}
+
+/**
+ * La nota su un errore della fonte, se questa voce ne ha uno.
+ * @param {ViewCtx} ctx
+ * @param {string} srd
+ * @param {{id: string, testo: string}} c
+ */
+function nota(ctx, srd, c) {
+  const chiave = c.testo ? errataDi(srd, 'condizione', c.id, c.testo) : null
+  if (!chiave) return null
+  return h('p', { class: 'dc-errata' }, [
+    h('span', { class: 'bsc-badge bsc-badge--warn' }, ctx.t('errata.fonte')),
+    ` ${ctx.t(chiave)}`,
+  ])
 }
 
 /**

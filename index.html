@@ -28,9 +28,12 @@
 
 <a class="bsc-skip" href="#principale">Salta al contenuto</a>
 
-<header class="bsc-appbar bsc-appbar--app" id="barra">
+<header class="bsc-appbar bsc-appbar--app dc-barra" id="barra">
   <div class="bsc-appbar__inner">
-    <a class="bsc-wordmark" href="#/libreria" aria-label="Character Companion"><span class="bsc-brandmark" aria-hidden="true"></span><span class="bsc-r">character</span>companion</a>
+    <!-- Con una scheda aperta il marchio si stringe in «cc» e cede il posto al nome:
+       a tavola serve sapere di chi è la scheda, non come si chiama l'app. -->
+    <a class="bsc-wordmark dc-marchio" href="#/libreria" aria-label="Character Companion"><span class="bsc-brandmark" aria-hidden="true"></span><span class="bsc-r">c<span class="dc-marchio__coda">haracter</span></span>c<span class="dc-marchio__coda">ompanion</span></a>
+    <a class="dc-barra__pg" id="barra-pg" hidden></a>
     <button class="bsc-theme-toggle" type="button" data-bsc-theme-toggle aria-label="Cambia tema"></button>
   </div>
 </header>

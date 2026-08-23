@@ -271,12 +271,17 @@ test.describe('il cassetto di consultazione', () => {
 })
 
 test.describe('come si legge un tiro', () => {
-  /** Tira finché non esce il naturale chiesto. Il d20 prima o poi lo dà. */
+  /**
+   * Tira finché non esce il naturale chiesto. Il d20 prima o poi lo dà.
+   *
+   * Si guarda solo a dado fermo: mentre gira mostra numeri a caso, e leggerlo
+   * lì dentro vuol dire far dipendere il test da come è carica la macchina.
+   */
   async function tiraFinoA(page, naturale) {
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 200; i++) {
       await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
+      await expect(page.locator('#principale .dc-dado--gira')).toHaveCount(0)
       if (await page.locator(`#principale [data-naturale="${naturale}"]`).count()) return true
-      await page.waitForTimeout(30)
     }
     return false
   }

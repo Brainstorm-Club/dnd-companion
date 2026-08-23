@@ -155,6 +155,37 @@ function disegnaAzioniBarra() {
   barra.insertBefore(link, barra.querySelector('.bsc-theme-toggle'))
 }
 
+/**
+ * Le rotte che parlano di un personaggio preciso. Non è solo la scheda: dai
+ * punti esperienza e dall'avanzamento di livello si esce solo per tornare
+ * indietro, e anche lì la domanda «di chi?» deve avere risposta.
+ */
+const ROTTE_CON_PG = ['scheda', 'px', 'livello']
+
+/**
+ * Il nome di chi si sta giocando, sempre in alto.
+ *
+ * Con una scheda aperta il marchio si stringe in «cc» (via CSS: le lettere
+ * restano nel DOM, e l'`aria-label` dell'ancora resta intero) e il posto va al
+ * nome. Al tavolo la barra deve dire di chi è la scheda, non come si chiama
+ * l'app — soprattutto per chi ne ha importate tre.
+ *
+ * @param {import('./router.js').Route} route
+ */
+function aggiornaNomeInBarra(route) {
+  const campo = document.querySelector('#barra-pg')
+  if (!(campo instanceof HTMLElement)) return
+  const id = ROTTE_CON_PG.includes(route.nome) ? route.params['id'] : undefined
+  const nome = id ? store.getState().characters[id]?.meta?.name ?? '' : ''
+  campo.textContent = nome
+  campo.hidden = !nome
+  // Il nome è anche la via di casa: dalla scheda dei punti esperienza o da
+  // metà di un avanzamento si torna alla scheda toccandolo.
+  if (nome && id) campo.setAttribute('href', `#/scheda/${encodeURIComponent(id)}/gioco`)
+  else campo.removeAttribute('href')
+  $('#barra').classList.toggle('is-pg', !!nome)
+}
+
 function disegnaTabbar() {
   const nav = $('#tabbar')
   clear(nav)
@@ -181,6 +212,7 @@ async function disegna(route) {
 
   rottaCorrente = route.nome
   segnaTabAttiva()
+  aggiornaNomeInBarra(route)
 
   const carica = VISTE[route.nome]
   if (!carica) return

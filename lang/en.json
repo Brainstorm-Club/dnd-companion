@@ -78,6 +78,8 @@
   "scheda.slot": "Slots",
   "scheda.cd": "Spell save DC",
   "scheda.attacco": "Attack",
+  "errata.fonte": "Error in the source",
+  "errata.incapacitato": "The official Italian SRD 5.2.1 opens this entry with “paralyzed”; the English original says “incapacitated”. The text above is reproduced verbatim.",
   "scheda.senzaTesto": "Text unavailable: not SRD material.",
   "px.totale": "{n} XP",
   "px.mancano": "{n} XP to level {liv}",
