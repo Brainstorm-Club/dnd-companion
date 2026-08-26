@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v6'
+const VERSION = 'v7'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -44,7 +44,7 @@ const SHELL = [
   'src/gestures.js', 'src/anima-dadi.js', 'src/schermo.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js', 'src/domain/errata.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
-  'src/domain/session.js', 'src/domain/spells.js', 'src/domain/privilegi.js', 'src/domain/rules.js',
+  'src/domain/session.js', 'src/domain/spells.js', 'src/domain/reimport.js', 'src/domain/privilegi.js', 'src/domain/rules.js',
   // Il lettore di QR: pesa, e si carica solo inquadrando — ma va precaricato
   // lo stesso, perché al tavolo si importa una scheda anche senza campo.
   'src/domain/qr/index.js', 'src/domain/qr/immagine.js', 'src/domain/qr/moduli.js',

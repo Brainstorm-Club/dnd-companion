@@ -11,6 +11,7 @@ import { h, clear } from '../dom.js'
 import { loadRegistry } from '../domain/packs.js'
 import { fromJson, fromShareUrl, nuovoId, congela } from '../domain/importer.js'
 import { derive } from '../domain/character.js'
+import { trovaDaAggiornare, riportaSopra } from '../domain/reimport.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 /** @typedef {import('../storage.js').CharacterEntry} CharacterEntry */
@@ -25,6 +26,16 @@ let esito = null
 /** Quale scheda ha chiesto conferma di cancellazione. */
 /** @type {string|null} */
 let daEliminare = null
+
+/**
+ * Se il pannello d'import è aperto.
+ *
+ * Serve perché la libreria si ridisegna da sé — quando arriva il registro dei
+ * pacchetti, dopo un import, cambiando lingua — e un `<details>` ricostruito
+ * nasce chiuso. Chi stava incollando un JSON se lo vedeva sparire sotto le
+ * dita insieme a quello che aveva scritto.
+ */
+let importAperto = false
 
 /** @type {string[]} */
 let urlDaLiberare = []
@@ -71,7 +82,12 @@ function disegna(contenitore, ctx) {
   // portata di un tocco, chiuso, in fondo.
   const importa = pannelloImport(contenitore, ctx)
   const zonaImport = voci.length
-    ? h('details', { class: 'dc-import' }, [
+    ? h('details', {
+      class: 'dc-import', open: importAperto || undefined,
+      ontoggle: (/** @type {Event} */ ev) => {
+        importAperto = /** @type {HTMLDetailsElement} */ (ev.currentTarget).open
+      },
+    }, [
       h('summary', { class: 'bsc-btn bsc-btn--outline' }, `+ ${ctx.t('libreria.importa')}`),
       importa,
     ])
@@ -282,6 +298,16 @@ function riquadroEsito(e, ctx) {
 }
 
 /**
+ * Cosa è cambiato ri-importando, in una frase per riga.
+ * @param {import('../domain/reimport.js').Cambiamento} c
+ * @param {ViewCtx} ctx
+ * @returns {string}
+ */
+function descriviCambiamento(c, ctx) {
+  return ctx.t(`reimport.${c.tipo}`, { da: String(c.da ?? ''), a: String(c.a ?? '') })
+}
+
+/**
  * @param {ReturnType<typeof fromJson>} r
  * @param {HTMLElement} contenitore
  * @param {ViewCtx} ctx
@@ -307,6 +333,26 @@ export function accogliImport(r, ctx) {
     esito = { tipo: 'ko', messaggio: r.message, avvisi: [] }
     return
   }
+  // Lo stesso personaggio che rientra non fa un doppione: aggiorna quello che
+  // c'è e si tiene la partita. Prima le strade erano due e sbagliate entrambe —
+  // due schede uguali, o una copia con i punti ferita azzerati.
+  const esistente = trovaDaAggiornare(ctx.state.characters, r.entry.snapshot)
+  if (esistente) {
+    const vecchia = ctx.state.characters[esistente]
+    const { entry, cambiamenti } = riportaSopra(/** @type {any} */ (vecchia), r.entry)
+    ctx.update(['characters'], s => {
+      s.characters[esistente] = entry
+      s.activeId = esistente
+    })
+    esito = {
+      tipo: 'ok',
+      messaggio: ctx.t('import.aggiornato', { nome: entry.meta.name }),
+      avvisi: [...r.warnings, ...cambiamenti.map(c => descriviCambiamento(c, ctx))],
+    }
+    ctx.toast(esito.messaggio)
+    return
+  }
+
   const id = nuovoId()
   ctx.update(['characters'], s => {
     s.characters[id] = r.entry

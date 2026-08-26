@@ -12,9 +12,21 @@ import { readFileSync } from 'node:fs'
 const CHIERICO = readFileSync('tests/fixtures/reale-dnd5e-chierico-3.json', 'utf8')
 const BRANCALONIA = readFileSync('tests/fixtures/brancalonia-rifiuto.json', 'utf8')
 
-/** Incolla un JSON nella libreria e preme il suo «importa». */
+/**
+ * Incolla un JSON nella libreria e preme il suo «importa».
+ *
+ * Con dei personaggi già dentro il pannello d'import è chiuso — è la libreria
+ * che deve mostrare i personaggi, non il modulo — quindi prima si apre.
+ */
 async function importa(page, json) {
   await page.goto('/#/libreria')
+  // Prima che la vista esista non c'è niente da aprire: senza questa attesa il
+  // controllo sul pannello legge zero, salta il clic, e poi `fill` aspetta per
+  // sempre una textarea che nel frattempo è comparsa dentro un `<details>`
+  // chiuso.
+  await expect(page.locator('#principale [data-vista="libreria"]')).toBeVisible()
+  const pannello = page.locator('#principale details.dc-import')
+  if (await pannello.count()) await pannello.first().locator('summary').click()
   const ta = page.locator('#principale textarea')
   await ta.fill(json)
   await page.locator('#principale button', { hasText: /importa/i }).first().click()
@@ -180,4 +192,45 @@ test('la voce sbagliata dell’SRD porta la sua nota', async ({ page }) => {
 
   // e nessun'altra condizione si porta dietro una nota che non le spetta
   await expect(page.locator('.dc-errata')).toHaveCount(1)
+})
+
+/**
+ * Ri-importare lo stesso personaggio non fa un doppione: aggiorna quello che
+ * c'è e si tiene la partita. È il gesto di ogni sessione — si sale di livello
+ * nel builder e si riporta qui — e finora costava o due schede uguali o i
+ * punti ferita azzerati.
+ */
+test('lo stesso personaggio ri-importato aggiorna la scheda e tiene la partita', async ({ page }) => {
+  await importa(page, CHIERICO)
+  await page.locator('.dc-pg__testa').first().click()
+
+  const misura = () => page.locator('#principale [data-sezione="gioco"] .bsc-meter').first()
+  const prima = await misura().getAttribute('aria-valuenow')
+
+  // e intanto nel builder il personaggio è salito di livello
+  const salito = JSON.parse(CHIERICO)
+  salito.level = 4
+  salito.maxHp = Number(salito.maxHp) + 7
+  await importa(page, JSON.stringify(salito))
+
+  // una scheda sola, non due
+  await expect(page.locator('.dc-pg')).toHaveCount(1)
+  await expect(page.locator('#principale')).toContainText(/livello 4/i)
+
+  // e l'app dice cosa è cambiato, invece di farlo di nascosto
+  await expect(page.locator('#principale')).toContainText(/aggiornato/i)
+  await expect(page.locator('#principale')).toContainText(/livello.*3.*4/i)
+
+  // i punti ferita correnti sono quelli di prima: salire di livello non cura
+  await page.locator('.dc-pg__testa').first().click()
+  await expect(misura()).toHaveAttribute('aria-valuenow', String(prima))
+  // il massimo invece è cresciuto, perché è la scheda a essere cambiata
+  const maxDopo = Number(await misura().getAttribute('aria-valuemax'))
+  expect(maxDopo).toBeGreaterThan(Number(prima))
+})
+
+test('due personaggi diversi restano due, anche importati di fila', async ({ page }) => {
+  await importa(page, CHIERICO)
+  await importa(page, readFileSync('tests/fixtures/reale-dnd2024-guerriero-3.json', 'utf8'))
+  await expect(page.locator('.dc-pg')).toHaveCount(2)
 })
