@@ -36,7 +36,7 @@ function copia(play) {
     // Solo se c'era: un campo facoltativo che si materializza da solo farebbe
     // risultare «cambiato» uno stato che nessuno ha toccato.
     ...(play.oggetti ? { oggetti: [...play.oggetti] } : {}),
-    uses: { ...(play.uses ?? {}) },
+    uses: copiaUsi(play.uses),
     xp: intero(play.xp),
     deaths: { succ: intero(play.deaths?.succ), fail: intero(play.deaths?.fail) },
     notes: typeof play.notes === 'string' ? play.notes : '',
@@ -242,7 +242,7 @@ export function shortRest(play, p, rules) {
     out.hp.cur = curaFinoA(out.hp.cur, cura, p?.pfMax ?? 0)
     if (play.hp.cur <= 0 && out.hp.cur > 0) out.deaths = { succ: 0, fail: 0 }
   }
-  for (const id of recuperabili(rules, 'breve')) delete out.uses[id]
+  ricarica(out, 'breve', recuperabili(rules, 'breve'))
   return out
 }
 
@@ -274,7 +274,7 @@ export function longRest(play, p, rules) {
     const s = out.slots[k]
     if (s) s.used = 0
   }
-  out.uses = {}
+  ricarica(out, 'lungo', new Set())
   out.deaths = { succ: 0, fail: 0 }
   return out
 }
@@ -341,6 +341,97 @@ function recuperabili(rules, quando) {
     }
   }
   return out
+}
+
+/* ── Usi dei privilegi ─────────────────────────────────────────────────────
+ *
+ * Quanti usi abbia un privilegio e quando si ricarichi non sta nei pacchetti:
+ * l'SRD lo dice in prosa e il generatore non l'ha estratto. Quindi lo dichiara
+ * chi gioca — che il manuale ce l'ha davanti — e qui si conta soltanto.
+ */
+
+/**
+ * Comincia a contare gli usi di un privilegio.
+ * @param {PlayState} play
+ * @param {string} id
+ * @param {number} max
+ * @param {'breve'|'lungo'} recupero
+ * @returns {PlayState}
+ */
+export function tracciaUsi(play, id, max, recupero) {
+  const out = copia(play)
+  const n = Math.max(1, Math.min(20, intero(max)))
+  const prima = out.uses[id]
+  out.uses[id] = {
+    max: n,
+    // ritoccare il massimo non ricarica: si sistema un numero sbagliato, non
+    // si riposa
+    spesi: Math.min(prima ? prima.spesi : 0, n),
+    recupero: recupero === 'breve' ? 'breve' : 'lungo',
+  }
+  return out
+}
+
+/**
+ * Smette di contarli. Il privilegio resta, sparisce il contatore.
+ * @param {PlayState} play @param {string} id @returns {PlayState}
+ */
+export function smettiUsi(play, id) {
+  const out = copia(play)
+  delete out.uses[id]
+  return out
+}
+
+/**
+ * Spende o restituisce usi.
+ * @param {PlayState} play @param {string} id @param {number} spesi quanti ne risultano spesi
+ * @returns {PlayState}
+ */
+export function segnaUsi(play, id, spesi) {
+  const out = copia(play)
+  const u = out.uses[id]
+  if (!u) return out
+  out.uses[id] = { ...u, spesi: Math.max(0, Math.min(intero(spesi), u.max)) }
+  return out
+}
+
+/**
+ * @param {Record<string, import('../storage.js').UsoTracciato>|undefined} usi
+ * @returns {Record<string, import('../storage.js').UsoTracciato>}
+ */
+function copiaUsi(usi) {
+  /** @type {Record<string, import('../storage.js').UsoTracciato>} */
+  const out = {}
+  for (const [k, v] of Object.entries(usi ?? {})) {
+    if (!v) continue
+    // Un numero nudo è la forma vecchia: la migrazione la converte, ma uno
+    // stato scritto a mano o un import di terze parti può ancora portarla, e
+    // qui vale la stessa lettura — un contatore senza massimo è un massimo
+    // tutto speso.
+    out[k] = typeof v === 'number'
+      ? { max: v, spesi: v, recupero: 'lungo' }
+      : { ...v }
+  }
+  return out
+}
+
+/**
+ * Ricarica quello che il riposo ricarica.
+ *
+ * `dalPacchetto` sono i privilegi che le regole dichiarano recuperabili con
+ * quel riposo: oggi nessun pacchetto lo dichiara, ma la strada resta aperta e
+ * quando ci sarà vincerà sulla scelta a mano, perché sarà la regola.
+ * @param {PlayState} play
+ * @param {'breve'|'lungo'} quando
+ * @param {Set<string>} dalPacchetto
+ */
+function ricarica(play, quando, dalPacchetto) {
+  for (const [id, u] of Object.entries(play.uses)) {
+    if (!u) continue
+    // il riposo lungo ricarica anche ciò che si ricarica col breve
+    const suo = quando === 'lungo' || u.recupero === 'breve'
+    if (suo || dalPacchetto.has(id)) play.uses[id] = { ...u, spesi: 0 }
+  }
 }
 
 // ── attrezzi ───────────────────────────────────────────────────────────────

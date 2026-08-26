@@ -234,3 +234,57 @@ test('due personaggi diversi restano due, anche importati di fila', async ({ pag
   await importa(page, readFileSync('tests/fixtures/reale-dnd2024-guerriero-3.json', 'utf8'))
   await expect(page.locator('.dc-pg')).toHaveCount(2)
 })
+
+/**
+ * Gli usi dei privilegi e le note di sessione: i due campi che stavano nello
+ * stato da sempre e che nessuna schermata mostrava.
+ */
+test.describe('quello che si segna al tavolo', () => {
+  /** @param {import('@playwright/test').Page} page */
+  async function apriScheda(page) {
+    await importa(page, readFileSync('tests/fixtures/reale-dnd2024-guerriero-3.json', 'utf8'))
+    await page.locator('.dc-pg__testa').first().click()
+    await expect(page.locator('#principale [data-sezione="privilegi"]')).toBeAttached()
+  }
+
+  test('un privilegio si conta, si spende e torna col riposo giusto', async ({ page }) => {
+    await apriScheda(page)
+    const sezione = page.locator('#principale [data-sezione="privilegi"]')
+
+    // il conteggio non c'è finché non lo si chiede: quasi nessun privilegio si conta
+    await expect(sezione.locator('.bsc-pips')).toHaveCount(0)
+    await sezione.getByRole('button', { name: /conta gli usi/i }).first().click()
+
+    // due usi, che tornano col riposo breve
+    const foglio = page.locator('.bsc-sheet')
+    await foglio.getByRole('button', { name: /\+1$/ }).click()
+    await foglio.getByRole('button', { name: /riposo breve/i }).click()
+    await foglio.getByRole('button', { name: /conferma/i }).click()
+
+    const pallini = sezione.locator('.dc-usi .bsc-pips').first()
+    await expect(pallini.getByRole('button')).toHaveCount(2)
+
+    // se ne spende uno
+    await pallini.getByRole('button').first().click()
+    await expect(pallini.locator('.is-used')).toHaveCount(1)
+
+    // e un riposo breve lo restituisce
+    await page.goto(page.url().replace(/\/[^/]+$/, '/gioco'))
+    await page.locator('#principale button', { hasText: /riposo breve/i }).first().click()
+    const conferma = page.locator('.bsc-sheet button', { hasText: /riposo breve|conferma/i }).last()
+    if (await conferma.count()) await conferma.click()
+    await page.goto(page.url().replace(/\/[^/]+$/, '/privilegi'))
+    await expect(page.locator('#principale [data-sezione="privilegi"] .dc-usi .is-used')).toHaveCount(0)
+  })
+
+  test('le note di sessione si salvano mentre si scrive, e restano', async ({ page }) => {
+    await apriScheda(page)
+    await page.goto(page.url().replace(/\/[^/]+$/, '/storia'))
+
+    const note = page.locator('#dc-note')
+    await note.fill('L’oste si chiama Beppe, gli dobbiamo 4 mo')
+    // niente pulsante «salva»: al tavolo si annota di fretta e si torna al gioco
+    await page.reload()
+    await expect(page.locator('#dc-note')).toHaveValue(/Beppe/)
+  })
+})

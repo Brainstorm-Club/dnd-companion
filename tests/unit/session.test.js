@@ -11,6 +11,7 @@ import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
   shortRest, longRest, slotsMassimi,
   aggiungiOggetto, togliOggetto, cambiaMonete, MAX_OGGETTO, MAX_OGGETTI,
+  tracciaUsi, smettiUsi, segnaUsi,
 } from '../../src/domain/session.js'
 
 /** @returns {import('../../src/storage.js').PlayState} */
@@ -120,23 +121,36 @@ describe('riposo breve', () => {
     expect(shortRest(p, { dadiSpesi: 0, tiri: [], pfMax: 20 }, null)).toEqual(p)
   })
 
-  it('recupera solo ciò che il pacchetto dichiara recuperabile a riposo breve', () => {
-    const p = stato({ uses: { 'second-wind': 1, 'rage': 2 } })
-    const rules = { recupero: { breve: ['second-wind'] } }
-    expect(shortRest(p, { dadiSpesi: 0, tiri: [] }, rules).uses).toEqual({ rage: 2 })
+  it('recupera ciò che il giocatore ha segnato come «riposo breve»', () => {
+    const p = stato({ uses: {
+      'second-wind': { max: 1, spesi: 1, recupero: 'breve' },
+      'rage': { max: 2, spesi: 2, recupero: 'lungo' },
+    } })
+    const dopo = shortRest(p, { dadiSpesi: 0, tiri: [] }, null).uses
+    expect(dopo['second-wind'].spesi).toBe(0)
+    expect(dopo['rage'].spesi).toBe(2)
   })
 
-  it('legge la dichiarazione anche dal singolo privilegio del pacchetto', () => {
-    const p = stato({ uses: { 'second-wind': 1, 'rage': 2 } })
+  it('e anche ciò che il pacchetto dichiara, se un giorno lo dichiarerà', () => {
+    // Oggi nessun pacchetto lo dice — sta nella prosa dell'SRD e il generatore
+    // non l'ha estratto — ma la strada resta aperta, e quando ci sarà la regola
+    // vincerà sulla scelta a mano.
+    const p = stato({ uses: { 'second-wind': { max: 1, spesi: 1, recupero: 'lungo' } } })
+    const rules = { recupero: { breve: ['second-wind'] } }
+    expect(shortRest(p, { dadiSpesi: 0, tiri: [] }, rules).uses['second-wind'].spesi).toBe(0)
+  })
+
+  it('la dichiarazione si legge anche dal singolo privilegio del pacchetto', () => {
+    const p = stato({ uses: { 'second-wind': { max: 1, spesi: 1, recupero: 'lungo' } } })
     const rules = {
       classes: { fighter: { features: [{ id: 'second-wind', recupero: 'breve' }] } },
     }
-    expect(shortRest(p, { dadiSpesi: 0, tiri: [] }, rules).uses).toEqual({ rage: 2 })
+    expect(shortRest(p, { dadiSpesi: 0, tiri: [] }, rules).uses['second-wind'].spesi).toBe(0)
   })
 
-  it('un pacchetto che non dichiara niente non restituisce niente', () => {
-    const p = stato({ uses: { 'rage': 2 } })
-    expect(shortRest(p, { dadiSpesi: 1, tiri: [5] }, {}).uses).toEqual({ rage: 2 })
+  it('quello che si ricarica solo col lungo non lo ricarica il breve', () => {
+    const p = stato({ uses: { 'rage': { max: 2, spesi: 2, recupero: 'lungo' } } })
+    expect(shortRest(p, { dadiSpesi: 1, tiri: [5] }, {}).uses['rage'].spesi).toBe(2)
   })
 })
 
@@ -146,13 +160,14 @@ describe('riposo lungo', () => {
       hp: { cur: 3, temp: 7 },
       hitDice: { spent: 8 },
       slots: { 1: { used: 4 }, 2: { used: 3 } },
-      uses: { 'rage': 2 },
+      uses: { 'rage': { max: 2, spesi: 2, recupero: 'lungo' } },
     })
     const dopo = longRest(p, { pfMax: 42, dadiVitaTotali: 9 }, null)
     expect(dopo.hp).toEqual({ cur: 42, temp: 0 })
     expect(dopo.hitDice.spent).toBe(4)          // 9 / 2 = 4,5 → 4
     expect(dopo.slots).toEqual({ 1: { used: 0 }, 2: { used: 0 } })
-    expect(dopo.uses).toEqual({})
+    // il contatore resta: sparisce solo se lo si toglie, non riposando
+    expect(dopo.uses['rage']).toEqual({ max: 2, spesi: 0, recupero: 'lungo' })
   })
 
   it('al 1° livello restituisce comunque un dado vita', () => {
@@ -181,7 +196,7 @@ describe('purezza', () => {
       hitDice: { spent: 2 },
       slots: { 1: { used: 1 } },
       conditions: ['prone'],
-      uses: { 'rage': 1 },
+      uses: { 'rage': { max: 3, spesi: 1, recupero: 'lungo' } },
       deaths: { succ: 1, fail: 1 },
     })
     const prima = structuredClone(p)
@@ -326,5 +341,50 @@ describe('slot che non esistevano ancora', () => {
   it('livelli senza senso non creano niente', () => {
     expect(useSlot(vuoto(), 0, 4).slots['0']).toBeUndefined()
     expect(useSlot(vuoto(), -1, 4).slots['-1']).toBeUndefined()
+  })
+})
+
+describe('contare gli usi di un privilegio', () => {
+  it('si comincia a contare dicendo quanti e quando tornano', () => {
+    const p = tracciaUsi(stato({}), 'rage', 3, 'lungo')
+    expect(p.uses['rage']).toEqual({ max: 3, spesi: 0, recupero: 'lungo' })
+  })
+
+  it('il massimo sta fra uno e venti: sotto non è un contatore, sopra è un errore di dito', () => {
+    expect(tracciaUsi(stato({}), 'x', 0, 'lungo').uses['x'].max).toBe(1)
+    expect(tracciaUsi(stato({}), 'x', 999, 'lungo').uses['x'].max).toBe(20)
+  })
+
+  it('ritoccare il massimo non ricarica: si sistema un numero, non si riposa', () => {
+    const p = segnaUsi(tracciaUsi(stato({}), 'rage', 3, 'lungo'), 'rage', 2)
+    const dopo = tracciaUsi(p, 'rage', 4, 'lungo')
+    expect(dopo.uses['rage']).toEqual({ max: 4, spesi: 2, recupero: 'lungo' })
+  })
+
+  it('ma se il massimo scende sotto gli spesi, gli spesi scendono con lui', () => {
+    const p = segnaUsi(tracciaUsi(stato({}), 'rage', 5, 'lungo'), 'rage', 5)
+    expect(tracciaUsi(p, 'rage', 2, 'lungo').uses['rage']).toEqual({ max: 2, spesi: 2, recupero: 'lungo' })
+  })
+
+  it('si spende e si restituisce, senza uscire dai limiti', () => {
+    const p = tracciaUsi(stato({}), 'rage', 2, 'lungo')
+    expect(segnaUsi(p, 'rage', 5).uses['rage'].spesi).toBe(2)
+    expect(segnaUsi(p, 'rage', -3).uses['rage'].spesi).toBe(0)
+  })
+
+  it('su un privilegio che non si conta, segnare non inventa un contatore', () => {
+    expect(segnaUsi(stato({}), 'mai-visto', 2).uses['mai-visto']).toBeUndefined()
+  })
+
+  it('si smette di contare, e il privilegio resta', () => {
+    const p = tracciaUsi(stato({}), 'rage', 3, 'lungo')
+    expect(smettiUsi(p, 'rage').uses['rage']).toBeUndefined()
+  })
+
+  it('il riposo lungo ricarica anche ciò che si ricarica col breve', () => {
+    // Non è una svista: chi riposa a lungo ha riposato anche a breve.
+    let p = tracciaUsi(stato({}), 'second-wind', 2, 'breve')
+    p = segnaUsi(p, 'second-wind', 2)
+    expect(longRest(p, { pfMax: 10, dadiVitaTotali: 2 }, null).uses['second-wind'].spesi).toBe(0)
   })
 })

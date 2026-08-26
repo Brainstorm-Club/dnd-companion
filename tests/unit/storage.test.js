@@ -73,6 +73,17 @@ describe('persistenza', () => {
     expect(oggi.settings.vibrazione).toBe(true)
   })
 
+  it('un contatore di usi della v2 diventa una scheda con massimo e recupero', () => {
+    // Un numero da solo non dice quanti usi restino: si legge come «tutti
+    // spesi», che è la lettura prudente.
+    const oggi = migrate({
+      v: 2, activeId: null, diceLog: [],
+      settings: { theme: 'dark', lang: 'it', xpMode: 'xp', edition: 'auto' },
+      characters: { a: { meta: { name: 'Kyra' }, play: { uses: { rage: 2 } }, levels: [] } },
+    })
+    expect(oggi.characters['a'].play.uses['rage']).toEqual({ max: 2, spesi: 2, recupero: 'lungo' })
+  })
+
   it('e se le aveva già scelte, non gliele si sovrascrive', () => {
     const oggi = migrate({
       v: 1, characters: {}, activeId: null, diceLog: [],

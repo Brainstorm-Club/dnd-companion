@@ -23,6 +23,7 @@ import { kv, elenco, pips, pipsTappabili, stepper, tirabile, bottoneTiro, tira, 
 import {
   applyDamage, heal, useSlot, restoreSlot, toggleCondition, modifica,
   shortRest, longRest, slotsMassimi, aggiungiOggetto, togliOggetto, cambiaMonete, MONETE,
+  tracciaUsi, smettiUsi, segnaUsi,
 } from '../domain/session.js'
 import { errataDi } from '../domain/errata.js'
 import { rollNotation } from '../domain/dice.js'
@@ -268,7 +269,9 @@ function contenuto(sezione, ctx, entry, d, rules) {
  * che si rifanno: il resto viene dallo snapshot, che è congelato e non cambia
  * mai. Il pager non si tocca, quindi la sezione in vista resta quella.
  * @param {PlayState} nuovo
- * @param {{annullabile?: boolean, mantieniFuoco?: boolean}} [opz]  un riposo si può annullare, un tap sui PF no
+ * @param {{annullabile?: boolean, mantieniFuoco?: boolean, ridisegna?: boolean}} [opz]
+ *   un riposo si può annullare, un tap sui PF no; e chi sta scrivendo in un
+ *   campo non vuole che gli si rifaccia la sezione sotto le dita
  */
 function applica(nuovo, opz = {}) {
   if (!vista) return
@@ -278,6 +281,11 @@ function applica(nuovo, opz = {}) {
     const e = s.characters[id]
     if (e) e.play = nuovo
   })
+  if (opz.ridisegna === false) {
+    // lo stato è salvato, ma la sezione resta com'è: la si sta usando
+    if (vista) vista.entry = /** @type {any} */ ({ ...vista.entry, play: nuovo })
+    return
+  }
   ridisegna()
   // Il ridisegno rifà la sezione da capo e si porta via il fuoco: chi sta
   // segnando il bottino deve poter scrivere la riga dopo senza ritoccare il
@@ -288,11 +296,14 @@ function applica(nuovo, opz = {}) {
   }
 }
 
-/** Le tre sezioni che dipendono dallo stato di gioco, ridisegnate in posto. */
+/** Le sezioni che dipendono dallo stato di gioco, ridisegnate in posto. */
 function ridisegna() {
   if (!vista) return
   const { ctx, entry, d, rules } = vista
-  for (const sezione of ['gioco', 'magia', 'zaino']) {
+  // Anche i privilegi, da quando ci si contano gli usi. La storia no: le note
+  // si salvano mentre si scrive, e rifarle sotto le dita cancellerebbe il
+  // cursore a metà parola.
+  for (const sezione of ['gioco', 'magia', 'zaino', 'privilegi']) {
     const pagina = vista.pagine.get(sezione)
     if (!pagina) continue
     clear(pagina)
@@ -769,7 +780,8 @@ function privilegi(ctx, entry, rules) {
     privilegiDiClasse(rules, classeId).map(p => [slugSemplice(p.nome), p.testo]))
 
   return [
-    ...gruppiDiPrivilegi(ctx, suoi, (f) => testi.get(slugSemplice(f.nome)) ?? null),
+    ...gruppiDiPrivilegi(ctx, suoi, (f) => testi.get(slugSemplice(f.nome)) ?? null,
+      (f) => contatore(ctx, entry, f)),
     // Il compendio ha anche quelli che non ha ancora: utile quando si guarda
     // avanti, salendo di livello.
     h('button', {
@@ -777,6 +789,108 @@ function privilegi(ctx, entry, rules) {
       onclick: () => apriCassetto('privilegi'),
     }, ctx.t('priv.titolo')),
   ]
+}
+
+/**
+ * Il contatore degli usi di un privilegio.
+ *
+ * Non c'è finché non lo si chiede: la maggior parte dei privilegi non si conta,
+ * e riempire la scheda di contatori a zero la renderebbe illeggibile. Chi ha
+ * un'Ira o un Recupero Energie da contare tocca «conta gli usi» e dice quanti
+ * sono — perché il manuale ce l'ha lui, e il pacchetto regole quel numero non
+ * ce l'ha.
+ *
+ * @param {ViewCtx} ctx
+ * @param {import('../storage.js').CharacterEntry} entry
+ * @param {import('../domain/character.js').Feature} f
+ * @returns {Node}
+ */
+function contatore(ctx, entry, f) {
+  const u = entry.play.uses[f.id]
+  if (!u) {
+    return h('button', {
+      class: 'bsc-btn bsc-btn--sm bsc-btn--outline dc-usi__attiva', type: 'button',
+      onclick: () => chiediUsi(ctx, f),
+    }, ctx.t('usi.conta'))
+  }
+  return h('span', { class: 'dc-usi' }, [
+    pipsTappabili(u.max, u.spesi, `${f.nome} — ${ctx.t('usi.titolo')}`,
+      (spesi) => applica(segnaUsi(entry.play, f.id, spesi))),
+    h('button', {
+      class: 'bsc-btn bsc-btn--sm bsc-btn--outline', type: 'button',
+      'aria-label': `${ctx.t('usi.modifica')} — ${f.nome}`,
+      onclick: () => chiediUsi(ctx, f),
+    }, '⋯'),
+  ])
+}
+
+/**
+ * Quanti usi, e quando tornano. Due domande, un foglio solo.
+ * @param {ViewCtx} ctx
+ * @param {import('../domain/character.js').Feature} f
+ */
+function chiediUsi(ctx, f) {
+  apriFoglio(ctx, f.nome, (chiudi) => {
+    const attuale = vista?.entry.play.uses[f.id]
+    let quanti = attuale?.max ?? 1
+    let quando = attuale?.recupero ?? 'lungo'
+
+    const numero = h('span', { class: 'bsc-stepper__valore' }, String(quanti))
+    /** @param {number} d */
+    const muovi = (d) => {
+      quanti = Math.max(1, Math.min(20, quanti + d))
+      numero.textContent = String(quanti)
+    }
+
+    const scelte = h('div', { class: 'dc-condizioni', role: 'group', 'aria-label': ctx.t('usi.quando') },
+      /** @type {const} */ (['breve', 'lungo']).map(v => {
+        const b = h('button', {
+          class: ['bsc-chip', v === quando && 'bsc-chip--on'], type: 'button',
+          'aria-pressed': v === quando ? 'true' : 'false',
+          onclick: () => {
+            quando = v
+            for (const altro of scelte.children) {
+              const suo = altro === b
+              altro.classList.toggle('bsc-chip--on', suo)
+              altro.setAttribute('aria-pressed', suo ? 'true' : 'false')
+            }
+          },
+        }, ctx.t(`usi.${v}`))
+        return b
+      }))
+
+    return [
+      h('p', { class: 'bsc-lead' }, ctx.t('usi.nota')),
+      h('div', { class: 'bsc-kv' }, [
+        h('span', { class: 'bsc-kv__label' }, ctx.t('usi.quanti')),
+        h('span', { class: 'bsc-stepper' }, [
+          h('button', { class: 'bsc-stepper__btn', type: 'button', 'aria-label': `${ctx.t('usi.quanti')} −1`, onclick: () => muovi(-1) }, '−'),
+          numero,
+          h('button', { class: 'bsc-stepper__btn', type: 'button', 'aria-label': `${ctx.t('usi.quanti')} +1`, onclick: () => muovi(1) }, '+'),
+        ]),
+      ]),
+      h('h3', { class: 'bsc-label' }, ctx.t('usi.quando')),
+      scelte,
+      h('div', { class: 'dc-azioni' }, [
+        h('button', {
+          class: 'bsc-btn', type: 'button',
+          onclick: () => {
+            if (vista) applica(tracciaUsi(vista.entry.play, f.id, quanti, quando))
+            chiudi()
+          },
+        }, ctx.t('comune.conferma')),
+        attuale
+          ? h('button', {
+            class: 'bsc-btn bsc-btn--outline', type: 'button',
+            onclick: () => {
+              if (vista) applica(smettiUsi(vista.entry.play, f.id))
+              chiudi()
+            },
+          }, ctx.t('usi.smetti'))
+          : null,
+      ]),
+    ]
+  })
 }
 
 /** Confronto fra nomi che tollera maiuscole e accenti. @param {string} v */
@@ -989,7 +1103,39 @@ function storia(ctx, entry, rules) {
   return [
     ...['personalityTraits', 'ideals', 'bonds', 'flaws', 'backstory', 'allies']
       .map(k => testo(s[k]) ? h('p', { class: 'bsc-prose' }, testo(s[k])) : null),
+    noteDiSessione(ctx, entry),
   ]
+}
+
+/**
+ * Le note di sessione.
+ *
+ * Stanno qui e non fra i tratti perché sono l'unica cosa scritta di questa
+ * scheda che appartiene a chi gioca e non al builder: il nome dell'oste, cosa
+ * si è promesso al barone, dove si è lasciato il carro. Il resto della sezione
+ * è la storia che il personaggio si porta da casa; questa è quella che gli
+ * succede.
+ *
+ * Si salvano mentre si scrive, senza un pulsante: al tavolo si annota di
+ * fretta e poi si torna al gioco, e un salvataggio da confermare è un modo per
+ * perdere quello che si è scritto.
+ * @param {ViewCtx} ctx
+ * @param {import('../storage.js').CharacterEntry} entry
+ */
+function noteDiSessione(ctx, entry) {
+  const campo = h('textarea', {
+    class: 'bsc-input dc-note', id: 'dc-note', rows: '5',
+    placeholder: ctx.t('note.invito'),
+  })
+  const area = /** @type {HTMLTextAreaElement} */ (campo)
+  area.value = entry.play.notes ?? ''
+  area.addEventListener('input', () => {
+    applica(modifica(vista?.entry.play ?? entry.play, p => { p.notes = area.value }), { ridisegna: false })
+  })
+  return h('section', { class: 'dc-gruppo' }, [
+    h('label', { class: 'bsc-field-label', for: 'dc-note' }, ctx.t('note.titolo')),
+    campo,
+  ])
 }
 
 // ── mattoni ───────────────────────────────────────────────────────────────

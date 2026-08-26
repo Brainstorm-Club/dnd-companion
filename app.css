@@ -695,6 +695,14 @@ ul.dc-elenco > li { min-width: 0; }
 .dc-interruttore { inline-size: 100%; }
 .dc-interruttore[aria-checked="true"] .bsc-kv__value { color: var(--bsc-accento); }
 
+/* Il contatore degli usi accanto a un privilegio: i pallini e il modo di
+   cambiarli, senza mandare la riga a capo. */
+.dc-usi { display: inline-flex; align-items: center; gap: var(--bsc-space-2); }
+.dc-usi__attiva { opacity: .8; }
+
+/* Le note di sessione: si scrive di fretta, quindi largo e senza fronzoli. */
+.dc-note { inline-size: 100%; resize: vertical; font-family: var(--bsc-font-body); }
+
 /* La nota su un errore della fonte: si legge, non urla. */
 .dc-errata { margin-top: var(--bsc-space-2); font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); }
 

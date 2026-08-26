@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v7'
+const VERSION = 'v8'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */

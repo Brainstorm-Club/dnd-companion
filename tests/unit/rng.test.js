@@ -33,13 +33,22 @@ describe('numeri casuali', () => {
   })
 
   it('il generatore crittografico è ragionevolmente uniforme sui venti', () => {
-    const r = cryptoRng()
-    const conta = new Array(20).fill(0)
-    const N = 40_000
-    for (let i = 0; i < N; i++) conta[r.int(20)]++
-    const atteso = N / 20
-    // chi quadro con 19 gradi di libertà: 43.8 è il 99.9° percentile
-    const chi2 = conta.reduce((s, c) => s + (c - atteso) ** 2 / atteso, 0)
-    expect(chi2).toBeLessThan(43.8)
+    /** Il chi quadro di una tornata di tiri. */
+    const prova = () => {
+      const r = cryptoRng()
+      const conta = new Array(20).fill(0)
+      const N = 40_000
+      for (let i = 0; i < N; i++) conta[r.int(20)]++
+      const atteso = N / 20
+      return conta.reduce((s, c) => s + (c - atteso) ** 2 / atteso, 0)
+    }
+
+    // 43.8 è il 99,9° percentile del chi quadro con 19 gradi di libertà: un
+    // generatore **onesto** lo supera una volta su mille, e questa suite gira
+    // molte volte al giorno. Tre tornate: un generatore storto le fallisce
+    // tutte e tre, uno onesto le fallisce tutte e tre una volta su un
+    // miliardo. La soglia non si è alzata — si è tolto il caso.
+    const tornate = [prova(), prova(), prova()]
+    expect(Math.min(...tornate)).toBeLessThan(43.8)
   })
 })

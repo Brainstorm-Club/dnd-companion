@@ -8,13 +8,26 @@
  */
 
 export const STORAGE_KEY = 'dndc'
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 /** Oltre questa quota si avvisa l'utente. */
 export const QUOTA_WARN = 0.8
 /** Dove finisce uno stato che non sappiamo leggere, invece che nel cestino. */
 export const BACKUP_KEY = 'dndc.backup'
 
 /** @typedef {import('./domain/edition.js').Edition} Edition */
+
+/**
+ * Un privilegio di cui si contano gli usi.
+ *
+ * Quanti usi abbia un privilegio, e quando si ricarichi, i pacchetti regole non
+ * lo dicono: sta nella prosa dell'SRD e il generatore non l'ha mai estratto.
+ * Quindi non lo si indovina — lo dichiara chi gioca, che il manuale ce l'ha
+ * davanti. L'app conta, e conta bene; non finge di conoscere la regola.
+ * @typedef {object} UsoTracciato
+ * @property {number} max
+ * @property {number} spesi
+ * @property {'breve'|'lungo'} recupero
+ */
 
 /**
  * @typedef {object} PlayState
@@ -25,7 +38,7 @@ export const BACKUP_KEY = 'dndc.backup'
  * @property {boolean} inspiration
  * @property {Record<string, number>} coins
  * @property {string[]} [oggetti]  raccolti al tavolo, accanto all'equipaggiamento iniziale
- * @property {Record<string, number>} uses
+ * @property {Record<string, UsoTracciato>} uses  i privilegi che il giocatore conta a mano
  * @property {number} xp
  * @property {{succ: number, fail: number}} deaths
  * @property {string} notes
@@ -81,6 +94,31 @@ export const MIGRATIONS = {
   // v1 → v2: lo schermo che resta acceso e la vibrazione ai tiri. Nascono
   // accese perché è quello che serve a un tavolo, e perché entrambe sono
   // migliorie che dove non ci sono non si notano: chi non le vuole le spegne.
+  // v2 → v3: gli usi dei privilegi passano da un contatore nudo a una scheda
+  // con massimo e recupero. Nessuno aveva scritto quei contatori — l'interfaccia
+  // per farlo non esisteva — ma se qualcuno li avesse, un numero da solo non
+  // dice quanti ne restino, e quindi diventa un massimo tutto speso.
+  2: (/** @type {any} */ s) => ({
+    ...s,
+    v: 3,
+    characters: Object.fromEntries(Object.entries(s.characters ?? {}).map(([k, e]) => {
+      const voce = /** @type {any} */ (e)
+      // Una voce senza `play` non si inventa: una migrazione converte quello
+      // che c'è, non aggiunge struttura che non c'era.
+      const usi = voce?.play?.uses
+      if (!usi || typeof usi !== 'object') return [k, voce]
+      return [k, {
+        ...voce,
+        play: {
+          ...voce.play,
+          uses: Object.fromEntries(Object.entries(usi).map(([id, v]) => [
+            id,
+            typeof v === 'number' ? { max: v, spesi: v, recupero: 'lungo' } : v,
+          ])),
+        },
+      }]
+    })),
+  }),
   1: (/** @type {any} */ s) => ({
     ...s,
     v: 2,

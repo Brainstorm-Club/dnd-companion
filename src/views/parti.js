@@ -177,9 +177,11 @@ const ORDINE_ORIGINI = ['race', 'subrace', 'class', 'subclass', 'background', 'f
  * @param {import('../domain/character.js').Feature[]} privilegi
  * @param {(f: import('../domain/character.js').Feature) => string|null} [testoDi]
  *   il testo del privilegio, quando il pacchetto ce l'ha: senza, restano righe
+ * @param {(f: import('../domain/character.js').Feature) => Node|null} [contatoreDi]
+ *   il contatore degli usi, per chi lo mostra: il compendio no, la scheda sì
  * @returns {Array<Node|null>}
  */
-export function gruppiDiPrivilegi(ctx, privilegi, testoDi) {
+export function gruppiDiPrivilegi(ctx, privilegi, testoDi, contatoreDi) {
   if (!privilegi.length) return []
 
   /** @type {Map<string|null, import('../domain/character.js').Feature[]>} */
@@ -203,26 +205,33 @@ export function gruppiDiPrivilegi(ctx, privilegi, testoDi) {
       .sort((a, b) => (a.livello ?? 0) - (b.livello ?? 0))
     return h('section', {}, [
       h('h2', { class: 'bsc-label' }, ctx.t(chiave ? `privilegi.${chiave}` : 'privilegi.altro')),
-      h('ul', { class: 'dc-elenco' }, voci.map(f => h('li', {
-        class: 'bsc-kv',
-        // `risolto` resta nel DOM anche quando non si vede: dice chi ha ancora
-        // un nome di ripiego invece che quello del pacchetto regole.
-        dataset: { privilegio: f.id, risolto: String(f.risolto) },
-      }, [
-        h('span', { class: 'bsc-kv__label' }, f.nome),
-        f.volte > 1 ? h('span', { class: 'bsc-badge' }, `×${f.volte}`) : null,
-        f.livello ? h('span', { class: 'bsc-kv__hint' }, ctx.t('privilegi.alLivello', { n: f.livello })) : null,
-      ]))
-        // col testo, la riga si apre; senza, resta una riga e basta
-        .map((riga, i) => {
-          const voce = voci[i]
-          const testo = voce ? testoDi?.(voce) : null
-          if (!testo) return riga
-          return h('li', {}, [h('details', { class: 'dc-priv' }, [
-            h('summary', {}, riga.childNodes.length ? [...riga.childNodes] : []),
-            h('p', { class: 'bsc-prose' }, testo),
-          ])])
-        })),
+      h('ul', { class: 'dc-elenco' }, voci.map(f => {
+        const intestazione = [
+          h('span', { class: 'bsc-kv__label' }, f.nome),
+          f.volte > 1 ? h('span', { class: 'bsc-badge' }, `×${f.volte}`) : null,
+          f.livello ? h('span', { class: 'bsc-kv__hint' }, ctx.t('privilegi.alLivello', { n: f.livello })) : null,
+        ]
+        const testo = testoDi?.(f) ?? null
+        // Il contatore non entra nell'intestazione: col testo quella diventa un
+        // `<summary>`, e un pulsante dentro un elemento già interattivo non lo
+        // raggiunge chi naviga da tastiera o con un lettore di schermo. Sta
+        // sotto, dov'è sempre visibile senza aprire niente.
+        const contatore = contatoreDi?.(f) ?? null
+        return h('li', {
+          class: [!testo && !contatore && 'bsc-kv', contatore && 'dc-priv-riga'],
+          // `risolto` resta nel DOM anche quando non si vede: dice chi ha
+          // ancora un nome di ripiego invece che quello del pacchetto regole.
+          dataset: { privilegio: f.id, risolto: String(f.risolto) },
+        }, [
+          ...(testo
+            ? [h('details', { class: 'dc-priv' }, [
+              h('summary', { class: 'bsc-kv' }, intestazione),
+              h('p', { class: 'bsc-prose' }, testo),
+            ])]
+            : contatore ? [h('div', { class: 'bsc-kv' }, intestazione)] : intestazione),
+          contatore,
+        ])
+      })),
     ])
   })
 }
