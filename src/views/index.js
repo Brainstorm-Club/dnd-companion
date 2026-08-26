@@ -28,6 +28,7 @@
 /** @type {Record<string, () => Promise<View>>} */
 export const VISTE = {
   libreria:     () => import('./library.js').then(m => m.default),
+  inquadra:     () => import('./scan.js').then(m => m.default),
   scheda:       () => import('./sheet.js').then(m => m.default),
   dadi:         () => import('./dice.js').then(m => m.default),
   prove:        () => import('./checks.js').then(m => m.default),

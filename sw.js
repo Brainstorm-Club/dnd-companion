@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v4'
+const VERSION = 'v5'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -40,17 +40,24 @@ const SHELL = [
   'src/main.js', 'src/dom.js', 'src/router.js', 'src/store.js', 'src/storage.js', 'src/i18n.js',
   'src/views/index.js', 'src/views/library.js', 'src/views/sheet.js', 'src/views/dice.js',
   'src/views/checks.js', 'src/views/spells.js', 'src/views/progress.js', 'src/views/levelup.js',
-  'src/views/settings.js', 'src/views/parti.js', 'src/views/features.js',
+  'src/views/settings.js', 'src/views/parti.js', 'src/views/features.js', 'src/views/scan.js',
   'src/gestures.js', 'src/anima-dadi.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js', 'src/domain/errata.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
-  'src/domain/session.js', 'src/domain/spells.js', 'src/domain/privilegi.js',
+  'src/domain/session.js', 'src/domain/spells.js', 'src/domain/privilegi.js', 'src/domain/rules.js',
+  // Il lettore di QR: pesa, e si carica solo inquadrando — ma va precaricato
+  // lo stesso, perché al tavolo si importa una scheda anche senza campo.
+  'src/domain/qr/index.js', 'src/domain/qr/immagine.js', 'src/domain/qr/moduli.js',
   'design-system/tokens.css', 'design-system/components.css',
   'design-system/theme.js', 'design-system/tokens.js',
   'design-system/assets/favicon.svg', 'design-system/assets/favicon.png',
   'lang/it.json', 'lang/en.json', 'data/packs.json', 'data/rules/index.json',
   // I due indici: senza, il compendio non si può nemmeno elencare.
   'data/spells/2014/index.json', 'data/spells/2024/index.json',
+  // Le due varianti Acheron: le regole servono a leggere la scheda, e senza
+  // l'indice il compendio di Brancalonia non si elenca.
+  'data/rules/brancalonia.json', 'data/rules/apocalisse.json',
+  'data/spells/brancalonia/index.json',
 ]
 
 /**

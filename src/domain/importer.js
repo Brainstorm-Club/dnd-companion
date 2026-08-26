@@ -2,7 +2,7 @@
  * Dal builder all'app.  ── Lotto B ──
  *
  * Tre vie, un solo risultato: file JSON, testo incollato, link di condivisione
- * (`…/share/<base64url>`, formato compatto del builder).
+ * (`…/share/<payload>`, formato compatto del builder — in chiaro o compresso).
  *
  * L'importatore è **tollerante ma esplicito**: campi mancanti diventano valori
  * di default e ogni supplenza finisce fra gli avvisi, che l'utente vede. Ciò
@@ -16,12 +16,29 @@ import { ABILITIES, modifier } from './character.js'
 
 /** @typedef {import('../storage.js').CharacterEntry} CharacterEntry */
 /** @typedef {{ ok: true, entry: CharacterEntry, warnings: string[] }} ImportOk */
-/** @typedef {{ ok: false, reason: 'variante-non-supportata'|'json-non-valido'|'troppo-grande'|'non-e-un-personaggio', message: string }} ImportKo */
+/** @typedef {{ ok: false, reason: 'variante-non-supportata'|'json-non-valido'|'troppo-grande'|'non-e-un-personaggio'|'link-non-decomprimibile', message: string }} ImportKo */
 
 /** Tetto sul testo accettato: uguale a quello del builder, per le stesse ragioni. */
 export const MAX_INPUT_BYTES = 200_000
 /** Tetto sui dati di un link di condivisione. */
 export const MAX_SHARE_DATA_LENGTH = 20_000
+
+/**
+ * Marca un payload compresso, ed è lo stesso carattere che sceglie il builder:
+ * fuori dall'alfabeto base64url, quindi non può comparire in testa a un link
+ * vecchio, e URL-safe, quindi non viene percentificato per strada.
+ */
+export const MARCATORE_COMPRESSO = '~'
+
+/**
+ * Tetto sui byte **decompressi** di un link.
+ *
+ * Il tetto sul payload codificato non basta: un deflate di 15 KB può gonfiare a
+ * megabyte, ed è l'unico modo che ha un link da 20 KB di far male. Il numero è
+ * lo stesso del testo incollato perché ciò che ne esce è la stessa cosa — il
+ * JSON compatto di un personaggio, che nel vero pesa qualche KB.
+ */
+export const MAX_DECOMPRESSED_BYTES = MAX_INPUT_BYTES
 
 /**
  * Le chiavi compatte del builder (`utils/shareCharacter.ts`), riscritte qui in
@@ -137,11 +154,16 @@ export function fromJson(testo, registro, origine) {
 }
 
 /**
+ * L'unica strada per importare da link, in entrambi i formati.
+ *
+ * È `async` perché decomprimere lo è: `DecompressionStream` non ha una variante
+ * sincrona. Una seconda funzione «compressa» accanto a questa avrebbe lasciato
+ * a chi chiama la scelta di quale usare — cioè la parte che non deve sapere.
  * @param {string} url  link di condivisione del builder
  * @param {import('./packs.js').PackRegistry} registro
- * @returns {ImportOk|ImportKo}
+ * @returns {Promise<ImportOk|ImportKo>}
  */
-export function fromShareUrl(url, registro) {
+export async function fromShareUrl(url, registro) {
   const troppo = oltreIlTetto(url, MAX_INPUT_BYTES)
   if (troppo) return troppo
 
@@ -155,28 +177,34 @@ export function fromShareUrl(url, registro) {
 
   let grezzo
   try {
-    grezzo = decodeShareData(dati)
-  } catch {
+    grezzo = await decodeShareData(dati)
+  } catch (e) {
+    // Un rifiuto che sa già cosa dire porta la sua frase fin qui: fuori dal
+    // link compresso non c'è altro modo di distinguere «browser troppo
+    // vecchio» da «link spezzato», e sono due cose da fare diverse.
+    if (e instanceof ErroreLink) return ko(e.reason, e.message)
     return ko('json-non-valido', 'Questo link non si lascia leggere: potrebbe essersi spezzato copiandolo.')
   }
   return costruisci(grezzo, registro, 'link')
 }
 
 /**
- * Decodifica il formato compatto del builder: base64url → chiavi brevi → chiavi
+ * Decodifica il formato compatto del builder: payload → chiavi brevi → chiavi
  * piene, con whitelist. Nessun `eval`, nessuna chiave che non conosciamo.
+ *
+ * Due formati, un solo ingresso: col marcatore in testa il payload è deflate
+ * grezzo, senza è base64url in chiaro — e i link condivisi prima che il builder
+ * imparasse a comprimere continuano a leggersi.
  * @param {string} encoded
- * @returns {Record<string, unknown>}
+ * @returns {Promise<Record<string, unknown>>}
  */
-export function decodeShareData(encoded) {
+export async function decodeShareData(encoded) {
   if (encoded.length > MAX_SHARE_DATA_LENGTH) {
     throw new Error('dati del link oltre il massimo consentito')
   }
-  const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
-  const pieno = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
-  const binario = atob(pieno)
-  const bytes = Uint8Array.from(binario, ch => ch.charCodeAt(0))
-  const json = new TextDecoder().decode(bytes)
+  const compresso = encoded.startsWith(MARCATORE_COMPRESSO)
+  const bytes = daBase64Url(compresso ? encoded.slice(MARCATORE_COMPRESSO.length) : encoded)
+  const json = compresso ? await rigonfia(bytes) : new TextDecoder().decode(bytes)
   const compatto = parseSicuro(json)
   if (!oggettoSemplice(compatto)) throw new Error('formato del link non riconosciuto')
 
@@ -190,6 +218,73 @@ export function decodeShareData(encoded) {
     espanso[piena] = valore
   }
   return espanso
+}
+
+/**
+ * Un rifiuto che si porta dietro la frase da mostrare. Serve solo alla strada
+ * del link: da dentro la decompressione, «errore» è troppo poco per scegliere
+ * il messaggio giusto, e sceglierlo fuori vorrebbe dire indovinarlo.
+ */
+class ErroreLink extends Error {
+  /** @param {ImportKo['reason']} reason @param {string} message */
+  constructor(reason, message) {
+    super(message)
+    /** @type {ImportKo['reason']} */
+    this.reason = reason
+  }
+}
+
+/** @param {string} b64url @returns {Uint8Array<ArrayBuffer>} */
+function daBase64Url(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/')
+  const pieno = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
+  return Uint8Array.from(atob(pieno), ch => ch.charCodeAt(0))
+}
+
+/**
+ * Sgonfia un payload `deflate-raw` sorvegliandone la crescita.
+ *
+ * Il tetto si controlla **mentre** si legge, non alla fine: contare i byte di
+ * una zip bomb dopo averli allocati vuol dire aver già subito il danno.
+ * @param {Uint8Array<ArrayBuffer>} bytes
+ * @returns {Promise<string>}
+ */
+async function rigonfia(bytes) {
+  const Decompressore = globalThis.DecompressionStream
+  if (typeof Decompressore !== 'function') {
+    throw new ErroreLink('link-non-decomprimibile',
+      'Questo link è nel formato compresso e questo browser non lo sa aprire: aggiornalo, oppure fatti mandare il file JSON del personaggio.')
+  }
+
+  const ds = new Decompressore('deflate-raw')
+  const scrittore = ds.writable.getWriter()
+  // Su un payload corrotto il flusso rifiuta da tutti e due i capi: senza
+  // queste due reti il rifiuto di scrittura resta senza gestore e diventa un
+  // «unhandled rejection» che non c'entra niente con l'utente.
+  void scrittore.write(bytes).catch(() => {})
+  void scrittore.close().catch(() => {})
+
+  const lettore = ds.readable.getReader()
+  /** @type {Uint8Array[]} */
+  const pezzi = []
+  let totale = 0
+  for (;;) {
+    const { done, value } = await lettore.read()
+    if (done) break
+    if (!value) continue
+    totale += value.length
+    if (totale > MAX_DECOMPRESSED_BYTES) {
+      await lettore.cancel().catch(() => {})
+      throw new ErroreLink('troppo-grande',
+        'Questo link, una volta aperto, contiene molti più dati di una scheda: l\'app lo lascia stare. Importa il JSON al posto suo.')
+    }
+    pezzi.push(value)
+  }
+
+  const tutto = new Uint8Array(totale)
+  let scritti = 0
+  for (const p of pezzi) { tutto.set(p, scritti); scritti += p.length }
+  return new TextDecoder().decode(tutto)
 }
 
 // ── il cuore: da JSON grezzo a voce di libreria ───────────────────────────
@@ -433,18 +528,22 @@ function parseSicuro(testo) {
 }
 
 /**
- * Il pezzo codificato di un link `…/share/<base64url>`. Accetta anche il solo
+ * Il pezzo codificato di un link `…/share/<payload>`. Accetta anche il solo
  * blocco codificato incollato da solo, e l'eventuale `#`/`?` in coda.
+ *
+ * Il marcatore è ammesso **solo in testa**: dentro il payload sarebbe fuori
+ * dall'alfabeto base64url, e accettarlo lì dentro vorrebbe dire raccogliere un
+ * link già rotto per poi non saperlo decodificare.
  * @param {string} url
  * @returns {string|null}
  */
 function pezzoCondiviso(url) {
   const pulito = url.trim()
   if (!pulito) return null
-  const m = /\/share\/([A-Za-z0-9_-]+)/.exec(pulito)
+  const m = /\/share\/(~?[A-Za-z0-9_-]+)/.exec(pulito)
   if (m && m[1]) return m[1]
-  // Nessun `/share/`: forse è già solo il blocco base64url.
-  return /^[A-Za-z0-9_-]+$/.test(pulito) ? pulito : null
+  // Nessun `/share/`: forse è già solo il blocco codificato.
+  return /^~?[A-Za-z0-9_-]+$/.test(pulito) ? pulito : null
 }
 
 /**

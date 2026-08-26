@@ -1,0 +1,421 @@
+{
+ "casi": [
+  {
+   "nome": "v1-L-numerico",
+   "versione": 1,
+   "livello": "L",
+   "maschera": 0,
+   "modi": [
+    "numerico"
+   ],
+   "testo": "01234567",
+   "moduli": "/iv8EFBuqLt0FdulrsE5B/qv4BQA764hpKig/d2ruyq9cIBBC/uiMFBLuurt06uuvcsFO4/tcoA="
+  },
+  {
+   "nome": "v1-M-alfanumerico",
+   "versione": 1,
+   "livello": "M",
+   "maschera": 1,
+   "modi": [
+    "alfanumerico"
+   ],
+   "testo": "HELLO WORLD",
+   "moduli": "/vv8EZBuvrt09dumrsFRB/qv4AoAoxkpbi7SoeVBkEGgb4B7v/tw0EbCuh6t0wIuqIcEkh/oJYA="
+  },
+  {
+   "nome": "v1-Q-byte",
+   "versione": 1,
+   "livello": "Q",
+   "maschera": 2,
+   "modi": [
+    "byte"
+   ],
+   "testo": "ciao!",
+   "moduli": "/vv8ExBumrt0BduoLsF5B/qv4A8Af3GIgXBt6t14TPc2kABQl/uz0F0+urSV1/ouutEF/E/ikQA="
+  },
+  {
+   "nome": "v1-H-byte",
+   "versione": 1,
+   "livello": "H",
+   "maschera": 3,
+   "modi": [
+    "byte"
+   ],
+   "testo": "drago",
+   "moduli": "/mP8ERBugLt0lduqrsE9B/qv4BoAM/aGgEH/lh6KI6KxEQBiI/vFEET+ugX91xauqdEE7x/gsgA="
+  },
+  {
+   "nome": "v2-L-accenti-latin1",
+   "versione": 2,
+   "livello": "L",
+   "maschera": 4,
+   "modi": [
+    "byte"
+   ],
+   "testo": "perché è così: né più né meno",
+   "moduli": "/s8/wXNQbqprt1jV26Fa7BR5B/qq/gCQAM4ZF9r5xLbGcRYH9EPyhz7IiMC/5oBQdVbfG/qAW8W/hCuQVjELrI+10dOe6XjtBSqO/pnbgA=="
+  },
+  {
+   "nome": "v5-Q-alfanumerico",
+   "versione": 5,
+   "livello": "Q",
+   "maschera": 5,
+   "modi": [
+    "alfanumerico"
+   ],
+   "testo": "TIRO SALVEZZA COSTITUZIONE CD 15 $%*+-./: 20",
+   "moduli": "/pZN4/wV00BQbpAALLt0pCR126AZq67BIwUNB/qqqq/gAtwUAEOAUhQbj5h6NmzX/qFe0ZCYdOW7CsTvYCqKBQ3rlouV/Ag3+lAmNE+KIII0wx3jvLYmMph/CpEFr/tbUcojzzUfW1Gvtzsr4ekz5tfgwfwMokAcYP1XXyNjjZOSWa/qUfiAe5l8X/pKnWqwQ0xdFromJV/10Cwlx+6TrIVzBbD5cQ/npNcjgA=="
+  },
+  {
+   "nome": "v7-L-byte",
+   "versione": 7,
+   "livello": "L",
+   "maschera": 6,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il dr",
+   "moduli": "/o5KKov8ETX+CJBulxTM9Lt0DOE/tduiEf47rsEcVF4BB/qqqqqv4B93HaoA2mT/iHIPAjZTN/kOmYihXz5I8Y3hUEnps4jrKcBUg72POIjq/+F43QoB+khPbqV2o6AdT8v4MWdtk8y3ESYKm9j4Lfv8nvym+NxcxHk8U2tsKlOrYRCbHtcWr/6f7v/H6pEf8jq+iT0YNnCibY+m4fH9e5J9WDyFZC329F1l4TFuuxO/fe6ORpuzSm0SaVuHuydC0+NHOb7xPs3FBmmnM/ir+QB+DHUEc/kzK4crEEnRHQUeuroP45/V1idccaEulDF3cv0FYO7XL//uVxynYAA="
+  },
+  {
+   "nome": "v7-H-numerico",
+   "versione": 7,
+   "livello": "H",
+   "maschera": 7,
+   "modi": [
+    "numerico"
+   ],
+   "testo": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+   "moduli": "/s+sPkv8FaZkXpBuhFyglLt1VEx1Ndus9v/TrsFY3FshB/qqqqqv4AgBH2EAElzf4EnfwAqe86FVwU3H9oErpf38xsLilPsf05yec2VPn+lWun8dT4YgGrVThxODVnHHRJuVAeaAi+UzxfUpFM7nBHH6PPjY+bR7HFEUVarOq2xrMxSNExkXj8NPju/iZWF9G2eingilGYnbN+rSZUn6XvsGae6xAoaRSu3NzDQtwwhvULOLj6GdS46858uWcHVC7ATUXDDzITsxPVm48/uE/gBRnE7Me/mMqlcqsE8NFlkVulYfkF/F1t/Ckmtum0JN/bMEkzxEH2/lDNIYfAA="
+  },
+  {
+   "nome": "v10-M-byte",
+   "versione": 10,
+   "livello": "M",
+   "maschera": 0,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo s",
+   "moduli": "/kyB47xrP8F6NTuyWJBumwtzcQDLt0LMGGpCJdus4Nv+s9LsE/ulG3sRB/qqqqqqqv4A4lFHf3gAqjcSP5/KCWyPRCqUxAHkootqSnQBLIN14BS7a6V3+8j8+4OT77ulBAiAutgoeCIkYj6Zhc13t72zj/9mK72+GUxPmzBIiA7x9fRSY3Zl9q2Ds3urgTytc4Gb7OefCJ4BnKRIvf+0yaw7RX5p1OgaubmyMndeG3u8SUyG9xTggArL/6FfwC0+8xQIpHubESauB0K/+bqexpODFqzEbn+F4f2iR+sR6DSda3XSWmqng7e8yXwFOapMSuJYyoF3pGIriYvK6/MbXqZ+sKravY4M4a/zcEiMpogJSptWJP5ADlpfdTHj1vSjQYmcIPAF4TAJiAHi0D5RhKQ6+KE7rcp/npyiAZArrcIcg9DzgIDFBp16s8omM7/xEAKTdXVqAvItP4n8+YBhOzFSQMX/gf6Kqkcq8E6urFR3sQuqQK/6vK+N0xF1wCJN2uoTEG4mRyMEbxEjsXoq/v1sOZvOkYA="
+  },
+  {
+   "nome": "v14-Q-byte",
+   "versione": 14,
+   "livello": "Q",
+   "maschera": 3,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina d",
+   "moduli": "/nJrXL+ysE6/wUrHefvG4jkQbqa+LpTeda4Lt0ynl2Zyo4xl26RHP78K+wJa7BJk7ERcxVoRB/qqqqqqqqqq/gDajxxTUTrwAHZr6fwX36/FA1gZU0gNtBglqmfnDzhM/jDXgDeljFo/RagXlJr9t48Dl0AoKnAnhSjgzDD9B04f3UMC5s5VB21gCtFtP/omuiGLXyRHNxFKPO6YqLTjX45kkmVojSMJIyU9ddpskFlvM5OuKV8hIH/KJN8eNFeQ4kfUdENUVAwQqD1yfs3nStSJoGo5QhDmoGENj4tn/ElP1gj/xGwpxhhEUgxF5rzAavU+q5SrhRvAEYNbEXoRGvi6v/2E+kkPrUKkBKHSzoXxpqyaGXCia5Tz59t55QolYPKWCSsxi8TMiifMoYYkn4xt1pC9IwuU99X1/9T5qxSKmD4EOgfKG8lyhqDEeSfKdXzI6QK6/FT5fC8es1luoPBT/jzDbfQTUGsXotv3YWUM19EEk2o69UdOHGzg1kN25lMmPKY9CfT6pI6iw1szomCs/XkfzD78sO+AxyXkY6vEkkRQqweOq+urKda5EX6dFLYxIXsc/6vS/2tv8kn7ABaqGy7POsnX2ojZJzpO+sOY16foFgbWQXowCiZy0JkN0msVMOFInBPCAxw5J7la3RkDNhS81qswtwGYfzKNspMlm8QXc+Ot2dqbxaeZ0sk1KBvRXzuIeLAdMwkLV2Dx8JMvCstk4UwNtE+K8uhLfbsAmIjlT/9c9Yzliub9SbQwSBsow6Gd9gCKHm3+N2+Luf6ASGDHb7RmUkZ/hHTqxiq0aaswXNex2JkXoXGLo5nfr/z4ng+V1dV7N4kFj1Mm6g/5JtgdF9f1BbhI+K4ufyRU/jsNLwBGfE5xgA=="
+  },
+  {
+   "nome": "v20-H-byte",
+   "versione": 20,
+   "livello": "H",
+   "maschera": 5,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dor",
+   "moduli": "/qrYfCEsAqdvf1m/wT7pYDTUxZki8oZQbq8qz/pCjXBlQv1rt0k8gRe35bgUENUV269WoN/zZ3z6UiZK7BDxOOxAWv3GPxBpB/qqqqqqqqqqqqqq/gGojXkf8/RxbldmAAY67e3974k/jBJgKoztyWId/zoxGMSRfROAMz/OGm241HbL++cbuhikB0/I2yMmupmkrBmXC8YVwb91ncNstrioQq9hMNWER7DOdVqmfSTZ14pIvf9JLGVA5rh7feIz7Dge01UJ9v3ZfOQayyX2DbF61gxV7ABQEEsx7XnUNYV7/OdaSm17khiSQq0kzV8ncoLwIRMSXd3ClIzJKORIIcdpwNoQczVEEMFSvRP5N/QmmiFScLumYzE4uAahM7Dn/28qOqCd/XVPvehXm/gazrZIbkzC1IMVFBFSh/UhDvLWlk55dSeKcQwDK+OJULE3Jm5TUXYk85iVcctqSQ6G7aQUAk5iWuME0U1QkP+xf/bB8TunmqJkyjLZrWebh8hcNjaqK++7VS/6M0rvrtpu/sR2P+pH8gLETdUYxRawJ0rrKaGaqLxNa2Ea5NmxvGNlES9qMaH8WJAv0R3j/7F1r90AmYnH4PGp6BWcTSJdem5IW65Zxo1WPp9QoxlEoAodAjbqT823/VyAVlTsnGw0Dxe4KYiKfJoZkt0FlZM07tznpoQ398JuZsYvtgSxbFaans+rZi0sPvZID+D9UlBvigF+pz746+R95OHQhB3TOytDewQeCDEJ2K/HuPKvMWuqazfidqLRip272eZG+fDV/VPdsC5vqGrZOiJcAM0YJMd8P0taqL0cvU/tuAu49l3f3dMmL268+fVCux9xnnPi76L1KIYpeoROuCHFBB1PcA3dVFICBkwqZmZsAunSaSZHIqwXOrfi8hvSZUIWxeMsLLoiFt6XeACgst9diF1UpiKXPfFg2FgqVj0JYWETxbxdz3N6Ryt6iDb9gfiv8yx//zkX79dFW9eUYUZ1RdkRVHMqwyj2qBNIa0uUvq+x6R5PFOKn8cKndRyf7hcN+CEZb/TyivtKKtZm0vSFNA1dUdii6qfRHpXy8CLgYsWrNYI3VeGotBWjYiKt+WEtPfdHtulppPVzb+Fg+9aX/FiEmA1iakUkXXLhsMNLln5fazWTW60xvwVYt6jJevv1BIGjg/psnRisMtAzTLqnUleclY3DL+KO8rFohP4k8QvNZJc7L/EKewQWxg6J5CPCXfNemExy/YQ++6nK9SEZ8opxCNFMuXxDkBXDmErwKmYHo9CjLBP0ZVfwsJapykd67VnkHUyMSebjKqoLiLGwUiLrUIiBhgnFKHh33iipsPFLTr2pw4XMSrY7hXG6F5l8+qmuemOBVZ6fi0UJeiPT1pQamBjZDLANTtwRjoFha4yYn9dJ91pDejmGQW5EZZX6wryE+3JK34Yjaf8AbGw5xFQ95ETd0EQ/jInU6pbtQqZiLiowUzHWcUi/oRerErG7pjOmj4ztBvopsv+10+mWr7iw4klASHsm6F831NTLhUUJnqxLBKXGrTamftduv4nB/nbYfpOT/NvxGQj8gA=="
+  },
+  {
+   "nome": "v26-L-byte",
+   "versione": 26,
+   "livello": "L",
+   "maschera": 1,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaa",
+   "moduli": "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"
+  },
+  {
+   "nome": "v27-M-numerico",
+   "versione": 27,
+   "livello": "M",
+   "maschera": 2,
+   "modi": [
+    "numerico"
+   ],
+   "testo": "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+   "moduli": "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"
+  },
+  {
+   "nome": "v32-Q-byte",
+   "versione": 32,
+   "livello": "Q",
+   "maschera": 4,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago ",
+   "moduli": "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"
+  },
+  {
+   "nome": "v40-H-byte",
+   "versione": 40,
+   "livello": "H",
+   "maschera": 6,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto la collina di Korvaal, e nessuno lo sveglia. Il drago dorme sotto l",
+   "moduli": "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"
+  },
+  {
+   "nome": "maschera-0",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 0,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/iEKM/wVE/GQbo0CxLt0H2RF26lvNy7BHxqZB/qqqq/gA1HtAKobCniQ5qjacfjSBos3kmKe0I7lTW/hpKdkBy5qwpEVcr2+G1IforGqHA2trHFRnWDg7jDBqZyod3z/aTjvR0U/OjspM+8WY9Oj/2waGwmtCPpypJyWCM7qFtaOKHev7P0ATCVsZ/h4sOvwSD4tELr7oK+N04+tDm6o6OIzBF2p2y/pHv2xgA=="
+  },
+  {
+   "nome": "maschera-1",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 1,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/vRfY/wTuVsQbrhXkLt0tc7l26Q6Yi7BdbAxB/qqqq/gCftHAKNOXykqTAJw222HU95jOMg0eiuwGDq0jg3OrYc/l8RAOBcUsfhK9+T/TqcHBtvEyDW1upprAzYNIimqPBJF7e+Wb258ZqW8yXkJqjlPTlsHolDYMcnDXZpAvHwkjSL6ufgAZo/ET/st5aqwQpSHGrou9f/d0SUHpO69vbdnBPcDcY/sS6jkgA=="
+  },
+  {
+   "nome": "maschera-2",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 2,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/kKEC/wR8H+QbrXhSrt1J4fF269X1K7BUSJ5B/qqqq/gEN/VAL54hEPmzktUSTbq5QUOGFp9Xr1rdYxvxilc5KKJTKn26h4wI7EnQT+S+iVOIkmfpYNu17r5ShKb+UQc51phf6az2bUR0He17etAx4+UI++F63RKaqR1hvdgLjUAG/mXD/sAQh2Ma/n2iCpwW7AVE7qYLp/t12wjNq6wC2wLBGVKVR/vJh4/gA=="
+  },
+  {
+   "nome": "maschera-3",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 3,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/sKEC/wXKxIQbo6M/Lt1J4fF26LhD67BJ/kVB/qqqq/gG7JjALcVMppezktUSRvcPmi5qoEQ6G1rdYxvnETqP83s+nKbSh4wI7GTmlIkJO4jlJLfpYNu1tNPkX8mb59xUdphf6axCtinCwyYWzAtx4+UI+ojMBn8nP8YMC1gLjUAELQh1P6AdMbkX/v2iCpwUN2jGLp1mE+F12wjNq6m0AG9BL4n48/vJh4/gA=="
+  },
+  {
+   "nome": "maschera-4",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 4,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/oWYe/wTyJwQbpvZqLt1VkDV26smE67BcqxBB/qqqq/gF8OkAIu/mDfNQHO3xxXk3eaBACu6Qsp3BEtz/srS3EC5ryfOG5ksUnZWhiPjOat2wce8q7uNWKKIjQ7s5TXb+2KC8Z5R6Vaf6IYy8ZqHtkiIUiwL05fESapNZXh4X/IcbOXmyP8AYZO0S/sVBiqQTKxlFLrfMu+t0VTAuK6eM4+FBBSNSW/rV9kjgA=="
+  },
+  {
+   "nome": "maschera-5",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 5,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/nRfY/wX+F8QbrXhSrt14Ju126dX1K7BMaBxB/qqqq/gGP9XAIL4hEZ3CVcljjbq5QUOONh1fjuwGDq0zgne7IKJTKn27QJB5K0nQT+S+qdGAsuEyDW1u5p7QjIb+UQc50YQuLrD2bUR0HW9zWlIqjlPTl8H41TIaqR1hvcR6Slx2/mXD/sAYp+ES/kt5aqwQ5CXG7oYLp/t0HBS8a6QC2wLBOdCdZ/sS6jkgA=="
+  },
+  {
+   "nome": "maschera-6",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 6,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/vRfY/wXyJwQbrzF2Lt04Ju1265zRq7BKcH1B/qqqq/gCDxbAJ/cFgy/CVcljj/Od0wqILnzZluwGDq0/srS3EOt3uDSbQJB5K0D03a2asbAGqoEyDW1u1l3cvEfaw04dUYQuLrDS/w1QjQ71QjOqjlPTlwL05fEeO1RFL8R6Slx2bCznfoAev4EU/st5aqwU1ObG7q8vN/N1HBS8a6UmSUvBIbEbf/sS6jkgA=="
+  },
+  {
+   "nome": "maschera-7",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 7,
+   "modi": [
+    "byte"
+   ],
+   "testo": "Lucian Ombralunga, mago di 5° livello - dardo, scudo, sonno.",
+   "moduli": "/iEKM/wQN2PQbomQjLt0H2RF26MmE67BVj4JB/qqqq/gB8OkAJaJQ10A5qjaceqbIhl/20YMma7lTW/hgDUtI774i7WHMr2+G1JWhiPjPSk/5VXRnWDg7qKIjQ7qPlhtIDjvR0U+HqlgF2uEKvcx/2waGwvkLGg7rbgEQerqFtaOLOXmyP8ARQH8b/h4sOvwXKxlFLpp6Y+d14+tDm6BzHB7BHk7kg/pHv2xgA=="
+  },
+  {
+   "nome": "multi-segmento",
+   "versione": 5,
+   "livello": "M",
+   "maschera": 3,
+   "modi": [
+    "numerico",
+    "alfanumerico",
+    "byte"
+   ],
+   "testo": "20241PUNTI FERITA rimasti: 7",
+   "moduli": "/rnq2/wUcd2QbotSjLt15ziF26bs2q7BNs6pB/qqqq/gHz2gALdNmEJYZEwBsibW0YP1OFJvXmrjSn0phC4QoGgraYz66rpv2yjS4PiSjg92wgZksPUIOMGIJrLhpSqlu4xq0YBeeC0YlkIrZt2iM0wumwomd2wEldTnWB1q2QLosGccoP0Aan2MU/rPVetQWgJvG7o0Iv/d1Qt2tW6mLmMNBLGQXq/pUcKEgA=="
+  },
+  {
+   "nome": "utf8-senza-eci",
+   "versione": 3,
+   "livello": "M",
+   "maschera": 2,
+   "modi": [
+    "byte"
+   ],
+   "testo": "àèìòù — «Ozymandias» 🐉",
+   "moduli": "/nd7/BG+UG6lSLt11oXbqxuuwVgFB/qqr+AUVQC+WFPhSTvh+pvrBgP6CdNtJeE0rJyIKaCDuppilkb53DQMuPfkubtnIam42qmp+QB4lEv5oauwWW8Xuqnv9dWW2O6smw0EThrv69boAA=="
+  },
+  {
+   "nome": "eci-26-utf8",
+   "versione": 3,
+   "livello": "M",
+   "maschera": 1,
+   "modi": [
+    "byte"
+   ],
+   "testo": "così è: il mago è caduto 🎲",
+   "moduli": "/qn7/BN3EG6g+rt0pIXboPWuwWy5B/qqr+AJcgCjduEsIPGm5q5mwcOYFhKsXJjocIA/T5x98olmQfpG1wlkvcU6giKWA6h03PZF/4BMzEP7WCswTksRuhaf9dPxc663St8E5yk/7e/QgA=="
+  },
+  {
+   "nome": "eci-3-latin1",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 0,
+   "modi": [
+    "byte"
+   ],
+   "testo": "perché però città",
+   "moduli": "/j4/wW3QbpbLt0il26si7BKtB/qq/gApAKpqCVhAqLjjfC4LHBkthvtu4IIc65L7XWiGkviAacS/kSpwTjGbqI/N0+4K6uoDBN99/tLTgA=="
+  },
+  {
+   "nome": "byte-spezzato",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 7,
+   "modi": [
+    "byte"
+   ],
+   "testo": "mezzo è mezzo",
+   "moduli": "/ko/wRRQbozLt0eF26UC7BeJB/qq/gDrAJbSUAgmb3TtzOSRlid9K1nPtq5u3ILS4eD7rPsAV8V/lutwWXHbph+N1JWq6YWjBISE/omLgA=="
+  },
+  {
+   "nome": "vuoto",
+   "versione": 1,
+   "livello": "L",
+   "maschera": 0,
+   "modi": [],
+   "testo": "",
+   "moduli": "/lv8E5Butrt0pduirsEFB/qv4BsA7/YjyhEt+iIqREAsqoBaq/rd0Fu7upd10xGuuiMFBG/uqoA="
+  },
+  {
+   "nome": "vuoto-segmento-byte",
+   "versione": 1,
+   "livello": "M",
+   "maschera": 4,
+   "modi": [
+    "byte"
+   ],
+   "testo": "",
+   "moduli": "/qv8ExBunLt1ZdurrsFVB/qv4BQAi8/OjHH4owdzsp/9PgBsr/rPkEzUuq490nHukwEE8o/rPoA="
+  },
+  {
+   "nome": "kanji-segnaposto",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 5,
+   "modi": [
+    "kanji"
+   ],
+   "testo": "���",
+   "moduli": "/jm/wWtQbrFLt1AV26Wa7BEJB/qq/gF3AIK45y6Sdn+d9YEDgGqr2bVoBcqaYKdAIuSTMPkAZ8d/lGuwSZEroL/N0x3m6WWbBKSt/sZfAA=="
+  },
+  {
+   "nome": "append-strutturato",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 1,
+   "modi": [
+    "byte"
+   ],
+   "testo": "primo pezzo",
+   "moduli": "/s8/wRCQbqkLt0U126Ia7BY1B/qq/gB4AKM1kojcQsiFqEMHdgN3a/mKMiNPxsIaCMH63f0AVMa/s6swQ3FroG+90TXi68MXBEmf/v0LgA=="
+  },
+  {
+   "nome": "fnc1-prima-posizione",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 2,
+   "modi": [
+    "byte"
+   ],
+   "testo": "0110012345678",
+   "moduli": "/kG/wRQQbq6rt1YV26ly7BY9B/qq/gGaAL4TPnzc2ubADrgcWK7zB41reyYJHOtImoqaa/yAUMb/nmrQXnGbqQ/N13dm65wPBJl7/upBgA=="
+  },
+  {
+   "nome": "fnc1-seconda-posizione",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 3,
+   "modi": [
+    "byte"
+   ],
+   "testo": "lotto A1",
+   "moduli": "/vG/wWGQbpvLt1AV26NC7BPRB/qq/gH8ALdGpfzw8E/K1L0F4pcoCzmuommIKdMK2iELEPkAdkc/pmrwWTGLod+11X4C6/ctBEM6/stiAA=="
+  },
+  {
+   "nome": "eci-lungo-899",
+   "versione": 2,
+   "livello": "M",
+   "maschera": 6,
+   "modi": [
+    "byte"
+   ],
+   "testo": "sconosciuto",
+   "moduli": "/s8/wUOQbqmLt0pl26rS7BOxB/qq/gDUAJ+Hy+gpJ6meiNyLanG2bBwDQ+c/D7daHbaHOfuAaMf/u6tQUrHrqU+N1WO26NDdBHlY/tyMgA=="
+  }
+ ],
+ "nulli": [
+  {
+   "nome": "numerico-fuori-scala",
+   "versione": 2,
+   "moduli": "/no/wVYQboBLt0SV26jK7BGdB/qq/gBCAKpIiUaC5ZXA6DWu0WrtM6rNmKqcEXjpouuGyP8AfsV/lqpQQdFrrT+t0p2q65TbBKC4/uj2gA=="
+  },
+  {
+   "nome": "alfanumerico-fuori-scala",
+   "versione": 2,
+   "moduli": "/jo/wVYQbpJLt0qV26rK7BBdB/qq/gCSAKpwiRbG5YW26C+z0WT9M6sgmKJJEXiYouuq6P8ATsV/jqpwSdFLrz+t0J2q6hTbBOC7/uj2gA=="
+  },
+  {
+   "nome": "modo-sconosciuto",
+   "versione": 2,
+   "moduli": "/ko/wVoQboBLt0qV26nK7BKdB/qq/gCyAKoAiWJK5TK46Dwa0U7xM6lImKr+kXzgYuua6P8AbsW/lqowQdFrrT+t0J2q65TbBOC7/sj3gA=="
+  },
+  {
+   "nome": "eci-prefisso-invalido",
+   "versione": 2,
+   "moduli": "/ko/wVIQbpBLt0iV26zK7BGdB/qq/gAiAKp4iWjm5Tym6Ci60Uf0M6tPmKqakXzhouuPKP8AbsW/jqowRdFrrz+t0p2m6hTdBCC5/uj3gA=="
+  },
+  {
+   "nome": "byte-piu-lunghi-del-simbolo",
+   "versione": 2,
+   "moduli": "/ky/wV3QboGrt0Hl268i7BLhB/qq/gC9AKoLCRbBip27F9KKLr7ljPEL7lp/boLyXRSWc/qAaUa/gSvwSjGrro/l0eIa6uulBF5G/vMLgA=="
+  },
+  {
+   "nome": "alfanumerico-singolo-fuori-scala",
+   "versione": 2,
+   "moduli": "/lS/wU3Qbourt0nl26ii7BBhB/qq/gCdAKoLCUhBiqL3F9mGLre8jPMu7lpfboLSnReGc/sASUZ/gSvQTjGrqI/t0OIa62ujBJ5H/tMKgA=="
+  }
+ ]
+}

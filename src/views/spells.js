@@ -19,7 +19,7 @@
 import { h, clear } from '../dom.js'
 import { EDITIONS, EDITION_LABELS, otherEdition, resolveEdition } from '../domain/edition.js'
 import { loadIndex, loadBridge, getSpell, getSpellByBuilderId, search, counterpart } from '../domain/spells.js'
-import { loadRegistry } from '../domain/packs.js'
+import { loadRegistry, spellSources, packChain } from '../domain/packs.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 /** @typedef {import('../domain/edition.js').Edition} Edition */
@@ -148,6 +148,29 @@ function edizione(ctx, override = null) {
 }
 
 /**
+ * Da dove leggere il compendio: l'edizione e basta, oppure — se il personaggio
+ * aperto ha un pacchetto che eredita — le cartelle di quel pacchetto sopra
+ * quelle del suo base, così i suoi incantesimi compaiono accanto a quelli SRD.
+ *
+ * Solo quando l'edizione mostrata è la sua: guardare l'altra edizione è una
+ * consultazione dell'SRD, e una variante lì non c'entra — non ne esiste una
+ * versione nell'altra edizione, ne ha scelta una sola per base.
+ * @param {ViewCtx} ctx
+ * @param {Edition} ed
+ * @returns {import('../domain/spells.js').DaDove}
+ */
+function fonte(ctx, ed) {
+  const s = ctx.state
+  const attivo = s.activeId ? s.characters[s.activeId] : undefined
+  if (!registro || !attivo || attivo.meta.edition !== ed) return ed
+  try {
+    return spellSources(registro, attivo.meta.packId)
+  } catch {
+    return ed
+  }
+}
+
+/**
  * L'etichetta che accompagna sempre il testo. Non è decorazione: un testo di
  * regole senza l'edizione a fianco è un testo di cui non si sa se vale al
  * proprio tavolo.
@@ -158,17 +181,45 @@ function etichettaEdizione(ctx, ed) {
 }
 
 /**
- * L'attribuzione, verbatim dal registro dei pacchetti. Chiusa in un `details`
- * perché al tavolo non serve, raggiungibile perché la licenza lo impone.
+ * Le attribuzioni, verbatim dal registro. Chiuse in un `details` perché al
+ * tavolo non servono, raggiungibili perché la licenza lo impone.
+ *
+ * **Una per ogni pacchetto che mette incantesimi in questa pagina**, non una
+ * sola per l'edizione. Con un personaggio di Brancalonia aperto l'elenco mescola
+ * incantesimi SRD e incantesimi di Acheron Games: mostrare solo l'attribuzione
+ * CC-BY dell'SRD vorrebbe dire dichiarare libero del materiale che non lo è.
+ *
+ * @param {ViewCtx} ctx
  * @param {Edition} ed
  */
-function attribuzione(ed) {
-  const pack = registro?.packs.find(p => p.edizione === ed)
-  if (!pack) return null
-  return h('details', { class: 'dc-gruppo' }, [
-    h('summary', { class: 'bsc-label' }, `${EDITION_LABELS[ed].srd} · ${pack.licenza}`),
+function attribuzione(ctx, ed) {
+  if (!registro) return null
+  const packs = pacchettiInPagina(ctx, ed)
+  if (!packs.length) return null
+  return h('div', {}, packs.map(pack => h('details', { class: 'dc-gruppo' }, [
+    h('summary', { class: 'bsc-label' }, `${pack.base ? pack.nome : EDITION_LABELS[ed].srd} · ${pack.licenza}`),
     h('p', { class: 'bsc-prose' }, pack.attribuzione),
-  ])
+  ])))
+}
+
+/**
+ * I pacchetti che contribuiscono a ciò che si sta guardando: quello del
+ * personaggio aperto e tutta la sua catena, o il solo SRD dell'edizione.
+ * @param {ViewCtx} ctx
+ * @param {Edition} ed
+ * @returns {import('../domain/packs.js').Pack[]}
+ */
+function pacchettiInPagina(ctx, ed) {
+  if (!registro) return []
+  const attivo = ctx.state.activeId ? ctx.state.characters[ctx.state.activeId] : undefined
+  if (attivo && attivo.meta.edition === ed) {
+    try {
+      // dalla radice al figlio: prima l'SRD su cui poggia, poi la variante
+      return packChain(registro, attivo.meta.packId).slice().reverse()
+    } catch { /* catena rotta: si ripiega sull'SRD, che c'è sempre */ }
+  }
+  const srd = registro.packs.find(p => p.edizione === ed && !p.base)
+  return srd ? [srd] : []
 }
 
 /* ── L'elenco ─────────────────────────────────────────────────────────────── */
@@ -179,7 +230,8 @@ function attribuzione(ed) {
  */
 async function elenco(contenitore, ctx) {
   const ed = edizione(ctx)
-  const [index, miei] = await Promise.all([loadIndex(ed), incantesimiDelPersonaggio(ctx, ed)])
+  const da = fonte(ctx, ed)
+  const [index, miei] = await Promise.all([loadIndex(da), incantesimiDelPersonaggio(ctx, da)])
 
   const risultati = h('div', { class: 'dc-elenco' })
   const filtri = h('div', { class: 'dc-gruppo' })
@@ -234,7 +286,7 @@ async function elenco(contenitore, ctx) {
     interruttoreMiei,
     filtri,
     risultati,
-    attribuzione(ed),
+    attribuzione(ctx, ed),
   ]))
 
   mostraQuali()
@@ -319,10 +371,10 @@ function segnale(ctx, voce, ed) {
  * incantesimi, ma nessuno di questi».
  *
  * @param {ViewCtx} ctx
- * @param {Edition} ed
+ * @param {import('../domain/spells.js').DaDove} da
  * @returns {Promise<Set<string>|null>}
  */
-async function incantesimiDelPersonaggio(ctx, ed) {
+async function incantesimiDelPersonaggio(ctx, da) {
   const s = ctx.state
   const attivo = s.activeId ? s.characters[s.activeId] : undefined
   if (!attivo) return null
@@ -331,7 +383,7 @@ async function incantesimiDelPersonaggio(ctx, ed) {
     .filter(v => typeof v === 'string')
   if (!grezzi.length) return null
   try {
-    const ponte = await loadBridge(ed)
+    const ponte = await loadBridge(da)
     /** @type {Set<string>} */
     const ids = new Set()
     for (const id of grezzi) {
@@ -413,13 +465,14 @@ function distinti(index, campo, etichetta) {
  */
 async function scheda(contenitore, ctx, idRotta) {
   const base = edizione(ctx)
-  const spell = (await getSpellByBuilderId(base, idRotta)) ?? (await getSpell(base, idRotta))
+  const da = fonte(ctx, base)
+  const spell = (await getSpellByBuilderId(da, idRotta)) ?? (await getSpell(da, idRotta))
   if (!spell) { senzaTesto(contenitore, ctx, base, idRotta); return }
 
   /** @type {Controparte} */
   let altro
   try {
-    altro = await counterpart(base, spell.id)
+    altro = await counterpart(da, spell.id)
   } catch {
     // Un guasto di lettura non è un'assenza. `counterpart` le distingue —
     // l'assenza la risolve, il guasto lo lancia — e qui la distinzione si
@@ -453,7 +506,7 @@ async function scheda(contenitore, ctx, idRotta) {
       h('p', { class: 'bsc-prose' }, mostrata.testo),
       mostrata.aLivelliSuperiori ? h('h2', { class: 'bsc-label' }, ETICHETTA.aLivelliSuperiori) : null,
       mostrata.aLivelliSuperiori ? h('p', { class: 'bsc-prose' }, mostrata.aLivelliSuperiori) : null,
-      attribuzione(ed),
+      attribuzione(ctx, ed),
     ]))
   }
 
@@ -528,7 +581,7 @@ function senzaTesto(contenitore, ctx, ed, idRotta) {
     h('h1', { class: 'bsc-display' }, nomeDaId(idRotta)),
     etichettaEdizione(ctx, ed),
     h('p', { class: 'bsc-lead' }, ctx.t('scheda.senzaTesto')),
-    attribuzione(ed),
+    attribuzione(ctx, ed),
   ]))
 }
 

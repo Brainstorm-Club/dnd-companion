@@ -5,8 +5,8 @@
  * percorsi servirebbe il trucco del `404.html` che il builder si porta dietro,
  * e non ne vale la pena per sei viste.
  *
- * Le rotte sono `#/libreria`, `#/scheda/<id>/<sezione>`, `#/dadi`, `#/prove`,
- * `#/px`, `#/incantesimi`, `#/impostazioni`.
+ * Le rotte sono `#/libreria`, `#/inquadra`, `#/scheda/<id>/<sezione>`, `#/dadi`,
+ * `#/prove`, `#/px`, `#/incantesimi`, `#/impostazioni`.
  */
 
 /** @typedef {{ nome: string, params: Record<string, string> }} Route */
@@ -15,6 +15,7 @@
 const ROTTE = [
   { re: /^#\/?$/,                                   nome: 'libreria',     chiavi: [] },
   { re: /^#\/libreria$/,                            nome: 'libreria',     chiavi: [] },
+  { re: /^#\/inquadra$/,                            nome: 'inquadra',     chiavi: [] },
   { re: /^#\/scheda\/([^/]+)(?:\/([^/]+))?$/,       nome: 'scheda',       chiavi: ['id', 'sezione'] },
   { re: /^#\/dadi$/,                                nome: 'dadi',         chiavi: [] },
   { re: /^#\/prove$/,                               nome: 'prove',        chiavi: [] },

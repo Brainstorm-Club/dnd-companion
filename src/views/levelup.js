@@ -19,7 +19,7 @@
 
 import { h, clear } from '../dom.js'
 import { planLevelUp } from '../domain/progress.js'
-import { loadRegistry } from '../domain/packs.js'
+import { loadRules } from '../domain/rules.js'
 import { derive, proficiencyBonus, formatModifier, ABILITIES, ABILITY_LABELS } from '../domain/character.js'
 import { rollNotation } from '../domain/dice.js'
 import { cryptoRng } from '../domain/rng.js'
@@ -92,34 +92,14 @@ export default {
 }
 
 /**
- * Il pacchetto regole dell'edizione del personaggio, una volta per sessione.
- * Se non arriva, la procedura si disegna lo stesso: `planLevelUp` risponde con
- * quello che si può dire senza, e lo dichiara negli avvisi.
- * @type {Map<string, unknown>}
- */
-const regolePerPack = new Map()
-
-/**
+ * Il pacchetto regole del personaggio, con ciò che eredita dal suo base. Se non
+ * arriva, la procedura si disegna lo stesso: `planLevelUp` risponde con quello
+ * che si può dire senza, e lo dichiara negli avvisi.
  * @param {CharacterEntry} entry
  * @returns {Promise<unknown>}
  */
-async function regoleDi(entry) {
-  const packId = entry.meta.packId
-  if (regolePerPack.has(packId)) return regolePerPack.get(packId)
-  /** @type {unknown} */
-  let regole = null
-  try {
-    const registro = await loadRegistry()
-    const pack = registro.packs.find(p => p.id === packId)
-    if (pack) {
-      const res = await fetch(pack.regole)
-      if (res.ok) regole = await res.json()
-    }
-  } catch {
-    regole = null
-  }
-  regolePerPack.set(packId, regole)
-  return regole
+function regoleDi(entry) {
+  return loadRules(entry.meta.packId).catch(() => null)
 }
 
 /**

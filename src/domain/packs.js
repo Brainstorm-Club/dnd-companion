@@ -60,6 +60,94 @@ export function packForVariant(registro, variante) {
 }
 
 /**
+ * Il pacchetto con questo id, o `null`.
+ * @param {PackRegistry} registro
+ * @param {string} id
+ * @returns {Pack|null}
+ */
+export function packById(registro, id) {
+  return registro.packs.find(p => p.id === id) ?? null
+}
+
+/**
+ * La catena di ereditarietà: il pacchetto, poi il suo `base`, poi il base del
+ * base, fino alla radice. **Figlio per primo**, perché è l'ordine di
+ * precedenza: chi viene prima vince su chi viene dopo.
+ *
+ * Due guasti possibili, e sono guasti diversi:
+ * - **il ciclo** (A eredita da B, B da A). Non è un caso teorico: basta un
+ *   copia-e-incolla nel registro. Senza il `Set` dei visti il `while` non
+ *   finisce, e l'app resta in attesa di una schermata che non arriverà mai.
+ * - **il base che non esiste**: il registro è rotto, e chi legge l'errore deve
+ *   sapere *quale* pacchetto dichiara *quale* base — «pacchetto non trovato»
+ *   manda a cercare a mano nel JSON.
+ *
+ * @param {PackRegistry} registro
+ * @param {string} id
+ * @returns {Pack[]}
+ */
+export function packChain(registro, id) {
+  /** @type {Pack[]} */
+  const catena = []
+  /** @type {string[]} */
+  const visti = []
+  let corrente = id
+  while (corrente) {
+    if (visti.includes(corrente)) {
+      throw new Error(`catena di pacchetti circolare: ${[...visti, corrente].join(' → ')}`)
+    }
+    visti.push(corrente)
+    const pack = packById(registro, corrente)
+    if (!pack) {
+      const chi = catena[catena.length - 1]
+      throw new Error(chi
+        ? `il pacchetto «${chi.id}» dichiara base «${corrente}», che non è nel registro`
+        : `il pacchetto «${corrente}» non è nel registro`)
+    }
+    catena.push(pack)
+    corrente = pack.base ?? ''
+  }
+  return catena
+}
+
+/**
+ * Le cartelle di compendio da sovrapporre per un pacchetto, figlio per primo.
+ *
+ * Un pacchetto con un base non ha un compendio *alternativo*: ha il compendio
+ * del base **più** il suo. Dire quali cartelle sono e in che ordine è mestiere
+ * del registro; sovrapporle è mestiere di `spells.js`.
+ *
+ * @param {PackRegistry} registro
+ * @param {string} id
+ * @returns {{edizione: Edition, cartelle: string[]}}
+ */
+export function spellSources(registro, id) {
+  const catena = packChain(registro, id)
+  const primo = catena[0]
+  if (!primo) throw new Error(`il pacchetto «${id}» non è nel registro`)
+  return {
+    edizione: primo.edizione,
+    cartelle: catena.map(p => p.incantesimi).filter(Boolean),
+  }
+}
+
+/**
+ * Vero se il testo di questo pacchetto si può spedire con l'app.
+ *
+ * I due SRD sono CC-BY: il testo viaggia con l'app. Brancalonia e Apocalisse
+ * no — sono di Acheron Games, e finché non c'è il permesso il pacchetto porta
+ * nomi, struttura e numeri, ma non le descrizioni. Chi disegna deve poterlo
+ * dire all'utente con la frase giusta, e la differenza sta qui e non in un
+ * confronto sulla variante sparso per le viste.
+ *
+ * @param {Pack|null|undefined} pack
+ * @returns {boolean}
+ */
+export function testoSpedibile(pack) {
+  return pack?.licenza === 'CC-BY-4.0'
+}
+
+/**
  * Se la variante non è coperta, cosa dire all'utente. Mai «errore»: la v1
  * semplicemente non ha ancora quel pacchetto, e la frase deve dirlo.
  * @param {string} variante

@@ -35,12 +35,22 @@ describe('dal builder al tavolo', () => {
     expect(r.entry.meta.edition).toBe(atteso)
   })
 
-  it('un personaggio di Brancalonia viene rifiutato con una spiegazione', () => {
+  it('un personaggio di Brancalonia entra, col suo pacchetto', () => {
     const r = importer.fromJson(fixture('brancalonia-rifiuto'), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    expect(r.entry.meta.packId).toBe('brancalonia')
+    // l'edizione la dà il pacchetto, e Brancalonia poggia sul 2014
+    expect(r.entry.meta.edition).toBe('2014')
+  })
+
+  it('una variante che nessun pacchetto copre viene rifiutata con una spiegazione', () => {
+    const inventato = JSON.parse(fixture('brancalonia-rifiuto'))
+    inventato.variant = 'gioco-che-non-esiste'
+    const r = importer.fromJson(JSON.stringify(inventato), registro, 'file')
     expect(r.ok).toBe(false)
     if (r.ok) return
     expect(r.reason).toBe('variante-non-supportata')
-    expect(r.message).toContain('Brancalonia')
+    expect(r.message).toContain('gioco-che-non-esiste')
     expect(r.message).not.toMatch(/errore|error|undefined|null/i)
   })
 

@@ -213,6 +213,11 @@ function pannelloImport(contenitore, ctx) {
   return h('section', { class: 'bsc-card', 'data-import': true }, [
     h('h2', { class: 'bsc-label' }, ctx.t('import.titolo')),
 
+    // Col foglio del builder in mano è la via più corta: niente file da
+    // ritrovare, niente link da copiare fra due telefoni. Sta per prima perché
+    // è quella che si prova per prima, e resta un link perché è una rotta.
+    h('a', { class: 'bsc-btn dc-import__qr', href: '#/inquadra' }, ctx.t('import.qr')),
+
     h('label', { class: 'bsc-field' }, [
       h('span', { class: 'bsc-field-label' }, ctx.t('import.file')),
       h('input', {
@@ -250,7 +255,9 @@ function pannelloImport(contenitore, ctx) {
       onclick: () => {
         const t = /** @type {HTMLInputElement} */ (linkIncollato).value.trim()
         if (!t || !registro) return
-        fatto(fromShareUrl(t, registro))
+        // Decomprimere è asincrono: il formato compresso del builder passa da
+        // `DecompressionStream`, che non ha una variante sincrona.
+        fromShareUrl(t, registro).then(fatto)
       },
     }, ctx.t('libreria.importa')),
 
@@ -280,10 +287,24 @@ function riquadroEsito(e, ctx) {
  * @param {ViewCtx} ctx
  */
 function accogli(r, contenitore, ctx) {
+  accogliImport(r, ctx)
+  disegna(contenitore, ctx)
+}
+
+/**
+ * Registra l'esito di un import e, se è andata, il personaggio.
+ *
+ * È esportata perché l'import dal QR avviene in un'altra vista (`scan.js`):
+ * quando quella finisce, la libreria non è ancora disegnata. Lasciarle
+ * scrivere l'esito qui e poi navigare è l'unico modo di non avere due copie di
+ * questa decisione — quale personaggio entra, con che nome, con quali avvisi.
+ * @param {ReturnType<typeof fromJson>} r
+ * @param {ViewCtx} ctx
+ */
+export function accogliImport(r, ctx) {
   if (!r.ok) {
     // Un rifiuto non è un errore: è una frase che spiega cosa manca.
     esito = { tipo: 'ko', messaggio: r.message, avvisi: [] }
-    disegna(contenitore, ctx)
     return
   }
   const id = nuovoId()
@@ -297,7 +318,6 @@ function accogli(r, contenitore, ctx) {
     avvisi: r.warnings,
   }
   ctx.toast(esito.messaggio)
-  disegna(contenitore, ctx)
 }
 
 /**

@@ -23,13 +23,17 @@ describe('fixture', () => {
     expect(c.currentHp).toBeLessThanOrEqual(c.maxHp)
   })
 
-  it('quella di Brancalonia non è coperta da nessun pacchetto della v1', () => {
+  it('anche quella di Brancalonia ora ha il suo pacchetto', () => {
+    // Il file si chiama ancora «rifiuto» perché è la fixture che documentava
+    // il rifiuto: adesso documenta che quel rifiuto non c'è più.
     const c = JSON.parse(readFileSync('tests/fixtures/brancalonia-rifiuto.json', 'utf8'))
-    expect(packForVariant(registro, c.variant)).toBeNull()
+    const pack = packForVariant(registro, c.variant)
+    expect(pack?.id).toBe('brancalonia')
+    expect(pack?.base).toBe('srd-2014')
   })
 
-  it('le altre lo sono', () => {
-    for (const f of files.filter(f => !f.startsWith('brancalonia'))) {
+  it('ogni fixture trova il suo pacchetto', () => {
+    for (const f of files) {
       const c = JSON.parse(readFileSync(`tests/fixtures/${f}`, 'utf8'))
       expect(packForVariant(registro, c.variant), f).not.toBeNull()
     }

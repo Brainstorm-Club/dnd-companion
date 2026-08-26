@@ -13,7 +13,8 @@
 import { h, clear } from '../dom.js'
 import { EDITION_LABELS, resolveEdition } from '../domain/edition.js'
 import { privilegiDiClasse, classiDelPacchetto } from '../domain/privilegi.js'
-import { loadRegistry } from '../domain/packs.js'
+import { loadRegistry, packById, testoSpedibile } from '../domain/packs.js'
+import { loadRules } from '../domain/rules.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 /** @typedef {import('../domain/edition.js').Edition} Edition */
@@ -21,15 +22,12 @@ import { loadRegistry } from '../domain/packs.js'
 /** Quale classe si sta guardando. Sopravvive all'andata e ritorno, come i filtri del compendio. */
 let classeScelta = ''
 
-/** @type {Map<string, unknown>} */
-const PACCHETTI = new Map()
-
 /** @type {import('./index.js').View} */
 export default {
   async render(contenitore, ctx) {
     const ed = edizione(ctx)
-    const rules = await regole(ed)
-    disegna(contenitore, ctx, ed, rules)
+    const { pack, rules } = await regole(ctx, ed)
+    disegna(contenitore, ctx, ed, rules, testoSpedibile(pack))
   },
 }
 
@@ -48,20 +46,31 @@ function edizione(ctx) {
 }
 
 /**
+ * Il pacchetto da cui leggere i privilegi.
+ *
+ * Quello del personaggio aperto quando l'edizione mostrata è la sua — altrimenti
+ * chi gioca una variante aprirebbe il compendio dei privilegi e non ci
+ * troverebbe le proprie sottoclassi, che è l'unica cosa che era andato a
+ * cercare. Se si sta guardando l'altra edizione, o non c'è nessuno aperto, vale
+ * il primo pacchetto di quell'edizione: il compendio si consulta anche a
+ * libreria vuota.
+ *
+ * La cache non è più qui: sta nel caricatore, ed è per pacchetto — due edizioni
+ * sono due pacchetti, e la vista non ha più bisogno di saperlo.
+ * @param {ViewCtx} ctx
  * @param {Edition} ed
- * @returns {Promise<unknown>}
+ * @returns {Promise<{pack: import('../domain/packs.js').Pack|null|undefined, rules: unknown}>}
  */
-async function regole(ed) {
-  if (PACCHETTI.has(ed)) return PACCHETTI.get(ed)
+async function regole(ctx, ed) {
   try {
     const registro = await loadRegistry()
-    const pack = registro.packs.find(p => p.edizione === ed)
-    const res = pack ? await fetch(pack.regole) : null
-    PACCHETTI.set(ed, res?.ok ? await res.json() : null)
+    const attivo = ctx.state.activeId ? ctx.state.characters[ctx.state.activeId] : undefined
+    const suo = attivo && attivo.meta.edition === ed ? packById(registro, attivo.meta.packId) : null
+    const pack = suo ?? registro.packs.find(p => p.edizione === ed)
+    return { pack, rules: pack ? await loadRules(pack.id) : null }
   } catch {
-    PACCHETTI.set(ed, null)
+    return { pack: null, rules: null }
   }
-  return PACCHETTI.get(ed)
 }
 
 /**
@@ -69,8 +78,9 @@ async function regole(ed) {
  * @param {ViewCtx} ctx
  * @param {Edition} ed
  * @param {unknown} rules
+ * @param {boolean} conTesto  se il pacchetto può spedire le descrizioni
  */
-function disegna(contenitore, ctx, ed, rules) {
+function disegna(contenitore, ctx, ed, rules, conTesto) {
   const t = ctx.t
   const classi = classiDelPacchetto(rules)
   const attivo = ctx.state.activeId ? ctx.state.characters[ctx.state.activeId] : undefined
@@ -112,7 +122,7 @@ function disegna(contenitore, ctx, ed, rules) {
         elenco.appendChild(h('h2', { class: 'bsc-label' },
           p.livello <= 1 ? t('priv.iniziale') : t('priv.livello', { n: p.livello })))
       }
-      elenco.appendChild(riga(ctx, p))
+      elenco.appendChild(riga(ctx, p, conTesto))
     }
   }
 
@@ -136,15 +146,19 @@ function disegna(contenitore, ctx, ed, rules) {
 /**
  * @param {ViewCtx} ctx
  * @param {import('../domain/privilegi.js').Privilegio} p
+ * @param {boolean} conTesto
  */
-function riga(ctx, p) {
+function riga(ctx, p, conTesto) {
   return h('details', { class: 'bsc-card dc-priv', dataset: { privilegio: p.id } }, [
     h('summary', {}, [
       h('span', { class: 'dc-priv__nome' }, p.nome),
       p.sottoclasse ? h('span', { class: 'bsc-badge' }, p.sottoclasse) : null,
     ]),
-    // Dove la fonte non ha il testo lo si dice, invece di aprire su un vuoto.
+    // Dove la fonte non ha il testo lo si dice, invece di aprire su un vuoto —
+    // e si dice la ragione giusta: «manca nell'SRD» e «non è materiale che
+    // possiamo spedire» sono due assenze diverse, e la seconda non si risolve
+    // aspettando un'altra edizione.
     h('p', { class: p.testo ? 'bsc-prose' : 'bsc-lead' },
-      p.testo ?? ctx.t('priv.senzaTesto')),
+      p.testo ?? ctx.t(conTesto ? 'priv.senzaTesto' : 'priv.senzaTestoNonLibero')),
   ])
 }

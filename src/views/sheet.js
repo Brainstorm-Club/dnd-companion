@@ -11,7 +11,8 @@
  */
 
 import { h, clear, append } from '../dom.js'
-import { loadRegistry } from '../domain/packs.js'
+import { loadRegistry, spellSources } from '../domain/packs.js'
+import { loadRules } from '../domain/rules.js'
 import {
   derive, features, formatModifier, diceModifier, ABILITIES, ABILITY_LABELS,
 } from '../domain/character.js'
@@ -57,10 +58,6 @@ const SEZIONI = /** @type {const} */ ([
   { id: 'zaino', chiave: 'sezione.zaino' },
   { id: 'storia', chiave: 'sezione.storia' },
 ])
-
-/** Cache del pacchetto regole, per id: si carica una volta per sessione. */
-/** @type {Map<string, unknown>} */
-const regolePerPack = new Map()
 
 /** @type {(() => void)|null} */
 let staccaScroll = null
@@ -115,7 +112,7 @@ export default {
     // invece di due attese in fila, e la scheda si disegna una volta sola.
     const [rules] = await Promise.all([
       regoleDi(entry),
-      caricaNomiIncantesimo(entry.meta.edition),
+      caricaNomiIncantesimo(entry),
     ])
     disegna(contenitore, ctx, id, entry, rules)
   },
@@ -132,29 +129,17 @@ export default {
 
 
 /**
- * Il pacchetto regole dell'edizione del personaggio. Se non c'è ancora (i
- * pacchetti li genera il lotto C) la scheda si disegna lo stesso, con i numeri
- * che sa calcolare da sé.
+ * Il pacchetto regole del personaggio, con ciò che eredita dal suo base. Se non
+ * si legge, la scheda si disegna lo stesso, con i numeri che sa calcolare da sé.
  * @param {CharacterEntry} entry
  * @returns {Promise<unknown>}
  */
 async function regoleDi(entry) {
-  const packId = entry.meta.packId
-  if (regolePerPack.has(packId)) return regolePerPack.get(packId)
-  /** @type {unknown} */
-  let regole = null
   try {
-    const registro = await loadRegistry()
-    const pack = registro.packs.find(p => p.id === packId)
-    if (pack) {
-      const res = await fetch(pack.regole)
-      if (res.ok) regole = await res.json()
-    }
+    return await loadRules(entry.meta.packId)
   } catch {
-    regole = null
+    return null
   }
-  regolePerPack.set(packId, regole)
-  return regole
 }
 
 /**
@@ -804,24 +789,31 @@ function slugSemplice(v) {
 
 
 /**
- * I nomi italiani degli incantesimi, per edizione.
+ * I nomi italiani degli incantesimi, per pacchetto.
  *
  * Il builder salva gli id inglesi (`1-cure-wounds`); il ponte generato dal
  * compendio li traduce in id italiani (`cura-ferite`), e l'indice dà il nome
- * per esteso. Si carica una volta per edizione, prima di disegnare: la scheda
+ * per esteso. Si carica una volta per pacchetto, prima di disegnare: la scheda
  * non deve passare da «Cure Wounds» a «Cura ferite» sotto gli occhi.
+ *
+ * La chiave è il **pacchetto** e non l'edizione perché due pacchetti della
+ * stessa edizione possono avere compendi diversi: chi ne eredita uno vede i
+ * suoi incantesimi in più, e con l'edizione per chiave si sarebbe preso quelli
+ * di chi ha disegnato per primo.
  * @type {Map<string, Record<string, {nome: string, livello: number}>>}
  */
 const NOMI_INCANTESIMO = new Map()
 
 /**
- * @param {import('../domain/edition.js').Edition} edizione
+ * @param {CharacterEntry} entry
  * @returns {Promise<void>}
  */
-async function caricaNomiIncantesimo(edizione) {
-  if (NOMI_INCANTESIMO.has(edizione)) return
+async function caricaNomiIncantesimo(entry) {
+  const chiave = entry.meta.packId
+  if (NOMI_INCANTESIMO.has(chiave)) return
   try {
-    const [ponte, indice] = await Promise.all([loadBridge(edizione), loadIndex(edizione)])
+    const da = await fonteDi(entry)
+    const [ponte, indice] = await Promise.all([loadBridge(da), loadIndex(da)])
     const perId = new Map(indice.map(s => [s.id, s]))
     /** @type {Record<string, {nome: string, livello: number}>} */
     const nomi = {}
@@ -829,9 +821,24 @@ async function caricaNomiIncantesimo(edizione) {
       const voce = perId.get(String(idItaliano))
       if (voce) nomi[idBuilder] = { nome: voce.nome, livello: voce.livello }
     }
-    NOMI_INCANTESIMO.set(edizione, nomi)
+    NOMI_INCANTESIMO.set(chiave, nomi)
   } catch {
-    NOMI_INCANTESIMO.set(edizione, {})   // niente compendio: si resta sull'id ripulito
+    NOMI_INCANTESIMO.set(chiave, {})   // niente compendio: si resta sull'id ripulito
+  }
+}
+
+/**
+ * Da dove leggere il compendio di questo personaggio: le cartelle del suo
+ * pacchetto e di quelli da cui eredita. Senza registro si resta sull'edizione,
+ * che è il compendio di serie.
+ * @param {CharacterEntry} entry
+ * @returns {Promise<import('../domain/spells.js').DaDove>}
+ */
+async function fonteDi(entry) {
+  try {
+    return spellSources(await loadRegistry(), entry.meta.packId)
+  } catch {
+    return entry.meta.edition
   }
 }
 
@@ -850,8 +857,8 @@ async function caricaNomiIncantesimo(edizione) {
  * @param {number[]} massimi  slot massimi per livello, indice 0 = 1° livello
  */
 function rigaIncantesimo(ctx, entry, id, preparati, massimi) {
-  const nome = nomeIncantesimo(id, entry.meta.edition)
-  const livello = livelloIncantesimo(id, entry.meta.edition)
+  const nome = nomeIncantesimo(id, entry.meta.packId)
+  const livello = livelloIncantesimo(id, entry.meta.packId)
   const preparato = preparati.includes(id)
 
   const etichetta = livello === 0
@@ -915,11 +922,11 @@ function usaIncantesimo(ctx, nome, livello, massimi) {
  * (`2-locate-object`), che il livello ce l'ha scritto dentro. Senza né l'uno né
  * l'altro è un trucchetto, che è il caso degli id senza prefisso.
  * @param {string} id
- * @param {import('../domain/edition.js').Edition} [edizione]
+ * @param {string} [packId]
  * @returns {number}
  */
-function livelloIncantesimo(id, edizione) {
-  const dal = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.livello : undefined
+function livelloIncantesimo(id, packId) {
+  const dal = packId ? NOMI_INCANTESIMO.get(packId)?.[id]?.livello : undefined
   if (typeof dal === 'number') return dal
   const prefisso = /^(\d+)-/.exec(id)
   return prefisso ? Number(prefisso[1]) : 0
@@ -930,10 +937,10 @@ function livelloIncantesimo(id, edizione) {
  * testa (`2-misty-step`). Il nome italiano arriva dal compendio (lotto M):
  * finché non c'è, si mostra l'id ripulito invece di un vuoto.
  * @param {string} id
- * @param {import('../domain/edition.js').Edition} [edizione]
+ * @param {string} [packId]
  */
-function nomeIncantesimo(id, edizione) {
-  const italiano = edizione ? NOMI_INCANTESIMO.get(edizione)?.[id]?.nome : undefined
+function nomeIncantesimo(id, packId) {
+  const italiano = packId ? NOMI_INCANTESIMO.get(packId)?.[id]?.nome : undefined
   if (italiano) return italiano
   const senzaLivello = id.replace(/^\d+-/, '')
   return senzaLivello.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')

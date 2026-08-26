@@ -5,7 +5,9 @@
       "id": "srd-2014",
       "nome": "D&D 2014 — SRD 5.1",
       "edizione": "2014",
-      "varianti": ["dnd5e"],
+      "varianti": [
+        "dnd5e"
+      ],
       "incluso": true,
       "licenza": "CC-BY-4.0",
       "kb": 470,
@@ -17,13 +19,45 @@
       "id": "srd-2024",
       "nome": "D&D 2024 — SRD 5.2.1",
       "edizione": "2024",
-      "varianti": ["dnd2024"],
+      "varianti": [
+        "dnd2024"
+      ],
       "incluso": true,
       "licenza": "CC-BY-4.0",
       "kb": 490,
       "regole": "data/rules/2024.json",
       "incantesimi": "data/spells/2024/",
       "attribuzione": "Quest'opera include materiale tratto dal System Reference Document 5.2.1 (\"SRD 5.2.1\") di Wizards of the Coast LLC, disponibile all'indirizzo https://www.dndbeyond.com/srd. Il SRD 5.2.1 è concesso in licenza ai sensi della licenza di attribuzione 4.0 Internazionale di Creative Commons, disponibile all'indirizzo https://creativecommons.org/licenses/by/4.0/legalcode."
+    },
+    {
+      "id": "brancalonia",
+      "nome": "Brancalonia",
+      "edizione": "2014",
+      "varianti": [
+        "brancalonia"
+      ],
+      "incluso": true,
+      "base": "srd-2014",
+      "licenza": "Materiale non libero — citato per nome, senza testo",
+      "kb": 44,
+      "regole": "data/rules/brancalonia.json",
+      "incantesimi": "data/spells/brancalonia/",
+      "attribuzione": "Brancalonia è un'ambientazione di Acheron Games (Setting Book, Macaronicon, L'Impero Randella Ancora). Non è materiale SRD e non è distribuito sotto licenza Creative Commons: questo pacchetto ne riporta soltanto nomi, struttura e valori numerici, necessari a leggere una scheda già creata. Nessun testo di regole è incluso, e per giocare serve il manuale. Marchi e contenuti restano di Acheron Games."
+    },
+    {
+      "id": "apocalisse",
+      "nome": "Apocalisse",
+      "edizione": "2014",
+      "varianti": [
+        "apocalisse"
+      ],
+      "incluso": true,
+      "base": "srd-2014",
+      "licenza": "Materiale non libero — citato per nome, senza testo",
+      "kb": 21,
+      "regole": "data/rules/apocalisse.json",
+      "incantesimi": "",
+      "attribuzione": "Apocalisse è un'ambientazione di Acheron Games. Non è materiale SRD e non è distribuito sotto licenza Creative Commons: questo pacchetto ne riporta soltanto nomi, struttura e valori numerici, necessari a leggere una scheda già creata. Nessun testo di regole è incluso, e per giocare serve il manuale. Marchi e contenuti restano di Acheron Games."
     }
   ]
 }

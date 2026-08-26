@@ -1268,3 +1268,55 @@ ul.dc-elenco > li { min-width: 0; }
 }
 
 .dc-nota { font-size: var(--bsc-text-sm); margin-block-start: var(--bsc-space-1); }
+
+/* ── Inquadrare il QR ─────────────────────────────────────────────────────
+   La cornice è quadrata perché un QR lo è: un video 16:9 lasciato intero
+   invita a inquadrare largo, e poi il codice arriva al lettore piccolo. Il
+   ritaglio che il lettore riceve è esattamente questo quadrato. */
+.dc-qr { display: grid; gap: var(--bsc-space-3); }
+
+/* `.bsc-btn` dichiara un `display`, e una classe batte la regola dello user
+   agent su `[hidden]`: senza questa riga il bottone «riprova» resta a vista
+   anche quando non serve a niente. */
+.dc-qr .bsc-btn[hidden] { display: none; }
+
+.dc-import__qr { justify-self: start; margin-block-end: var(--bsc-space-4); }
+
+.dc-qr__cornice {
+  position: relative;
+  aspect-ratio: 1;
+  inline-size: 100%;
+  max-inline-size: var(--bsc-measure);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--bsc-border);
+  border-radius: var(--bsc-radius-lg);
+  background: var(--bsc-surface);
+}
+
+.dc-qr__video {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* Il mirino dice dove mettere il codice, e non dice nient'altro: chi non vede
+   riceve la stessa informazione da `.dc-qr__stato`, che è annunciato. */
+.dc-qr__mirino {
+  position: absolute;
+  inset: 12%;
+  border: 2px solid var(--bsc-primary);
+  border-radius: var(--bsc-radius-md);
+  pointer-events: none;
+}
+
+.dc-qr__stato {
+  min-block-size: calc(var(--bsc-space-5) * 2);
+  margin: 0;
+  font-family: var(--bsc-font-mono);
+  font-size: var(--bsc-text-sm);
+  color: var(--bsc-text-muted);
+}
+
+.dc-qr__stato[data-tono="errore"] { color: var(--bsc-text); }

@@ -12,7 +12,7 @@
 import { h, clear } from '../dom.js'
 import { cryptoRng } from '../domain/rng.js'
 import { check, opposed } from '../domain/check.js'
-import { loadRegistry } from '../domain/packs.js'
+import { loadRules, rulesFor } from '../domain/rules.js'
 import { derive, formatModifier, ABILITIES, ABILITY_LABELS } from '../domain/character.js'
 import { facciaDado, animaDadi } from '../anima-dadi.js'
 
@@ -69,10 +69,6 @@ let ripetiPareggio = false
 
 /** @type {import('../domain/rng.js').Rng} */
 const rng = cryptoRng()
-
-/** Cache del pacchetto regole, per id: si carica una volta per sessione. */
-/** @type {Map<string, unknown>} */
-const regolePerPack = new Map()
 
 /** @type {import('./index.js').View} */
 export default {
@@ -507,29 +503,17 @@ function registra(ctx, r, label) {
  * @returns {Derived}
  */
 function derivato(entry) {
-  return derive(entry, regolePerPack.get(entry.meta.packId) ?? null)
+  // Sincrono di proposito: `render` ha già caricato le regole di tutti i
+  // pacchetti in gioco, e qui si risponde a un dito che sta ancora premendo.
+  return derive(entry, rulesFor(entry.meta.packId))
 }
 
 /**
- * Il pacchetto regole di un'edizione. Se non c'è, i bonus si calcolano lo
+ * Il pacchetto regole di un personaggio. Se non c'è, i bonus si calcolano lo
  * stesso: `derive` sa cavarsela con l'elenco di abilità di serie.
  * @param {string} packId
  * @returns {Promise<unknown>}
  */
-async function caricaRegole(packId) {
-  if (regolePerPack.has(packId)) return regolePerPack.get(packId) ?? null
-  /** @type {unknown} */
-  let regole = null
-  try {
-    const registro = await loadRegistry()
-    const pack = registro.packs.find(p => p.id === packId)
-    if (pack) {
-      const res = await fetch(pack.regole)
-      if (res.ok) regole = await res.json()
-    }
-  } catch {
-    regole = null
-  }
-  regolePerPack.set(packId, regole)
-  return regole
+function caricaRegole(packId) {
+  return loadRules(packId).catch(() => null)
 }

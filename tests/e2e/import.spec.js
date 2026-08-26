@@ -78,14 +78,45 @@ test('gli incantesimi si vedono in italiano, dal compendio SRD', async ({ page }
   await expect(magia).not.toContainText('Cure Wounds')
 })
 
-test('Brancalonia viene rifiutata con una spiegazione, non con un errore', async ({ page }) => {
+test('Brancalonia entra, e la scheda si apre', async ({ page }) => {
   const errori = []
   page.on('pageerror', e => errori.push(String(e)))
 
   await importa(page, BRANCALONIA)
 
-  await expect(page.locator('body')).toContainText(/Brancalonia/)
-  await expect(page.locator('body')).toContainText(/prossima versione/i)
+  await expect(page.locator('#principale')).toContainText('Menego')
+  await page.locator('.dc-pg__testa').first().click()
+  await expect(page.locator('#barra-pg')).toContainText('Menego')
+  expect(errori).toEqual([])
+})
+
+test('col compendio aperto su Brancalonia si attribuiscono tutt\'e due le fonti', async ({ page }) => {
+  // L'elenco mescola incantesimi SRD e incantesimi di Acheron Games: mostrare
+  // solo l'attribuzione CC-BY vorrebbe dire dichiarare libero ciò che non lo è.
+  await importa(page, BRANCALONIA)
+  await page.locator('.dc-pg__testa').first().click()
+  await page.goto('/#/incantesimi')
+
+  const fonti = page.locator('#principale details summary')
+  await expect(fonti).toHaveCount(2)
+  await expect(fonti.first()).toContainText('CC-BY-4.0')
+  await expect(fonti.last()).toContainText('Brancalonia')
+  await expect(fonti.last()).not.toContainText('CC-BY-4.0')
+
+  // e un incantesimo della variante c'è, senza il suo testo
+  await page.locator('#principale input[type=search]').fill('Dito del Fato')
+  await expect(page.locator('#principale')).toContainText('Dito del Fato')
+})
+
+test('una variante senza pacchetto viene rifiutata con una spiegazione, non con un errore', async ({ page }) => {
+  const errori = []
+  page.on('pageerror', e => errori.push(String(e)))
+
+  const inventato = JSON.parse(BRANCALONIA)
+  inventato.variant = 'gioco-che-non-esiste'
+  await importa(page, JSON.stringify(inventato))
+
+  await expect(page.locator('body')).toContainText(/gioco-che-non-esiste/)
   await expect(page.locator('#principale')).not.toContainText('Menego')   // niente import a metà
   expect(errori).toEqual([])
 })

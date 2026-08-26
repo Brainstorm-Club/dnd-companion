@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   fromJson, fromShareUrl, decodeShareData,
-  COMPACT_KEYS, MAX_INPUT_BYTES, MAX_SHARE_DATA_LENGTH,
+  COMPACT_KEYS, MAX_INPUT_BYTES, MAX_SHARE_DATA_LENGTH, MAX_DECOMPRESSED_BYTES,
 } from '../../src/domain/importer.js'
 
 const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
@@ -87,9 +87,9 @@ describe('lotto B — import', () => {
     expect(b.ok && b.entry.meta.edition).toBe('2014')
   })
 
-  it('importa dal formato compatto di un link di condivisione', () => {
+  it('importa dal formato compatto di un link di condivisione', async () => {
     const originale = JSON.parse(fixture('dnd2024-mago-5'))
-    const r = fromShareUrl(`https://esempio.test/dnd-character-builder/share/${linkDi(originale)}`, registro)
+    const r = await fromShareUrl(`https://esempio.test/dnd-character-builder/share/${linkDi(originale)}`, registro)
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.entry.meta.name).toBe('Vittoria Sacchi')
@@ -99,20 +99,20 @@ describe('lotto B — import', () => {
     expect(r.entry.snapshot['level']).toBe(5)
   })
 
-  it('accetta anche il solo blocco codificato, incollato senza il link intorno', () => {
+  it('accetta anche il solo blocco codificato, incollato senza il link intorno', async () => {
     const originale = JSON.parse(fixture('dnd5e-guerriero-3'))
-    const r = fromShareUrl(linkDi(originale), registro)
+    const r = await fromShareUrl(linkDi(originale), registro)
     expect(r.ok && r.entry.meta.name).toBe('Baldo di Faenza')
   })
 
-  it('rifiuta un link più lungo di MAX_SHARE_DATA_LENGTH', () => {
+  it('rifiuta un link più lungo di MAX_SHARE_DATA_LENGTH', async () => {
     const lungo = 'A'.repeat(MAX_SHARE_DATA_LENGTH + 1)
-    const r = fromShareUrl(`https://esempio.test/share/${lungo}`, registro)
+    const r = await fromShareUrl(`https://esempio.test/share/${lungo}`, registro)
     expect(r.ok).toBe(false)
     if (r.ok) return
     expect(r.reason).toBe('troppo-grande')
     // e la funzione di basso livello si rifiuta da sé, non solo per gentilezza
-    expect(() => decodeShareData(lungo)).toThrow()
+    await expect(decodeShareData(lungo)).rejects.toThrow()
   })
 
   it('rifiuta un testo più grande di MAX_INPUT_BYTES', () => {
@@ -122,12 +122,12 @@ describe('lotto B — import', () => {
     if (!r.ok) expect(r.reason).toBe('troppo-grande')
   })
 
-  it('scarta le chiavi che non sono nella whitelist', () => {
+  it('scarta le chiavi che non sono nella whitelist', async () => {
     // JSON scritto a mano: `__proto__` in un letterale JS cambierebbe il
     // prototipo invece di diventare una chiave, e il caso da provare è l'altro.
     const veleno = '{"n":"Prova","lv":3,"v":"dnd5e","zz":"chiave che non esiste",'
       + '"__proto__":{"inquinato":true},"constructor":"no"}'
-    const espanso = decodeShareData(base64url(veleno))
+    const espanso = await decodeShareData(base64url(veleno))
     expect(espanso['name']).toBe('Prova')
     expect(espanso['level']).toBe(3)
     expect(Object.keys(espanso).sort()).toEqual(['level', 'name', 'variant'])
@@ -150,13 +150,20 @@ describe('lotto B — import', () => {
     if (!senzaVariante.ok) expect(senzaVariante.reason).toBe('non-e-un-personaggio')
   })
 
-  it('rifiuta Brancalonia con il messaggio del registro, non con un errore', () => {
+  it('accoglie Brancalonia, che adesso ha il suo pacchetto', () => {
     const r = fromJson(fixture('brancalonia-rifiuto'), registro, 'file')
+    if (!r.ok) throw new Error(r.message)
+    expect(r.entry.meta.packId).toBe('brancalonia')
+  })
+
+  it('rifiuta una variante senza pacchetto con il messaggio del registro, non con un errore', () => {
+    const inventato = JSON.parse(fixture('brancalonia-rifiuto'))
+    inventato.variant = 'gioco-che-non-esiste'
+    const r = fromJson(JSON.stringify(inventato), registro, 'file')
     expect(r.ok).toBe(false)
     if (r.ok) return
     expect(r.reason).toBe('variante-non-supportata')
-    expect(r.message).toContain('Brancalonia')
-    expect(r.message).toContain('prossima versione')
+    expect(r.message).toContain('gioco-che-non-esiste')
     expect(r.message).not.toMatch(/errore|error/i)
     // niente import a metà: non esiste nessuna voce da salvare
     expect(/** @type {any} */ (r).entry).toBeUndefined()
@@ -208,5 +215,153 @@ describe('lotto B — import', () => {
     // silenziosamente. Nel builder c'è lo stesso test, per lo stesso motivo.
     const brevi = Object.values(COMPACT_KEYS)
     expect(new Set(brevi).size).toBe(brevi.length)
+  })
+})
+
+/**
+ * Il formato compresso del builder (`~` + base64url di deflate-raw), pensato
+ * per stare dentro un QR code.
+ *
+ * Le due fixture in `tests/fixtures/qr/` sono complementari: `lucian.testo.txt`
+ * è un link vero, letto da un QR generato dal builder, e contiene un
+ * personaggio di una variante che l'app non copre — quindi prova che si arrivi
+ * fino al rifiuto per variante invece di rompersi prima, sulla decompressione.
+ * `link-compresso-2024.txt` lo genera `scripts/genera-link-compresso.mjs` ed è
+ * il caso che arriva in fondo.
+ */
+describe('link di condivisione compressi', () => {
+  /** @param {string} nome */
+  function linkQr(nome) {
+    return readFileSync(`tests/fixtures/qr/${nome}.txt`, 'utf8').trim()
+  }
+
+  /** Comprime come `encodeCharacterCompressed()` del builder. @param {string} json */
+  async function comprimi(json) {
+    const cs = new CompressionStream('deflate-raw')
+    const w = cs.writable.getWriter()
+    void w.write(new TextEncoder().encode(json))
+    void w.close()
+    const bytes = new Uint8Array(await new Response(cs.readable).arrayBuffer())
+    let bin = ''
+    for (const b of bytes) bin += String.fromCharCode(b)
+    return '~' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  }
+
+  it('il formato vecchio, non compresso, continua a funzionare', async () => {
+    const originale = JSON.parse(fixture('reale-dnd2024-guerriero-3'))
+    const payload = linkDi(originale)
+    expect(payload.startsWith('~')).toBe(false)
+    const r = await fromShareUrl(`https://esempio.test/dnd-character-builder/share/${payload}`, registro)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.entry.meta.name).toBe('Theron')
+    expect(r.entry.meta.edition).toBe('2024')
+  })
+
+  it('importa un link compresso di un personaggio coperto', async () => {
+    const link = linkQr('link-compresso-2024')
+    expect(link).toContain('/share/~')
+    const r = await fromShareUrl(link, registro)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.entry.meta.name).toBe('Theron')
+    expect(r.entry.meta.edition).toBe('2024')
+    expect(r.entry.meta.source).toBe('link')
+    expect(r.entry.snapshot['level']).toBe(3)
+    expect(r.entry.snapshot['abilityScores']).toEqual(
+      JSON.parse(fixture('reale-dnd2024-guerriero-3')).abilityScores
+    )
+  })
+
+  it('compresso e non compresso danno lo stesso personaggio', async () => {
+    const originale = JSON.parse(fixture('reale-dnd2024-guerriero-3'))
+    const chiaro = await fromShareUrl(linkDi(originale), registro)
+    const compresso = await fromShareUrl(linkQr('link-compresso-2024'), registro)
+    expect(chiaro.ok && compresso.ok).toBe(true)
+    if (!chiaro.ok || !compresso.ok) return
+    // Meno l'`id`: il formato compatto non lo trasporta, e l'import ne conia
+    // uno nuovo ogni volta — è l'unico campo che deve differire.
+    const { id: _a, ...senzaIdChiaro } = chiaro.entry.snapshot
+    const { id: _b, ...senzaIdCompresso } = compresso.entry.snapshot
+    expect(senzaIdCompresso).toEqual(senzaIdChiaro)
+  })
+
+  it('accetta il payload compresso anche incollato senza il link intorno', async () => {
+    const payload = linkQr('link-compresso-2024').split('/share/')[1]
+    const r = await fromShareUrl(payload, registro)
+    expect(r.ok && r.entry.meta.name).toBe('Theron')
+  })
+
+  it('il QR vero di Apocalisse arriva fino in fondo', async () => {
+    // Il caso che conta: la decompressione riesce e il personaggio entra. Prima
+    // che Apocalisse avesse il suo pacchetto, questo stesso test verificava che
+    // il no arrivasse da `packs.js` invece che da un link creduto spezzato.
+    const r = await fromShareUrl(linkQr('lucian.testo'), registro)
+    if (!r.ok) throw new Error(r.message)
+    expect(r.entry.meta.name).toBe('Lucian')
+    expect(r.entry.meta.packId).toBe('apocalisse')
+    expect(r.entry.meta.source).toBe('link')
+  })
+
+  it('rifiuta un payload che gonfia oltre il tetto sui byte decompressi', async () => {
+    // Una zip bomb: poche centinaia di byte codificati, molti più dell'intero
+    // tetto una volta aperti.
+    const gonfio = await comprimi(JSON.stringify({ n: 'a'.repeat(MAX_DECOMPRESSED_BYTES + 1_000) }))
+    expect(gonfio.length).toBeLessThan(MAX_SHARE_DATA_LENGTH)
+    const r = await fromShareUrl(`https://esempio.test/share/${gonfio}`, registro)
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.reason).toBe('troppo-grande')
+    expect(r.message).toMatch(/[a-zà-ù]/)
+    expect(r.message).not.toMatch(/error/i)
+  })
+
+  it('un payload compresso corrotto dà un messaggio, non un\'eccezione', async () => {
+    const sano = linkQr('link-compresso-2024').split('/share/')[1]
+    // Si taglia a metà, come farebbe un link spezzato da un client di posta.
+    const troncato = sano.slice(0, Math.floor(sano.length / 2))
+    const r = await fromShareUrl(troncato, registro)
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.reason).toBe('json-non-valido')
+    expect(r.message).toContain('spezzato')
+
+    // e anche il marcatore da solo, o seguito da spazzatura
+    for (const rotto of ['~', '~zzzz', '~' + sano.slice(4)]) {
+      const x = await fromShareUrl(rotto, registro)
+      expect(x.ok, rotto).toBe(false)
+      if (!x.ok) expect(x.message).toMatch(/[a-zà-ù]/)
+    }
+  })
+
+  it('dove il browser non sa decomprimere, il messaggio lo dice', async () => {
+    const originale = globalThis.DecompressionStream
+    // @ts-ignore — si finge un Safari sotto la 16.4
+    delete globalThis.DecompressionStream
+    try {
+      const r = await fromShareUrl(linkQr('link-compresso-2024'), registro)
+      expect(r.ok).toBe(false)
+      if (r.ok) return
+      expect(r.reason).toBe('link-non-decomprimibile')
+      expect(r.message).toMatch(/browser/i)
+      expect(r.message).toMatch(/JSON/)
+      expect(r.message).not.toMatch(/error|Decompression/i)
+    } finally {
+      globalThis.DecompressionStream = originale
+    }
+  })
+
+  it('senza decompressore i link vecchi funzionano lo stesso', async () => {
+    // La decompressione manca solo alla strada compressa: un link di prima non
+    // deve smettere di funzionare su un browser vecchio.
+    const originale = globalThis.DecompressionStream
+    // @ts-ignore
+    delete globalThis.DecompressionStream
+    try {
+      const r = await fromShareUrl(linkDi(JSON.parse(fixture('dnd5e-guerriero-3'))), registro)
+      expect(r.ok && r.entry.meta.name).toBe('Baldo di Faenza')
+    } finally {
+      globalThis.DecompressionStream = originale
+    }
   })
 })

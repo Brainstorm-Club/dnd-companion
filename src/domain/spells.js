@@ -39,11 +39,63 @@ export const MAX_LOADED_LEVELS = 2
 /** @typedef {(url: string) => Promise<Response>} Fetcher */
 
 /**
- * Gli indici, uno per edizione, e non se ne vanno più: sono ~13 KB gzip in due
+ * Da dove si legge il compendio: un'edizione, oppure una pila di cartelle da
+ * sovrapporre — la prima è quella che vince.
+ *
+ * **Perché l'edizione resta la chiave, e la variante si sovrappone.**
+ * L'edizione è l'asse su cui l'utente si muove davvero: il selettore del
+ * compendio, `counterpart`, `resolveEdition`, l'etichetta accanto a ogni testo
+ * e l'attribuzione CC-BY sono tutti «per edizione». Un pacchetto di variante
+ * non è un compendio *alternativo*: dichiarando `base: srd-2014` dice
+ * «l'SRD 5.1 **più** i miei», ed è esattamente una sovrapposizione. Re-indicizzare
+ * tutto per pacchetto avrebbe reso l'«altra edizione» una domanda senza
+ * risposta e avrebbe costretto ogni vista a portarsi dietro un id di pacchetto
+ * che spesso non ha — il compendio si apre anche senza nessun personaggio.
+ *
+ * Con una cartella sola tutto resta com'era, chiave di cache compresa: il caso
+ * comune non paga niente per una possibilità che non usa.
+ *
+ * @typedef {{edizione: Edition, cartelle: string[]}} Fonte
+ */
+
+/** @typedef {Edition|Fonte} DaDove */
+
+/** La cartella di serie di un'edizione. @param {Edition} ed @returns {string} */
+function cartellaDi(ed) { return `data/spells/${ed}/` }
+
+/**
+ * @param {DaDove} d
+ * @returns {{edizione: Edition, cartelle: string[], chiave: string}}
+ */
+function normalizza(d) {
+  const f = typeof d === 'string' ? { edizione: d, cartelle: [cartellaDi(d)] } : d
+  const cartelle = f.cartelle.length ? f.cartelle : [cartellaDi(f.edizione)]
+  // La chiave identifica *l'insieme di cartelle*; quando è quello di serie il
+  // nome corto è l'edizione, così le cache restano quelle di prima e chi passa
+  // l'edizione e chi passa il pacchetto SRD non si ritrovano due indici uguali.
+  const sola = cartelle.length === 1 ? cartelle[0] : null
+  const chiave = sola && sola === cartellaDi(f.edizione) ? f.edizione : cartelle.join('|')
+  return { edizione: f.edizione, cartelle, chiave }
+}
+
+/** L'ordine dell'indice, lo stesso che usa il generatore: livello, poi nome. */
+const ORDINE = /** @param {SpellIndexEntry} a @param {SpellIndexEntry} b */
+  (a, b) => a.livello - b.livello || a.nome.localeCompare(b.nome, 'it')
+
+/**
+ * Gli indici, uno per fonte, e non se ne vanno più: sono ~13 KB gzip in due
  * e servono a ogni elenco, filtro e confronto.
- * @type {Map<Edition, SpellIndexEntry[]>}
+ * @type {Map<string, SpellIndexEntry[]>}
  */
 const indici = new Map()
+
+/**
+ * Da quale cartella viene ogni incantesimo dell'indice fuso. Serve a `loadLevel`
+ * per non chiedere `l7.json` a una variante che di incantesimi di 7° non ne ha:
+ * sarebbe un 404 per livello, e offline un 404 non si distingue da un guasto.
+ * @type {Map<string, Map<string, string>>}
+ */
+const origini = new Map()
 
 /**
  * I blocchi di testo, al massimo `MAX_LOADED_LEVELS` insieme, i più vecchi
@@ -52,7 +104,7 @@ const indici = new Map()
  */
 const blocchi = new Map()
 
-/** Le tabelle id-inglese → id-italiano, una per edizione. @type {Map<Edition, Record<string, string>>} */
+/** Le tabelle id-inglese → id-italiano, una per fonte. @type {Map<string, Record<string, string>>} */
 const ponti = new Map()
 
 /** @type {Map<string, Promise<any>>} */
@@ -75,19 +127,63 @@ function leggi(url, fetcher) {
   return p
 }
 
-/** @param {Edition} ed @param {Fetcher} [fetcher] @returns {Promise<SpellIndexEntry[]>} */
-export async function loadIndex(ed, fetcher = fetch) {
-  const gia = indici.get(ed)
+/**
+ * Un file che una sovrapposizione può legittimamente non avere.
+ *
+ * Un pacchetto di variante dichiara la sua cartella di compendio anche quando
+ * di incantesimi non ne aggiunge (o non ne aggiunge ancora): far cadere l'intero
+ * compendio perché manca il file di una variante vorrebbe dire lasciare senza
+ * incantesimi anche l'SRD che c'è. La cartella di base, invece, resta severa —
+ * lì un file che non si legge è un guasto, e va detto.
+ * @param {string} url @param {Fetcher} fetcher @returns {Promise<any>}
+ */
+function leggiSePresente(url, fetcher) {
+  return leggi(url, fetcher).catch(() => null)
+}
+
+/** @param {DaDove} da @param {Fetcher} [fetcher] @returns {Promise<SpellIndexEntry[]>} */
+export async function loadIndex(da, fetcher = fetch) {
+  const f = normalizza(da)
+  const gia = indici.get(f.chiave)
   if (gia) return gia
-  const dati = /** @type {SpellIndexEntry[]} */ (await leggi(`data/spells/${ed}/index.json`, fetcher))
-  indici.set(ed, dati)
+  if (f.cartelle.length === 1) {
+    const dati = /** @type {SpellIndexEntry[]} */ (await leggi(`${f.cartelle[0]}index.json`, fetcher))
+    indici.set(f.chiave, dati)
+    return dati
+  }
+
+  const parti = await Promise.all(f.cartelle.map((c, i) => i === f.cartelle.length - 1
+    ? leggi(`${c}index.json`, fetcher)
+    : leggiSePresente(`${c}index.json`, fetcher)))
+
+  // Dalla radice verso il figlio, così l'ultimo che scrive è quello che vince.
+  // Una voce d'indice si sostituisce intera e non si fonde: è un record piatto
+  // di undici campi, e una voce «a metà» — un livello senza scuola, delle classi
+  // senza nome — non è una cosa che il compendio sappia mostrare.
+  /** @type {Map<string, SpellIndexEntry>} */
+  const per = new Map()
+  /** @type {Map<string, string>} */
+  const org = new Map()
+  for (let i = f.cartelle.length - 1; i >= 0; i--) {
+    const cartella = f.cartelle[i] ?? ''
+    for (const voce of /** @type {SpellIndexEntry[]} */ (parti[i] ?? [])) {
+      per.set(voce.id, voce)
+      org.set(voce.id, cartella)
+    }
+  }
+  // Riordinare serve: l'elenco si raggruppa per livello, e degli incantesimi
+  // accodati in fondo spezzerebbero i gruppi.
+  const dati = [...per.values()].sort(ORDINE)
+  indici.set(f.chiave, dati)
+  origini.set(f.chiave, org)
   return dati
 }
 
-/** @param {Edition} ed @param {number} livello @param {Fetcher} [fetcher] @returns {Promise<Spell[]>} */
-export async function loadLevel(ed, livello, fetcher = fetch) {
+/** @param {DaDove} da @param {number} livello @param {Fetcher} [fetcher] @returns {Promise<Spell[]>} */
+export async function loadLevel(da, livello, fetcher = fetch) {
   if (!Number.isInteger(livello) || livello < 0 || livello > 9) throw new Error(`livello fuori scala: ${livello}`)
-  const chiave = `${ed}:${livello}`
+  const f = normalizza(da)
+  const chiave = `${f.chiave}:${livello}`
   const gia = blocchi.get(chiave)
   if (gia) {
     // Riaccodare tiene in vita quello appena usato: la mappa è la coda LRU.
@@ -95,7 +191,9 @@ export async function loadLevel(ed, livello, fetcher = fetch) {
     blocchi.set(chiave, gia)
     return gia
   }
-  const dati = /** @type {Spell[]} */ (await leggi(`data/spells/${ed}/l${livello}.json`, fetcher))
+  const dati = f.cartelle.length === 1
+    ? /** @type {Spell[]} */ (await leggi(`${f.cartelle[0]}l${livello}.json`, fetcher))
+    : await bloccoSovrapposto(f, livello, fetcher)
   blocchi.set(chiave, dati)
   while (blocchi.size > MAX_LOADED_LEVELS) {
     const piuVecchio = blocchi.keys().next().value
@@ -105,14 +203,37 @@ export async function loadLevel(ed, livello, fetcher = fetch) {
   return dati
 }
 
-/** @param {Edition} ed @param {string} id @param {Fetcher} [fetcher] @returns {Promise<Spell|null>} */
-export async function getSpell(ed, id, fetcher = fetch) {
-  const indice = await loadIndex(ed, fetcher)
+/**
+ * Il blocco di un livello quando le cartelle sono più d'una.
+ * @param {{edizione: Edition, cartelle: string[], chiave: string}} f
+ * @param {number} livello
+ * @param {Fetcher} fetcher
+ * @returns {Promise<Spell[]>}
+ */
+async function bloccoSovrapposto(f, livello, fetcher) {
+  await loadIndex(f, fetcher)
+  const indice = indici.get(f.chiave) ?? []
+  const org = origini.get(f.chiave) ?? new Map()
+  const quali = f.cartelle.filter(c => indice.some(s => s.livello === livello && org.get(s.id) === c))
+  const parti = await Promise.all(quali.map((c, i) => i === quali.length - 1
+    ? leggi(`${c}l${livello}.json`, fetcher)
+    : leggiSePresente(`${c}l${livello}.json`, fetcher)))
+  /** @type {Map<string, Spell>} */
+  const per = new Map()
+  for (let i = quali.length - 1; i >= 0; i--) {
+    for (const s of /** @type {Spell[]} */ (parti[i] ?? [])) per.set(s.id, s)
+  }
+  return [...per.values()]
+}
+
+/** @param {DaDove} da @param {string} id @param {Fetcher} [fetcher] @returns {Promise<Spell|null>} */
+export async function getSpell(da, id, fetcher = fetch) {
+  const indice = await loadIndex(da, fetcher)
   const voce = indice.find(s => s.id === id)
   // Senza la voce d'indice non si sa quale blocco aprire, e scaricarli tutti
   // per cercare un id che non esiste sarebbe il modo peggiore di dire «non c'è».
   if (!voce) return null
-  const livello = await loadLevel(ed, voce.livello, fetcher)
+  const livello = await loadLevel(da, voce.livello, fetcher)
   return livello.find(s => s.id === id) ?? null
 }
 
@@ -120,28 +241,39 @@ export async function getSpell(ed, id, fetcher = fetch) {
  * Il ponte: il builder salva gli incantesimi come id inglesi (`fire-bolt`,
  * `2-locate-object`), il compendio è italiano. Chi non c'è non c'è: si torna
  * `null` e la scheda lo mostra col suo nome e senza testo, dicendo perché.
- * @param {Edition} ed @param {Fetcher} [fetcher] @returns {Promise<Record<string, string>>}
+ * @param {DaDove} da @param {Fetcher} [fetcher] @returns {Promise<Record<string, string>>}
  */
-export async function loadBridge(ed, fetcher = fetch) {
-  const gia = ponti.get(ed)
+export async function loadBridge(da, fetcher = fetch) {
+  const f = normalizza(da)
+  const gia = ponti.get(f.chiave)
   if (gia) return gia
-  const dati = /** @type {Record<string, string>} */ (await leggi(`data/spells/${ed}/ponte.json`, fetcher))
-  ponti.set(ed, dati)
+  if (f.cartelle.length === 1) {
+    const solo = /** @type {Record<string, string>} */ (await leggi(`${f.cartelle[0]}ponte.json`, fetcher))
+    ponti.set(f.chiave, solo)
+    return solo
+  }
+  const parti = await Promise.all(f.cartelle.map((c, i) => i === f.cartelle.length - 1
+    ? leggi(`${c}ponte.json`, fetcher)
+    : leggiSePresente(`${c}ponte.json`, fetcher)))
+  /** @type {Record<string, string>} */
+  let dati = {}
+  for (let i = f.cartelle.length - 1; i >= 0; i--) dati = { ...dati, ...(parti[i] ?? {}) }
+  ponti.set(f.chiave, dati)
   return dati
 }
 
-/** @param {Edition} ed @param {string} idBuilder @param {Fetcher} [fetcher] @returns {Promise<Spell|null>} */
-export async function getSpellByBuilderId(ed, idBuilder, fetcher = fetch) {
-  const ponte = await loadBridge(ed, fetcher)
+/** @param {DaDove} da @param {string} idBuilder @param {Fetcher} [fetcher] @returns {Promise<Spell|null>} */
+export async function getSpellByBuilderId(da, idBuilder, fetcher = fetch) {
+  const ponte = await loadBridge(da, fetcher)
   const id = ponte[idBuilder]
-  return id ? getSpell(ed, id, fetcher) : null
+  return id ? getSpell(da, id, fetcher) : null
 }
 
 /** Quali blocchi di testo sono vivi adesso. Serve ai test e a nient'altro. @returns {string[]} */
 export function _loadedLevels() { return [...blocchi.keys()] }
 
 /** Solo per i test: dimentica tutto ciò che è stato caricato. */
-export function _reset() { indici.clear(); blocchi.clear(); ponti.clear(); inCorso.clear() }
+export function _reset() { indici.clear(); blocchi.clear(); ponti.clear(); origini.clear(); inCorso.clear() }
 
 /* ── Ricerca ──────────────────────────────────────────────────────────────
    Si cerca mentre si scrive, e si scrive al tavolo con una mano sola: ogni
@@ -240,16 +372,23 @@ export function search(index, filtri) {
  * ponte fra i due, e si paga il ponte solo quando serve davvero — due
  * incantesimi su 317.
  *
- * @param {Edition} ed  l'edizione da cui si guarda
+ * Il confronto è fra **edizioni**, e resta tale anche quando si guarda da un
+ * pacchetto di variante: di qua si cerca nel compendio com'è, sovrapposizione
+ * compresa (un incantesimo della variante deve almeno trovarsi), di là c'è
+ * l'altro SRD e basta. Chiedersi quale sia «la variante dell'altra edizione»
+ * non avrebbe risposta: una variante sceglie una base, non due.
+ *
+ * @param {DaDove} da   il compendio da cui si guarda
  * @param {string} id   l'id italiano dell'incantesimo in quell'edizione
  * @param {Fetcher} [fetcher]
  * @returns {Promise<{presente: false, motivo: string} | {presente: true, spell: Spell}>}
  */
-export async function counterpart(ed, id, fetcher = fetch) {
+export async function counterpart(da, id, fetcher = fetch) {
+  const ed = normalizza(da).edizione
   const altra = otherEdition(ed)
   const laSrd = EDITION_LABELS[altra].srd
 
-  const qui = await loadIndex(ed, fetcher)
+  const qui = await loadIndex(da, fetcher)
   const voce = qui.find(s => s.id === id)
   if (!voce) return { presente: false, motivo: `«${id}» non è nel compendio dell'${EDITION_LABELS[ed].srd}.` }
   if (voce.cambiamenti.includes('assente')) return { presente: false, motivo: `Non esiste nell'${laSrd}.` }
@@ -257,7 +396,7 @@ export async function counterpart(ed, id, fetcher = fetch) {
   const la = await loadIndex(altra, fetcher)
   let idAltra = la.some(s => s.id === id) ? id : ''
   if (!idAltra) {
-    const ponteQui = await loadBridge(ed, fetcher)
+    const ponteQui = await loadBridge(da, fetcher)
     const idBuilder = Object.keys(ponteQui).find(k => ponteQui[k] === id)
     const ponteLa = idBuilder ? await loadBridge(altra, fetcher) : null
     idAltra = (idBuilder && ponteLa?.[idBuilder]) || ''
