@@ -6,30 +6,14 @@
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* In attesa che i token entrino nel design system (lotto DS). */
-  --dc-tap-min: 44px;
-  --dc-bordo-morto: 24px;   /* zona in cui non si mettono elementi interattivi */
-
-  /* Altezza della barra da pollice: un target pieno più il suo respiro. Serve
-     a due posti (padding del contenuto, quota del toast), e due posti che
-     devono restare d'accordo vogliono un nome. */
-  --dc-tabbar-h: calc(var(--dc-tap-min) + var(--bsc-space-4));
-
-  /* Margine orizzontale del contenuto: mai meno della zona morta, e di più se
-     il notch o la barra di casa se ne prendono altro. */
-  --dc-margine-i: max(var(--dc-bordo-morto), env(safe-area-inset-left, 0px));
-  --dc-margine-f: max(var(--dc-bordo-morto), env(safe-area-inset-right, 0px));
-
-  /* Gli z-index dell'app in un posto solo, finché il DS non porta i suoi.
-     Gli stessi valori che il design system usa già per appbar (50) e toast. */
-  --dc-z-tabbar: 60;
-  --dc-z-sheet: 200;
-  --dc-z-toast: 300;
+  /* Bersagli, margini di sicurezza, z-index e altezza della barra da pollice
+     stanno nel design system: li usano tutte le app del club, non solo questa.
+     Qui restano i numeri che appartengono davvero a questa app. */
 
   /* Il vassoio dei dadi. La maniglia è alta un bersaglio pieno, e quel numero
      lo sanno in due: il CSS che la disegna e la trasformazione che decide
      quanto del pannello resta fuori da chiuso. */
-  --dc-maniglia-h: var(--dc-tap-min);
+  --dc-maniglia-h: var(--bsc-tap-min);
   /* Da chiuso il vassoio non deve mangiarsi lo schermo: si apre fin qui, e da
      lì in giù scorre. */
   --dc-tray-h: 60dvh;
@@ -39,7 +23,7 @@
   /* L'appbar è alta il suo bersaglio più il padding che le dà il design system
      (--bsc-space-3 sopra e sotto). Serve solo al vassoio, per non partire da
      sotto di lei. */
-  --dc-appbar-h: calc(var(--dc-tap-min) + var(--bsc-space-5));
+  --dc-appbar-h: calc(var(--bsc-tap-min) + var(--bsc-space-5));
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────
@@ -66,12 +50,12 @@ body {
    padding inferiore tiene conto della barra *e* della safe-area, altrimenti
    l'ultima riga della scheda finisce sotto la home indicator. */
 .dc-main {
-  padding-inline-start: var(--dc-margine-i);
-  padding-inline-end: var(--dc-margine-f);
+  padding-inline-start: var(--bsc-margine-i);
+  padding-inline-end: var(--bsc-margine-f);
   padding-block-start: var(--bsc-space-4);
   /* Sotto c'è la tab bar, e sopra di lei la maniglia del vassoio: l'ultima riga
      della scheda deve restare leggibile senza spostare niente. */
-  padding-block-end: calc(var(--dc-tabbar-h) + var(--dc-maniglia-h) + var(--bsc-space-4) + env(safe-area-inset-bottom, 0px));
+  padding-block-end: calc(var(--bsc-tabbar-h) + var(--dc-maniglia-h) + var(--bsc-space-4) + env(safe-area-inset-bottom, 0px));
   max-width: var(--bsc-container);
   margin-inline: auto;
   min-width: 0;
@@ -89,8 +73,8 @@ body {
    né essere più piccoli di un polpastrello. */
 .dc-main button, .dc-main a, .dc-main input, .dc-main select, .dc-main summary {
   touch-action: manipulation;      /* toglie il ritardo del doppio tap, lo zoom resta */
-  min-height: var(--dc-tap-min);
-  min-width: var(--dc-tap-min);
+  min-height: var(--bsc-tap-min);
+  min-width: var(--bsc-tap-min);
 }
 
 /* ── Tablet e oltre: master-detail, in griglia e senza una riga di JS ──────
@@ -141,9 +125,9 @@ body {
    chiede, non si subisce a metà di un tiro. */
 .dc-aggiorna {
   position: fixed;
-  z-index: var(--dc-z-toast);
-  inset-inline: var(--dc-margine-i) var(--dc-margine-f);
-  bottom: calc(var(--dc-tabbar-h) + var(--bsc-space-3) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--bsc-z-toast);
+  inset-inline: var(--bsc-margine-i) var(--bsc-margine-f);
+  bottom: calc(var(--bsc-tabbar-h) + var(--bsc-space-3) + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -161,7 +145,7 @@ body {
 }
 
 .dc-aggiorna[hidden] { display: none; }
-.dc-aggiorna button { min-height: var(--dc-tap-min); touch-action: manipulation; }
+.dc-aggiorna button { min-height: var(--bsc-tap-min); touch-action: manipulation; }
 
 /* ── Pressione lunga ──────────────────────────────────────────────────────
    Lente d'ingrandimento e menu contestuale di iOS spenti **solo** dove una
@@ -190,8 +174,8 @@ body {
 .dc-tray {
   position: fixed;
   inset-inline: 0;
-  bottom: calc(var(--dc-tabbar-h) + env(safe-area-inset-bottom, 0px));
-  z-index: var(--dc-z-sheet);
+  bottom: calc(var(--bsc-tabbar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--bsc-z-sheet);
   display: grid;
   grid-template-rows: var(--dc-maniglia-h) minmax(0, 1fr);
   max-block-size: var(--dc-tray-h);
@@ -225,7 +209,7 @@ body {
   gap: var(--bsc-space-3);
   block-size: var(--dc-maniglia-h);
   /* Il bersaglio sta lontano dai bordi verticali: quelli non sono nostri. */
-  margin-inline: var(--dc-margine-i) var(--dc-margine-f);
+  margin-inline: var(--bsc-margine-i) var(--bsc-margine-f);
   padding: 0;
   background: none;
   color: var(--bsc-text-muted);
@@ -269,14 +253,14 @@ body {
   /* Arrivati in fondo allo storico la spinta si ferma qui, non passa alla
      pagina sotto. */
   overscroll-behavior: contain;
-  padding-inline: var(--dc-margine-i) var(--dc-margine-f);
+  padding-inline: var(--bsc-margine-i) var(--bsc-margine-f);
   padding-block: var(--bsc-space-3) var(--bsc-space-4);
   border-top: 1px solid var(--bsc-border);
 }
 
 .dc-tray .dc-dadi {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--dc-tap-min), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--bsc-tap-min), 1fr));
   gap: var(--bsc-space-2);
 }
 
@@ -300,12 +284,12 @@ body {
        margini, e quando avanza spazio si centra. Il vassoio ripercorre lo
        stesso conto, altrimenti scivola di mezzo margine. */
     inset-inline: auto calc(
-      max(0px, (100% - var(--bsc-container) - var(--dc-margine-i) - var(--dc-margine-f)) / 2)
-      + var(--dc-margine-f)
+      max(0px, (100% - var(--bsc-container) - var(--bsc-margine-i) - var(--bsc-margine-f)) / 2)
+      + var(--bsc-margine-f)
     );
     inline-size: var(--dc-tray-w);
     inset-block: calc(var(--dc-appbar-h) + var(--bsc-space-4) + env(safe-area-inset-top, 0px))
-                calc(var(--dc-tabbar-h) + var(--bsc-space-4) + env(safe-area-inset-bottom, 0px));
+                calc(var(--bsc-tabbar-h) + var(--bsc-space-4) + env(safe-area-inset-bottom, 0px));
     grid-template-rows: minmax(0, 1fr);
     max-block-size: none;
     border-radius: var(--bsc-radius-lg);
@@ -321,469 +305,13 @@ body {
   .dc-tray__corpo { border-top: 0; }
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   PONTEGGIO — da rimuovere quando il lotto DS avrà portato .bsc-tabbar nel
-   design system. Qui c'è il minimo perché la fase 0 non sia visibilmente
-   rotta: barra in basso, safe-area rispettata, niente scorrimento orizzontale
-   del corpo. Solo token, nessun valore inventato.
-   ────────────────────────────────────────────────────────────────────────── */
-.bsc-tabbar {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: var(--dc-z-tabbar);
-  display: flex;
-  gap: var(--bsc-space-1);
-  /* Anche le voci della barra stanno fuori dalla zona che il sistema si è
-     prenotato per il gesto «indietro». */
-  padding: var(--bsc-space-2) 0;
-  padding-inline-start: var(--dc-margine-i);
-  padding-inline-end: var(--dc-margine-f);
-  padding-bottom: calc(var(--bsc-space-2) + env(safe-area-inset-bottom, 0px));
-  background: color-mix(in srgb, var(--bsc-bg) 92%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--bsc-border);
-}
-
-.bsc-tabbar a {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: var(--dc-tap-min);
-  /* Le etichette sono corte, ma cinque in 375 px non concedono margini: il
-     respiro orizzontale lo dà la barra, non la singola voce. */
-  padding-inline: var(--bsc-space-1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-xs);
-  color: var(--bsc-text-muted);
-  text-decoration: none;
-  border: 0;
-  border-radius: var(--bsc-radius-sm);
-  touch-action: manipulation;
-}
-
-.bsc-tabbar a[aria-current] { color: var(--bsc-text); background: var(--bsc-surface); }
-.bsc-tabbar a:focus-visible { outline: 2px solid var(--bsc-focus); outline-offset: -2px; }
-
-/* ──────────────────────────────────────────────────────────────────────────
-   PONTEGGIO DS — classi che l'app usa e che il design system non ha ancora
-   (PIANO.md § 4.1). VANNO RIMOSSE DA QUI quando il lotto DS le porta a monte:
-   il contratto fra i lotti è il nome della classe, non questa implementazione.
-   ────────────────────────────────────────────────────────────────────────── */
-
-/* --- Varianti «app» dei componenti del sito: safe-area ------------------- */
-.bsc-safe-t { padding-top: env(safe-area-inset-top, 0px); }
-.bsc-safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
-
-.bsc-appbar--app { padding-top: env(safe-area-inset-top, 0px); }
-.bsc-appbar--app .bsc-appbar__inner {
-  padding-inline-start: var(--dc-margine-i);
-  padding-inline-end: var(--dc-margine-f);
-}
-
-/* Nel sito il toggle del tema si clicca col mouse; qui si tocca col pollice. */
-.bsc-appbar--app .bsc-theme-toggle {
-  min-inline-size: var(--dc-tap-min);
-  min-block-size: var(--dc-tap-min);
-  touch-action: manipulation;
-}
-
-/* Il toast del DS sta a 2 rem dal fondo: lì c'è la tab bar. */
-.bsc-toast--app { bottom: calc(var(--dc-tabbar-h) + var(--bsc-space-3) + env(safe-area-inset-bottom, 0px)); }
-
-.bsc-sheet--app {
-  padding-bottom: calc(var(--bsc-space-4) + env(safe-area-inset-bottom, 0px));
-  z-index: var(--dc-z-sheet);
-}
-
-/* --- .bsc-pager — lo swipe fra le sezioni, in CSS ------------------------
-   Non è codice mio: è scroll-snap. Il browser ci mette inerzia, accessibilità
-   e — la parte che conta — la precedenza col gesto di sistema. Dito dal bordo:
-   vince il sistema. Dito dentro il contenuto: vince lo scorrimento.
-   `overscroll-behavior-x: contain` impedisce che, arrivati in fondo, la spinta
-   passi al browser e diventi un «indietro». */
-.bsc-pager {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  gap: 0;                          /* pagine adiacenti: uno swipe = una sezione */
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.bsc-pager::-webkit-scrollbar { display: none; }
-
-.bsc-pager > *, .bsc-pager__page {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  min-width: 0;
-  padding-block-end: var(--bsc-space-4);
-}
-
-/* La barra delle sezioni della scheda: sei etichette non stanno in una riga da
-   375 px. Va a capo invece di scorrere — scorrendo, l'ultima sezione si
-   raggiungerebbe solo con un gesto, e le etichette ai bordi finirebbero nella
-   zona che il sistema si è prenotato. A capo non succede né l'uno né l'altro. */
-.bsc-tabs[data-sezioni] {
-  display: grid;
-  /* Tre e tre, non «quante ce ne stanno»: sei etichette spezzate in 5 + 1 si
-     leggono peggio di due righe pari. Diventano sei in fila solo quando c'è
-     davvero lo spazio — e a deciderlo è la colonna che le contiene, non il
-     viewport, perché sul tablet la scheda vive nella colonna centrale. */
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--bsc-space-1);
-  padding-bottom: var(--bsc-space-1);
-}
-
-@container vista (min-width: 34rem) {
-  .bsc-tabs[data-sezioni] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-}
-
-.bsc-tabs[data-sezioni] .bsc-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-/* L'indicatore: dove sono, e quante ne restano. Tappabile, perché nessuna
-   funzione deve dipendere da un gesto (WCAG 2.5.1). */
-.bsc-pager__punti {
-  display: flex;
-  justify-content: center;
-  gap: var(--bsc-space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bsc-pager__punto {
-  inline-size: var(--dc-tap-min);
-  block-size: var(--dc-tap-min);
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.bsc-pager__punto::before {
-  content: '';
-  inline-size: var(--bsc-space-2);
-  block-size: var(--bsc-space-2);
-  border-radius: var(--bsc-radius-pill);
-  background: var(--bsc-border);
-}
-
-.bsc-pager__punto[aria-current]::before { background: var(--bsc-primary); }
-
-/* --- .bsc-kv — riga chiave/valore, il pane e burro della scheda ---------- */
-.bsc-kv {
-  display: flex;
-  align-items: center;
-  gap: var(--bsc-space-3);
-  width: 100%;
-  min-height: var(--dc-tap-min);
-  padding: var(--bsc-space-2) 0;
-  text-align: start;
-  background: none;
-  color: inherit;
-  border: 0;
-  border-bottom: 1px solid var(--bsc-border);
-}
-
-button.bsc-kv, a.bsc-kv { cursor: pointer; text-decoration: none; touch-action: manipulation; }
-button.bsc-kv:focus-visible, a.bsc-kv:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: -2px; }
-
-.bsc-kv__label {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-family: var(--bsc-font-body);
-  font-size: var(--bsc-text-sm);
-  color: var(--bsc-text-muted);
-}
-
-.bsc-kv__value {
-  flex: 0 0 auto;
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-lg);
-  font-variant-numeric: tabular-nums;
-  color: var(--bsc-text);
-}
-
-.bsc-kv__hint {
-  flex: 0 0 auto;
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--bsc-tracking-label);
-  color: var(--bsc-text-faint);
-}
-
-/* La riga che tira: si vede che è tappabile senza doverla toccare. */
-.bsc-kv--azione .bsc-kv__value { color: var(--bsc-primary); }
-.bsc-kv--azione:active { background: var(--bsc-surface); }
-
-/* --- .bsc-meter — PF e avanzamento PX, con i suoi tre stati --------------
-   Non è una barra sottile con l'etichetta accanto: etichetta e valore stanno
-   *dentro*, e il riempimento passa dietro. Sono i punti ferita — al tavolo si
-   guardano più di ogni altra cosa, e devono leggersi in un colpo d'occhio. */
-.bsc-meter {
-  position: relative;
-  isolation: isolate;              /* così il riempimento sta dietro al testo, non sotto lo sfondo */
-  display: flex;
-  align-items: center;
-  gap: var(--bsc-space-3);
-  min-height: var(--dc-tap-min);
-  padding: var(--bsc-space-2) var(--bsc-space-3);
-  background: var(--bsc-surface-2);
-  border-radius: var(--bsc-radius-md);
-  overflow: hidden;
-}
-
-/* `--bsc-meter-quota` è una frazione fra 0 e 1 (è così che la scrive la vista
-   scheda), non una percentuale. Il colore la segue con continuità: verde a
-   pieni punti ferita, rosso quando ne restano pochi — senza che chi disegna la
-   riga debba scegliere una soglia. Le classi `--ferito` e `--critico` restano
-   per chi una soglia ce l'ha davvero. */
-.bsc-meter__fill {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  z-index: -1;
-  inline-size: calc(var(--bsc-meter-quota, 1) * 100%);
-  background: color-mix(in oklab, var(--bsc-successo) calc(var(--bsc-meter-quota, 1) * 100%), var(--bsc-errore));
-  opacity: 0.38;
-  transition: inline-size var(--bsc-dur-base) var(--bsc-ease);
-}
-
-.bsc-meter__label {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-family: var(--bsc-font-body);
-  font-size: var(--bsc-text-sm);
-  color: var(--bsc-text-muted);
-}
-
-.bsc-meter__value {
-  flex: 0 0 auto;
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-lg);
-  font-variant-numeric: tabular-nums;
-  color: var(--bsc-text);
-}
-
-.bsc-meter--ferito  .bsc-meter__fill { background: var(--bsc-attenzione); }
-.bsc-meter--critico .bsc-meter__fill { background: var(--bsc-errore); }
-
-/* --- .bsc-pips — usati/liberi, il componente più usato dell'app ----------
-   Il pallino è piccolo perché gli slot sono tanti; il bersaglio è grande
-   perché il dito è uno solo. Sono due misure diverse, e va bene così. */
-.bsc-pips {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Il pallino da leggere (uno `span`: la riga intera è il bersaglio). */
-.bsc-pips__pip {
-  flex: 0 0 auto;
-  inline-size: var(--bsc-space-4);
-  block-size: var(--bsc-space-4);
-  margin-inline-end: var(--bsc-space-1);
-  border: 2px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-pill);
-  background: var(--bsc-surface);
-}
-
-.bsc-pips__pip.is-used { background: var(--bsc-primary); border-color: var(--bsc-primary); }
-
-/* Il pallino da toccare: bersaglio pieno, pallino piccolo. Sono due misure
-   diverse — gli slot sono tanti, il dito è uno solo — e va bene così. */
-.bsc-pips button {
-  inline-size: var(--dc-tap-min);
-  block-size: var(--dc-tap-min);
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.bsc-pips button::before {
-  content: '';
-  inline-size: var(--bsc-space-5);
-  block-size: var(--bsc-space-5);
-  border: 2px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-pill);
-  background: var(--bsc-surface);
-  transition: background var(--bsc-dur-fast) var(--bsc-ease);
-}
-
-.bsc-pips button[aria-pressed="true"]::before {
-  background: var(--bsc-primary);
-  border-color: var(--bsc-primary);
-}
-
-.bsc-pips button:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: -4px; border-radius: var(--bsc-radius-sm); }
-
-/* --- .bsc-chip — condizioni attive, filtri del compendio -----------------
-   Le viste a volte combinano `.bsc-chip` con `.bsc-btn`: la parte decorativa
-   sta dietro un `:not(.bsc-btn)` per non scavalcare il bottone del design
-   system. La forma e il bersaglio invece valgono sempre. */
-.bsc-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bsc-space-2);
-  min-height: var(--dc-tap-min);
-  padding-inline: var(--bsc-space-4);
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-sm);
-  text-decoration: none;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.bsc-chip:not(.bsc-btn) {
-  background: var(--bsc-surface);
-  color: var(--bsc-text-muted);
-  border: 1px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-pill);
-}
-
-.bsc-chip--on, .bsc-chip[aria-pressed="true"] {
-  background: var(--bsc-primary);
-  color: var(--bsc-on-primary);
-  border-color: var(--bsc-primary);
-}
-
-.bsc-chip:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: 2px; }
-
-/* --- .bsc-die e .bsc-roll — specifici dei GDR, ma il club fa solo quelli -- */
-.bsc-die {
-  display: inline-grid;
-  place-items: center;
-  min-inline-size: var(--dc-tap-min);
-  min-block-size: var(--dc-tap-min);
-  font-family: var(--bsc-font-display);
-  font-size: var(--bsc-text-base);
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.bsc-die:not(.bsc-btn) {
-  background: var(--bsc-surface);
-  color: var(--bsc-text);
-  border: 2px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-md);
-}
-
-.bsc-die[aria-pressed="true"], .bsc-die.is-active { border-color: var(--bsc-primary); }
-.bsc-die:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: 2px; }
-
-.bsc-roll {
-  display: grid;
-  gap: var(--bsc-space-2);
-  padding: var(--bsc-space-4);
-  background: var(--bsc-surface);
-  border: 1px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-lg);
-}
-
-.bsc-roll .bsc-display { font-variant-numeric: tabular-nums; margin: 0; }
-
 /* Un gruppo di dadi del tiro: le facce sopra, la formula sotto. */
 .dc-gruppo { display: grid; gap: var(--bsc-space-1); }
 .dc-gruppo .bsc-code { margin: 0; }
 
-/* Gli scartati si mostrano, non si nascondono: al tavolo il dado scartato si
-   vede sul feltro. */
-.bsc-pill.is-scartato { color: var(--bsc-text-faint); text-decoration: line-through; }
-
 /* Le condizioni attive: chip che vanno a capo, non una riga che sfora. */
 .dc-condizioni { display: flex; flex-wrap: wrap; gap: var(--bsc-space-2); }
 
-/* --- .bsc-numpad — cifre grandi, si digita al buio ----------------------- */
-.bsc-numpad {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(var(--dc-tap-min), 1fr));
-  gap: var(--bsc-space-2);
-}
-
-.bsc-numpad button {
-  min-block-size: var(--bsc-space-7);
-  min-inline-size: var(--dc-tap-min);
-  background: var(--bsc-surface);
-  color: var(--bsc-text);
-  border: 1px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-md);
-  font-family: var(--bsc-font-display);
-  font-size: var(--bsc-text-xl);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.bsc-numpad button:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: -2px; }
-
-/* --- .bsc-stepper — monete, PX rapidi, contatori ------------------------- */
-.bsc-stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--bsc-space-1);
-}
-
-.bsc-stepper button {
-  inline-size: var(--dc-tap-min);
-  block-size: var(--dc-tap-min);
-  display: grid;
-  place-items: center;
-  background: var(--bsc-surface);
-  color: var(--bsc-text);
-  border: 1px solid var(--bsc-border);
-  border-radius: var(--bsc-radius-md);
-  font-family: var(--bsc-font-display);
-  font-size: var(--bsc-text-lg);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.bsc-stepper button:focus-visible { outline: 3px solid var(--bsc-focus); outline-offset: -2px; }
-
-.bsc-stepper__v {
-  min-inline-size: var(--bsc-space-7);
-  text-align: center;
-  font-family: var(--bsc-font-mono);
-  font-size: var(--bsc-text-lg);
-  font-variant-numeric: tabular-nums;
-}
 
 /* ── Movimento ridotto ────────────────────────────────────────────────────
    Il design system azzera già le durate; qui resta lo scorrimento, che è
@@ -891,7 +419,7 @@ a.bsc-wordmark:focus-visible {
 }
 
 .dc-aggiungi .bsc-field { flex: 1 1 auto; min-width: 0; }
-.dc-aggiungi .bsc-btn { flex: 0 0 auto; min-width: var(--dc-tap-min); }
+.dc-aggiungi .bsc-btn { flex: 0 0 auto; min-width: var(--bsc-tap-min); }
 
 /* L'app bar è appiccicata in cima: senza questo, ciò a cui si scorre finisce
    sotto di lei — e un bottone coperto non si può premere, né a mano né in un
@@ -900,7 +428,7 @@ a.bsc-wordmark:focus-visible {
 .dc-vista .bsc-field,
 .dc-vista button {
   scroll-margin-block-start: calc(var(--dc-appbar-h, 4rem) + var(--bsc-space-3));
-  scroll-margin-block-end: calc(var(--dc-tabbar-h, 4rem) + var(--bsc-space-3));
+  scroll-margin-block-end: calc(var(--bsc-tabbar-h, 4rem) + var(--bsc-space-3));
 }
 
 /* Una riga di incantesimo: nome, livello, e il bottone per segnarne l'uso.
@@ -955,23 +483,15 @@ ul.dc-elenco { list-style: none; margin: 0; padding: 0; }
 ul.dc-elenco > li { min-width: 0; }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Contrasto del modificatore e dei valori d'azione.
+   Contrasto del modificatore.
 
    `.bsc-stat__mod` del design system usa `--bsc-rosso-400`, che su quella
-   superficie **non raggiunge l'AA in nessuno dei due temi**: misurato 4,44 su
-   carbone e 3,63 su carta, contro il 4,5 richiesto per il testo normale. Non è
-   un caso limite: axe lo segnala come «serious» su ogni scheda.
-
-   Fra i token disponibili gli unici che passano su entrambi i temi sono
-   `--bsc-text` (15,17 / 17,74) e `--bsc-text-muted` (6,91 / 7,49). Si usa il
-   secondo: il modificatore resta distinguibile per corpo e posizione, che è
-   come lo si legge su una scheda di carta.
-
-   Da portare a monte: al design system serve un accento che tenga l'AA, e
-   `--bsc-rosso-400` non è quello. Qui non si può correggere, perché la regola
-   è che l'esistente non si tocca.
+   superficie non raggiunge l'AA: axe lo segnalava come «serious» su ogni
+   scheda. Per mesi qui c'è stato il grigio, che passava ma buttava via il
+   colore; adesso il design system ha `--bsc-accento`, che è rosso **e**
+   leggibile su tutti e tre i fondi di entrambi i temi.
    ────────────────────────────────────────────────────────────────────────── */
-.bsc-stat__mod { color: var(--bsc-text-muted); }
+.bsc-stat__mod { color: var(--bsc-accento); }
 .dc-vista .bsc-kv--azione .bsc-kv__value { color: var(--bsc-text); }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -993,7 +513,7 @@ ul.dc-elenco > li { min-width: 0; }
   color: inherit;
   text-decoration: none;
   /* tutta la testa è il collegamento: il bersaglio è grande quanto serve */
-  min-height: var(--dc-tap-min);
+  min-height: var(--bsc-tap-min);
 }
 
 .dc-pg__testa:focus-visible {
@@ -1076,7 +596,7 @@ ul.dc-elenco > li { min-width: 0; }
    finisce sotto la presa — che è esattamente dove si tocca. */
 .dc-main {
   padding-block-end: calc(
-    var(--dc-tabbar-h, 4rem) + var(--dc-maniglia-h, 2.75rem) + var(--bsc-space-5)
+    var(--bsc-tabbar-h, 4rem) + var(--dc-maniglia-h, 2.75rem) + var(--bsc-space-5)
     + env(safe-area-inset-bottom, 0px)
   );
 }
@@ -1118,8 +638,8 @@ ul.dc-elenco > li { min-width: 0; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--dc-tap-min);
-  min-height: var(--dc-tap-min);
+  min-width: var(--bsc-tap-min);
+  min-height: var(--bsc-tap-min);
   color: var(--bsc-text);
   text-decoration: none;
   font-size: var(--bsc-text-lg);
@@ -1141,7 +661,7 @@ ul.dc-elenco > li { min-width: 0; }
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  min-height: var(--dc-tap-min);
+  min-height: var(--bsc-tap-min);
   font-family: var(--bsc-font-mono);
   font-size: var(--bsc-text-lg);
   font-weight: 700;
@@ -1189,7 +709,7 @@ ul.dc-elenco > li { min-width: 0; }
 
 .dc-tray__schede .bsc-tab {
   flex: 1 1 0;
-  min-height: var(--dc-tap-min);
+  min-height: var(--bsc-tap-min);
   border: 1px solid var(--bsc-border);
   border-radius: var(--bsc-radius-pill);
   background: transparent;

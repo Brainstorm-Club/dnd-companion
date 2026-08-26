@@ -33,7 +33,7 @@ export const MAX_STORICO = 30
  * blocchi e i target minimi non sono di nessun componente. Nessun valore
  * inventato: ogni misura è un token.
  */
-const TAP = 'min-width: var(--dc-tap-min); min-height: var(--dc-tap-min)'
+const TAP = 'min-width: var(--bsc-tap-min); min-height: var(--bsc-tap-min)'
 /** 24 px di `.dc-main` più 12 qui: i controlli restano fuori dalla zona morta. */
 const VISTA = 'display: grid; gap: var(--bsc-space-4); padding-inline: var(--bsc-space-3)'
 const RIGA = 'display: flex; flex-wrap: wrap; gap: var(--bsc-space-2); align-items: center'

@@ -27,6 +27,58 @@ describe('architettura', () => {
     expect(colpevoli).toEqual([])
   })
 
+  it('i fogli di stile si leggono per intero', () => {
+    // Un commento senza apertura, o una graffa in più, non danno nessun errore:
+    // il browser smette di leggere da lì in poi e il resto del foglio non
+    // esiste. È già successo traslocando i componenti nel design system, e a
+    // vederlo è stato un end-to-end che misurava dove stava la barra — non
+    // l'occhio, che su un testo orfano legge un commento come gli altri.
+    for (const f of ['app.css', 'design-system/tokens.css', 'design-system/components.css']) {
+      const css = readFileSync(f, 'utf8')
+
+      // Si scorre come farebbe il parser, invece di contare i marcatori: un
+      // «/*» dentro un commento è legittimo e ricorrente nella prosa dei
+      // commenti, e contarlo darebbe falsi allarmi. Quello che si cerca è un
+      // commento che non si chiude — o, come è successo, che si apre due volte
+      // e si mangia la regola che segue.
+      let dentro = false, apertoA = 0
+      for (let i = 0; i < css.length; i++) {
+        if (!dentro && css.startsWith('/*', i)) { dentro = true; apertoA = i; i++ }
+        else if (dentro && css.startsWith('*/', i)) { dentro = false; i++ }
+        else if (dentro && css.startsWith('/*', i)) {
+          const riga = css.slice(0, i).split('\n').length
+          expect.unreachable(`${f}:${riga}: «/*» dentro un commento — la regola che segue è testo morto`)
+        }
+      }
+      expect(dentro, `${f}: commento aperto a ${css.slice(0, apertoA).split('\n').length} e mai chiuso`).toBe(false)
+
+      let profondita = 0
+      for (const c of css.replace(/\/\*[\s\S]*?\*\//g, '')) {
+        if (c === '{') profondita++
+        else if (c === '}') profondita--
+        expect(profondita, `${f}: graffa di chiusura di troppo`).toBeGreaterThanOrEqual(0)
+      }
+      expect(profondita, `${f}: graffe non bilanciate`).toBe(0)
+    }
+  })
+
+  it('i componenti che l\'app usa stanno nel design system, non in casa', () => {
+    // La regola 4 del progetto: se una classe `.bsc-` è definita in `app.css`
+    // e non a monte, il design system ha un buco e l'app se lo sta tappando da
+    // sola — che è come si finisce con due app dello stesso club che si
+    // somigliano solo di lontano.
+    const app = readFileSync('app.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+    const ds = readFileSync('design-system/components.css', 'utf8')
+
+    // Una definizione è una regola che apre un blocco su un selettore che
+    // *comincia* con la classe: `.bsc-kv { … }`. Non lo sono le varianti
+    // (`.bsc-kv--mia`), gli stati, né i discendenti (`.bsc-tabs a`), che sono
+    // il modo legittimo con cui un'app rifinisce un componente di monte.
+    const definite = [...app.matchAll(/^(\.bsc-[a-z0-9-]+)\s*\{/gm)].map(m => m[1])
+    const orfane = [...new Set(definite)].filter(c => !ds.includes(`${c} `) && !ds.includes(`${c}{`) && !ds.includes(`${c},`))
+    expect(orfane).toEqual([])
+  })
+
   it('dom.js resta sotto le cento righe', () => {
     const righe = readFileSync('src/dom.js', 'utf8').split('\n').length
     expect(righe).toBeLessThanOrEqual(100)

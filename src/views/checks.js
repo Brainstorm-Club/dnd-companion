@@ -37,7 +37,7 @@ const CD_MAX = 99
  * lotto DS non arriva servono queste righe perché i target restino tappabili
  * e lontani dai bordi.
  */
-const TAP = 'min-width: var(--dc-tap-min); min-height: var(--dc-tap-min)'
+const TAP = 'min-width: var(--bsc-tap-min); min-height: var(--bsc-tap-min)'
 /** 16 px di `.dc-main` + 12 px qui = 28 px: fuori dalla zona morta dei 24. */
 const VISTA = 'display: grid; gap: var(--bsc-space-4); padding-inline: var(--bsc-space-3)'
 const RIGA = 'display: flex; flex-wrap: wrap; gap: var(--bsc-space-2); align-items: center'

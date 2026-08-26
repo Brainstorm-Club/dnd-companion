@@ -20,7 +20,7 @@ export const MAX_STORICO = 50
  * i target restino tappabili e lontani dai bordi. Nessun valore inventato:
  * ogni misura è un token. Quando `.bsc-die` esisterà, questo sparisce.
  */
-const TAP = 'min-width: var(--dc-tap-min); min-height: var(--dc-tap-min)'
+const TAP = 'min-width: var(--bsc-tap-min); min-height: var(--bsc-tap-min)'
 /** 16 px di `.dc-main` + 12 px qui = 28 px: fuori dalla zona morta dei 24. */
 const VISTA = 'display: grid; gap: var(--bsc-space-4); padding-inline: var(--bsc-space-3)'
 const GRIGLIA = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(4rem, 1fr)); gap: var(--bsc-space-2)'

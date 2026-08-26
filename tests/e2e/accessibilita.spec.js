@@ -38,6 +38,23 @@ async function violazioni(page) {
   }))
 }
 
+/**
+ * Aspetta che la vista ci sia davvero.
+ *
+ * «`#principale` non è vuoto» non basta: mentre la vista si carica lì dentro
+ * c'è il segnaposto «Caricamento…», che vuoto non è. Sotto carico axe partiva
+ * su quello, o peggio a metà dello scambio, e il test cadeva a giorni alterni
+ * senza che fosse cambiato niente.
+ * @param {import('@playwright/test').Page} page
+ */
+async function pronta(page) {
+  await expect(page.locator('#principale .dc-vista')).toBeVisible()
+  // figlio diretto: il segnaposto del router sta lì, mentre `.dc-avvio` dentro
+  // una vista è un'altra cosa — è il modo in cui certe schermate dicono «qui
+  // non c'è ancora niente», e resta anche a vista disegnata.
+  await expect(page.locator('#principale > .dc-avvio')).toHaveCount(0)
+}
+
 test.describe('accessibilità', () => {
   for (const [nome, rotta] of [
     ['libreria', '#/libreria'],
@@ -48,7 +65,7 @@ test.describe('accessibilità', () => {
   ]) {
     test(`${nome} non ha violazioni WCAG che una macchina sappia vedere`, async ({ page }) => {
       await page.goto(`/${rotta}`)
-      await expect(page.locator('#principale')).not.toBeEmpty()
+      await pronta(page)
       expect(await violazioni(page)).toEqual([])
     })
   }
@@ -57,7 +74,7 @@ test.describe('accessibilità', () => {
     const id = await conPersonaggio(page)
     for (const sezione of ['gioco', 'prove', 'azioni', 'magia', 'zaino', 'storia']) {
       await page.goto(`/#/scheda/${id}/${sezione}`)
-      await expect(page.locator('#principale')).not.toBeEmpty()
+      await pronta(page)
       expect(await violazioni(page), `sezione ${sezione}`).toEqual([])
     }
   })

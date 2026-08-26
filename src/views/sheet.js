@@ -408,7 +408,7 @@ function tastierino(ctx, pfMax) {
 }
 
 /** Due colonne invece di tre, senza scrivere una spaziatura a mano. */
-const DUE_COLONNE = 'grid-template-columns: repeat(2, minmax(var(--dc-tap-min), 1fr))'
+const DUE_COLONNE = 'grid-template-columns: repeat(2, minmax(var(--bsc-tap-min), 1fr))'
 
 /**
  * Una delle due righe dei tiri salvezza contro morte: tre caselle, e la terza

@@ -30,7 +30,7 @@ import { congela } from '../domain/importer.js'
 /** @typedef {import('../domain/progress.js').PianoLivello} PianoLivello */
 /** @typedef {import('../domain/character.js').Ability} Ability */
 
-const TAP = 'min-width: var(--dc-tap-min); min-height: var(--dc-tap-min)'
+const TAP = 'min-width: var(--bsc-tap-min); min-height: var(--bsc-tap-min)'
 const VISTA = 'display: grid; gap: var(--bsc-space-4); padding-inline: var(--bsc-space-3)'
 const RIGA = 'display: flex; flex-wrap: wrap; gap: var(--bsc-space-2); align-items: center'
 const COLONNA = 'display: grid; gap: var(--bsc-space-2)'
