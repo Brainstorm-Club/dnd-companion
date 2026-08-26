@@ -669,23 +669,55 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 
 ## 13. Dove siamo, e cosa resta
 
-**Fatto**, con 266 test di unità e 50 end-to-end su due viewport:
+**Fatto**, con 473 test di unità e 148 end-to-end su due viewport:
 
 | | |
 |---|---|
-| Import | file, incolla, link di condivisione; edizione dedotta; varianti non coperte rifiutate con una frase |
-| Scheda | sei sezioni in un pager a scroll-snap, valori verificati contro il builder stesso |
+| Import | file, incolla, link di condivisione (anche compressi), **QR inquadrato con la telecamera** |
+| Scheda | sette sezioni in un pager a scroll-snap, valori verificati contro il builder stesso |
 | Dadi | nove facce, gruppi indipendenti, vantaggio, storico unico condiviso con scheda, prove e vassoio |
 | Prove | abilità, tiri salvezza, contrapposti, CD col tastierino, margine dichiarato |
 | Sessione | PF, temporanei, tiri contro morte, dadi vita, slot, condizioni, riposi con annullamento |
 | Zaino | monete che si muovono, oggetti raccolti al tavolo, equipaggiamento iniziale in sola lettura |
 | PX e livello | soglie, traguardi, avanzamento guidato in sette passi, annullabile |
-| Compendio | 658 incantesimi, ricerca e filtri, selettore di edizione, «cosa cambia» |
+| Compendio | 658 incantesimi SRD più quelli delle varianti, ricerca e filtri, selettore di edizione |
+| Pacchetti | quattro: i due SRD, **Brancalonia e Apocalisse**, che ereditano dal 2014 con `base` |
 | Vassoio | maniglia trascinabile o toccabile, terza colonna fissa su tablet |
 
-**Fatto anche**: impostazioni (tema, lingua, PX, edizione, copia dei dati, crediti), copertura del dominio al
-92,55 % con soglia in CI, controllo axe su ogni vista e in entrambi i temi, end-to-end a rete spenta,
-pubblicazione su GitHub Pages e card sul sito del club.
+**Fatto anche**: impostazioni (tema, lingua, PX, edizione, copia dei dati, crediti), barra che porta il nome
+del personaggio aperto, copertura del dominio al 93,2 % con soglia in CI, controllo axe su ogni vista e in
+entrambi i temi, end-to-end a rete spenta, pubblicazione su GitHub Pages e card sul sito del club.
+
+### Il lettore di QR, e i suoi limiti
+
+Scritto qui, senza librerie, perché `BarcodeDetector` non c'è su Safari. Due metà: `qr/immagine.js`
+(fotogramma → griglia) e `qr/moduli.js` (griglia → testo, con Reed–Solomon che corregge davvero).
+
+Misurato sui due QR veri stampati dal builder — 149 e 157 moduli, versioni 33 e 35:
+
+| condizione | esito |
+|---|---|
+| a fuoco, da 3 px per modulo in su | sempre |
+| ruotato di qualunque angolo, in prospettiva | sempre |
+| sfocato | fino a σ 2 px |
+| rumore e contrasto | tiene finché il rumore sta sotto ~⅐ dello scarto bianco-nero |
+| tutti i difetti insieme | fra la metà e i due terzi dei fotogrammi |
+| fotogramma senza codice | ~5 ms, `null` |
+
+L'ultima riga è quella che conta per l'uso vero: a dieci fotogrammi al secondo, agganciare metà dei
+fotogrammi vuol dire leggere in una frazione di secondo.
+
+### I pacchetti Acheron: cosa c'è e cosa no
+
+Brancalonia e Apocalisse dichiarano `base: "srd-2014"` ed ereditano ciò che non ridefiniscono. Portano
+**nomi, struttura e numeri; nessuna descrizione**: non è materiale SRD e il permesso di pubblicare il testo
+non c'è ancora. `tests/unit/varianti-senza-testo.test.js` apre ogni file generato e fallisce se un testo
+compare — quando il permesso arriva, pubblicare dev'essere una decisione presa, non l'effetto collaterale
+di una rigenerazione.
+
+Restano perciò fuori: i testi dei privilegi, dei talenti, delle mosse da rissa, delle Virtù, dei Peccati,
+degli Spiriti dei Marchi, e il testo degli incantesimi propri. Il pacchetto dice *che cosa* esiste e *come
+si chiama*; *cosa fa* resta sul manuale, e l'app lo dichiara invece di aprire su un vuoto.
 
 **Resta aperto**, e sono decisioni di chi possiede i repo, non lavoro tecnico:
 
@@ -693,13 +725,14 @@ pubblicazione su GitHub Pages e card sul sito del club.
    aggiunte, **zero rimosse** — ma non è su GitHub. Finché non ci arriva, il submodule del companion resta sul
    commit vecchio e `app.css` tiene le due sezioni marcate `PONTEGGIO`. Appena il repo è pubblicato si sposta
    il pin e si tolgono i ponteggi: mezz'ora, con i test a fare da rete.
-2. **La nota sull'SRD**: la voce «Incapacitato» dell'SRD 5.2.1 italiano ufficiale apre dicendo «ha la condizione
-   "paralizzato"». È un errore della fonte, lasciato verbatim. Se va segnalato in app, va deciso.
-3. **La v3 dei pacchetti Acheron**, per cui l'architettura è già pronta (§ 6.4).
-4. **Un accento conforme nel design system.** `--bsc-rosso-400` non raggiunge l'AA su nessuno dei due temi
+2. **Il permesso di Acheron Games** sui testi di Brancalonia e Apocalisse. Con quello, rigenerare è un
+   comando; senza, il pacchetto resta un elenco di nomi.
+3. **Un accento conforme nel design system.** `--bsc-rosso-400` non raggiunge l'AA su nessuno dei due temi
    (4,44 su carbone, 3,63 su carta, contro 4,5): il companion lo aggira con `--bsc-text-muted`, ma la
    correzione vera è un token nuovo a monte. Il marchio resta rosso: la 1.4.3 esenta i logotipi.
-5. **Wake Lock e vibrazione**, migliorie progressive del § 5.2.1 mai implementate. Al tavolo lo schermo si
+4. **Wake Lock e vibrazione**, migliorie progressive del § 5.2.1 mai implementate. Al tavolo lo schermo si
    spegne ancora da solo.
-6. **Ri-importa sopra** (§ 5.1): aggiornare lo snapshot conservando lo stato di gioco. Oggi «duplica» azzera.
-7. **Note di sessione e usi dei privilegi**: i campi ci sono nello stato, l'interfaccia no.
+5. **Ri-importa sopra** (§ 5.1): aggiornare lo snapshot conservando lo stato di gioco. Oggi «duplica» azzera.
+6. **Note di sessione e usi dei privilegi**: i campi ci sono nello stato, l'interfaccia no.
+7. **La nota sull'SRD 5.2.1** è stata risolta: l'errore di «Incapacitato» si dichiara in app, con una spia
+   che fa sparire la nota da sé se la fonte viene corretta.
