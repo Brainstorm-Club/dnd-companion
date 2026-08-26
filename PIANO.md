@@ -669,15 +669,15 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 
 ## 13. Dove siamo, e cosa resta
 
-**Fatto**, con 473 test di unità e 148 end-to-end su due viewport:
+**Fatto**, con 524 test di unità e 160 end-to-end su due viewport:
 
 | | |
 |---|---|
-| Import | file, incolla, link di condivisione (anche compressi), **QR inquadrato con la telecamera** |
+| Import | file, incolla, link di condivisione (anche compressi), **QR inquadrato con la telecamera**, ri-import sopra |
 | Scheda | sette sezioni in un pager a scroll-snap, valori verificati contro il builder stesso |
 | Dadi | nove facce, gruppi indipendenti, vantaggio, storico unico condiviso con scheda, prove e vassoio |
 | Prove | abilità, tiri salvezza, contrapposti, CD col tastierino, margine dichiarato |
-| Sessione | PF, temporanei, tiri contro morte, dadi vita, slot, condizioni, riposi con annullamento |
+| Sessione | PF, temporanei, tiri contro morte, dadi vita, slot, condizioni, riposi, **usi dei privilegi, note** |
 | Zaino | monete che si muovono, oggetti raccolti al tavolo, equipaggiamento iniziale in sola lettura |
 | PX e livello | soglie, traguardi, avanzamento guidato in sette passi, annullabile |
 | Compendio | 658 incantesimi SRD più quelli delle varianti, ricerca e filtri, selettore di edizione |
@@ -719,20 +719,23 @@ Restano perciò fuori: i testi dei privilegi, dei talenti, delle mosse da rissa,
 degli Spiriti dei Marchi, e il testo degli incantesimi propri. Il pacchetto dice *che cosa* esiste e *come
 si chiama*; *cosa fa* resta sul manuale, e l'app lo dichiara invece di aprire su un vuoto.
 
-**Resta aperto**, e sono decisioni di chi possiede i repo, non lavoro tecnico:
+### Il guscio applicativo è salito nel design system
 
-1. **Il design system va pubblicato.** Il branch `componenti-app` è fuso in `main` in locale — 1597 righe
-   aggiunte, **zero rimosse** — ma non è su GitHub. Finché non ci arriva, il submodule del companion resta sul
-   commit vecchio e `app.css` tiene le due sezioni marcate `PONTEGGIO`. Appena il repo è pubblicato si sposta
-   il pin e si tolgono i ponteggi: mezz'ora, con i test a fare da rete.
-2. **Il permesso di Acheron Games** sui testi di Brancalonia e Apocalisse. Con quello, rigenerare è un
-   comando; senza, il pacchetto resta un elenco di nomi.
-3. **Un accento conforme nel design system.** `--bsc-rosso-400` non raggiunge l'AA su nessuno dei due temi
-   (4,44 su carbone, 3,63 su carta, contro 4,5): il companion lo aggira con `--bsc-text-muted`, ma la
-   correzione vera è un token nuovo a monte. Il marchio resta rosso: la 1.4.3 esenta i logotipi.
-4. **Wake Lock e vibrazione**, migliorie progressive del § 5.2.1 mai implementate. Al tavolo lo schermo si
-   spegne ancora da solo.
-5. **Ri-importa sopra** (§ 5.1): aggiornare lo snapshot conservando lo stato di gioco. Oggi «duplica» azzera.
-6. **Note di sessione e usi dei privilegi**: i campi ci sono nello stato, l'interfaccia no.
-7. **La nota sull'SRD 5.2.1** è stata risolta: l'errore di «Incapacitato» si dichiara in app, con una spia
-   che fa sparire la nota da sé se la fonte viene corretta.
+I 450 righe di componenti che l'app teneva in casa sotto il commento «ponteggio» — barra da pollice, foglio
+che sale dal basso, pager, righe chiave/valore, misuratori, pallini, chip, stepper, tastierino, dadi — stanno
+a monte, insieme ai sei token che usavano (bersaglio minimo, fascia morta ai bordi, margini con la safe area,
+z-index). In `app.css` restano solo le rifiniture: dove tocca ancora una classe `.bsc-` lo fa per aggiungere
+uno stato o una variante, mai per ridefinire il componente — e c'è un test che lo verifica.
+
+Con loro è arrivato `--bsc-accento`, che è rosso **e** conforme all'AA su tutti e tre i fondi di entrambi i
+temi: il modificatore di caratteristica, grigio per mesi, è tornato del colore giusto.
+
+**Resta aperto**, e non è lavoro tecnico:
+
+1. **Il permesso di Acheron Games** sui testi di Brancalonia e Apocalisse. Con quello, rigenerare è un
+   comando; senza, il pacchetto resta un elenco di nomi — corretto, utile per leggere una scheda, muto sulle
+   regole.
+
+Tutto il resto della lista è stato chiuso: la nota sull'errore dell'SRD 5.2.1, i pacchetti Acheron, il
+design system, l'accento conforme, il Wake Lock e la vibrazione, il ri-import sopra, gli usi dei privilegi e
+le note di sessione.
