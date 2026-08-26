@@ -16,6 +16,7 @@ import { EDITIONS, EDITION_LABELS } from '../domain/edition.js'
 import { STORAGE_KEY, SCHEMA_VERSION, migrate } from '../storage.js'
 import { setLang, getLang } from '../i18n.js'
 import { kv } from './parti.js'
+import { tieniAcceso, vibra } from '../schermo.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 
@@ -72,6 +73,26 @@ function disegna(contenitore, ctx) {
       (v) => { ctx.update(['settings'], (st) => { st.settings.edition = /** @type {any} */ (v) }); ridisegna() }),
     h('p', { class: 'bsc-lead' }, t('opz.edizioneNota')),
 
+    // ── Al tavolo ─────────────────────────────────────────────────────────
+    // Due comodità, non due funzioni: dove il browser non le ha, l'app è la
+    // stessa. Si mostrano comunque — spiegare cosa fanno vale più che
+    // nascondere l'interruttore a chi non ne beneficia.
+    h('h2', { class: 'bsc-label' }, t('opz.tavolo')),
+    interruttore(t('opz.schermoSveglio'), s.settings.schermoSveglio !== false, (v) => {
+      ctx.update(['settings'], (st) => { st.settings.schermoSveglio = v })
+      void tieniAcceso(v)
+      ridisegna()
+    }),
+    h('p', { class: 'bsc-lead' }, t('opz.schermoSveglioNota')),
+
+    interruttore(t('opz.vibrazione'), s.settings.vibrazione !== false, (v) => {
+      ctx.update(['settings'], (st) => { st.settings.vibrazione = v })
+      // si prova subito: un interruttore che non dimostra niente è un mistero
+      if (v) vibra('tiro', true)
+      ridisegna()
+    }),
+    h('p', { class: 'bsc-lead' }, t('opz.vibrazioneNota')),
+
     // ── Dati ──────────────────────────────────────────────────────────────
     h('h2', { class: 'bsc-label' }, t('opz.dati')),
     h('p', { class: 'bsc-lead' }, t('opz.privacy')),
@@ -120,6 +141,27 @@ function scelta(etichetta, opzioni, attuale, onScelta) {
           onclick: () => onScelta(String(valore)),
         }, String(testo))
       })),
+  ])
+}
+
+/**
+ * Un sì/no. È la `scelta` a due voci, ma con un nome che dice cosa fa e senza
+ * costringere chi legge a decidere fra due etichette per un interruttore.
+ * @param {string} etichetta
+ * @param {boolean} acceso
+ * @param {(v: boolean) => void} onCambio
+ */
+function interruttore(etichetta, acceso, onCambio) {
+  return h('div', { class: 'dc-gruppo' }, [
+    h('button', {
+      class: ['bsc-kv', 'bsc-kv--azione', 'dc-interruttore'],
+      type: 'button', role: 'switch',
+      'aria-checked': acceso ? 'true' : 'false',
+      onclick: () => onCambio(!acceso),
+    }, [
+      h('span', { class: 'bsc-kv__label' }, etichetta),
+      h('span', { class: 'bsc-kv__value' }, acceso ? '◉' : '○'),
+    ]),
   ])
 }
 

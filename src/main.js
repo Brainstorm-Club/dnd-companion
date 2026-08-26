@@ -13,6 +13,7 @@ import { VISTE } from './views/index.js'
 import { mount as montaVassoio } from './components/dice-tray.js'
 import { rollNotation } from './domain/dice.js'
 import { cryptoRng } from './domain/rng.js'
+import { tieniAcceso, seguiVisibilita, vibra } from './schermo.js'
 
 /**
  * Le cinque voci della barra da pollice. Le etichette sono corte di proposito:
@@ -41,6 +42,10 @@ async function main() {
   // Cambiare lingua non deve lasciare indietro i pezzi disegnati una volta sola.
   addEventListener('dc:lingua', () => { traduciMarcatori(); disegnaTabbar(); segnaTabAttiva() })
   ascoltaTiriRapidi()
+  // Lo schermo che non si spegne a metà turno. Se il browser non sa cosa sia,
+  // non succede niente — ed è il punto delle migliorie progressive.
+  seguiVisibilita()
+  void tieniAcceso(stato.settings.schermoSveglio !== false)
   // Sul body, non su `#principale`: il router svuota quello a ogni navigazione,
   // e il vassoio dei dadi deve restare raggiungibile da qualunque vista.
   montaVassoio(document.body, { state: stato, t, update: store.update })
@@ -80,6 +85,10 @@ function ascoltaTiriRapidi() {
       const naturale = voce.dice.find((/** @type {any} */ d) => d.faces === 20 && !d.dropped)
       const nota = naturale?.value === 20 ? ` — ${t('dadi.critico')}`
         : naturale?.value === 1 ? ` — ${t('dadi.fallimento')}` : ''
+      // Un tiro fatto senza guardare — mentre il master parla — altrimenti non
+      // dà nessun riscontro. Critico e fallimento hanno una forma propria.
+      vibra(naturale?.value === 20 ? 'critico' : naturale?.value === 1 ? 'fallimento' : 'tiro',
+        store.getState().settings.vibrazione !== false)
       mostraToast(`${dettaglio.etichetta ?? voce.source}: ${voce.total}${nota}`)
     } catch (e) {
       mostraToast(e instanceof Error ? e.message : t('comune.errore'))

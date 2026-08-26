@@ -272,28 +272,43 @@ test.describe('il cassetto di consultazione', () => {
 
 test.describe('come si legge un tiro', () => {
   /**
-   * Tira finché non esce il naturale chiesto. Il d20 prima o poi lo dà.
+   * Trucca il dado.
    *
-   * Si guarda solo a dado fermo: mentre gira mostra numeri a caso, e leggerlo
-   * lì dentro vuol dire far dipendere il test da come è carica la macchina.
+   * Prima questo test tirava finché non usciva il naturale che serviva: in
+   * media una ventina di giri, ma con la suite intera addosso ogni giro
+   * aspetta l'animazione e il test andava in timeout a giorni alterni. E non
+   * è nemmeno il modo giusto di provare una cosa: «col 20 naturale si vede il
+   * totale» è un'affermazione su un caso preciso, non su una distribuzione.
+   *
+   * `cryptoRng` campiona per rifiuto su `getRandomValues`: si serve un valore
+   * che dà sempre la faccia più alta, e il rifiuto non scatta mai perché è
+   * sotto il limite.
+   * @param {import('@playwright/test').Page} page
+   * @param {number} faccia  quale numero deve uscire, 1..n
    */
-  async function tiraFinoA(page, naturale) {
-    for (let i = 0; i < 200; i++) {
-      await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
-      await expect(page.locator('#principale .dc-dado--gira')).toHaveCount(0)
-      if (await page.locator(`#principale [data-naturale="${naturale}"]`).count()) return true
-    }
-    return false
+  async function truccaIlDado(page, faccia) {
+    await page.addInitScript((f) => {
+      const vero = crypto.getRandomValues.bind(crypto)
+      crypto.getRandomValues = (buf) => {
+        if (!(buf instanceof Uint32Array)) return vero(buf)
+        // il motore fa `x % max`: con max = 20 e faccia = 20 serve un x ≡ 19
+        buf[0] = f - 1
+        return buf
+      }
+    }, faccia)
   }
 
   test('col 20 naturale il totale si vede lo stesso, e la regola non urla', async ({ page }) => {
     // con un personaggio c'è un bonus vero: senza, 20 + 0 fa 20 e il test non
     // distinguerebbe «totale calcolato» da «mostra solo il dado»
+    await truccaIlDado(page, 20)
     await importa(page)
     await page.goto('/#/prove')
     // una CD, così c'è anche l'esito da confrontare
     for (const c of ['1', '2']) await page.locator('#principale button', { hasText: new RegExp(`^${c}$`) }).first().click()
-    expect(await tiraFinoA(page, '20')).toBe(true)
+    await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
+    await expect(page.locator('#principale .dc-dado--gira')).toHaveCount(0)
+    await expect(page.locator('#principale [data-naturale="20"]')).toHaveCount(1)
 
     const esito = page.locator('#principale [data-totale]').first()
     // il totale è calcolato: naturale più bonus, non «20 naturale» e basta

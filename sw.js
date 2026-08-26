@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v5'
+const VERSION = 'v6'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -41,7 +41,7 @@ const SHELL = [
   'src/views/index.js', 'src/views/library.js', 'src/views/sheet.js', 'src/views/dice.js',
   'src/views/checks.js', 'src/views/spells.js', 'src/views/progress.js', 'src/views/levelup.js',
   'src/views/settings.js', 'src/views/parti.js', 'src/views/features.js', 'src/views/scan.js',
-  'src/gestures.js', 'src/anima-dadi.js', 'src/components/dice-tray.js',
+  'src/gestures.js', 'src/anima-dadi.js', 'src/schermo.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js', 'src/domain/errata.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
   'src/domain/session.js', 'src/domain/spells.js', 'src/domain/privilegi.js', 'src/domain/rules.js',

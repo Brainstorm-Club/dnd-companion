@@ -84,3 +84,46 @@ test('i crediti portano al club e al builder, in una scheda nuova', async ({ pag
   const builder = page.locator('#principale a[href*="dnd-character-builder"]')
   await expect(builder).toBeVisible()
 })
+
+/**
+ * Le due comodità da tavolo. Non si può provare davvero che lo schermo resti
+ * acceso — nessun browser lo espone — ma si può provare che l'interruttore
+ * salvi la scelta, che la scelta sopravviva alla ricarica, e che su un browser
+ * senza le API non salti niente.
+ */
+test.describe('al tavolo', () => {
+  test('schermo e vibrazione si spengono, e la scelta resta', async ({ page }) => {
+    const errori = []
+    page.on('pageerror', e => errori.push(String(e)))
+
+    await page.goto('/#/impostazioni')
+    const schermo = page.getByRole('switch', { name: /schermo/i })
+    await expect(schermo).toHaveAttribute('aria-checked', 'true')   // acceso di suo
+    await schermo.click()
+    await expect(schermo).toHaveAttribute('aria-checked', 'false')
+
+    await page.reload()
+    await expect(page.getByRole('switch', { name: /schermo/i })).toHaveAttribute('aria-checked', 'false')
+    expect(errori).toEqual([])
+  })
+
+  test('senza le API del browser l’app non se ne accorge', async ({ page }) => {
+    const errori = []
+    page.on('pageerror', e => errori.push(String(e)))
+    await page.addInitScript(() => {
+      // @ts-ignore — è esattamente Safari
+      delete navigator.wakeLock
+      // @ts-ignore
+      delete navigator.vibrate
+    })
+
+    await page.goto('/#/impostazioni')
+    await page.getByRole('switch', { name: /vibra/i }).click()
+    await page.goto('/#/dadi')
+    await page.locator('#principale input[type=text]').fill('1d20')
+    await page.locator('#principale button').filter({ hasText: /^tira$/i }).click()
+    await expect(page.locator('#principale .dc-dado--gira')).toHaveCount(0, { timeout: 4000 })
+    await expect(page.locator('#principale .dc-dado').first()).toBeVisible()
+    expect(errori).toEqual([])
+  })
+})

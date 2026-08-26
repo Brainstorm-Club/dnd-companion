@@ -8,7 +8,7 @@
  */
 
 export const STORAGE_KEY = 'dndc'
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 /** Oltre questa quota si avvisa l'utente. */
 export const QUOTA_WARN = 0.8
 /** Dove finisce uno stato che non sappiamo leggere, invece che nel cestino. */
@@ -56,7 +56,7 @@ export const BACKUP_KEY = 'dndc.backup'
  * @property {number} v
  * @property {Record<string, CharacterEntry>} characters
  * @property {string|null} activeId
- * @property {{theme: string, lang: string, xpMode: 'xp'|'milestone', edition: Edition|'auto'}} settings
+ * @property {{theme: string, lang: string, xpMode: 'xp'|'milestone', edition: Edition|'auto', schermoSveglio: boolean, vibrazione: boolean}} settings
  * @property {DiceLogEntry[]} diceLog
  */
 
@@ -66,7 +66,7 @@ export function emptyState() {
     v: SCHEMA_VERSION,
     characters: {},
     activeId: null,
-    settings: { theme: 'dark', lang: 'it', xpMode: 'xp', edition: 'auto' },
+    settings: { theme: 'dark', lang: 'it', xpMode: 'xp', edition: 'auto', schermoSveglio: true, vibrazione: true },
     diceLog: [],
   }
 }
@@ -77,7 +77,16 @@ export function emptyState() {
  * uno stato salvato mesi fa deve poter arrivare a oggi senza perdere niente.
  * @type {Record<number, (s: any) => any>}
  */
-export const MIGRATIONS = {}
+export const MIGRATIONS = {
+  // v1 → v2: lo schermo che resta acceso e la vibrazione ai tiri. Nascono
+  // accese perché è quello che serve a un tavolo, e perché entrambe sono
+  // migliorie che dove non ci sono non si notano: chi non le vuole le spegne.
+  1: (/** @type {any} */ s) => ({
+    ...s,
+    v: 2,
+    settings: { schermoSveglio: true, vibrazione: true, ...s.settings },
+  }),
+}
 
 /**
  * @param {any} raw

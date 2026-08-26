@@ -690,6 +690,11 @@ ul.dc-elenco > li { min-width: 0; }
    con uno screen reader. */
 .dc-barra.is-pg .dc-marchio__coda { display: none; }
 
+/* L'interruttore delle impostazioni: il pallino sta a destra, dove sta il
+   valore in ogni altra riga chiave/valore della scheda. */
+.dc-interruttore { inline-size: 100%; }
+.dc-interruttore[aria-checked="true"] .bsc-kv__value { color: var(--bsc-accento); }
+
 /* La nota su un errore della fonte: si legge, non urla. */
 .dc-errata { margin-top: var(--bsc-space-2); font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); }
 

@@ -44,9 +44,42 @@ describe('persistenza', () => {
   })
 
   it('applica le migrazioni in catena', () => {
-    // la fase 0 non ne ha ancora: il test descrive il contratto per chi ne aggiungerà
-    expect(Object.keys(MIGRATIONS)).toEqual([])
     expect(migrate(emptyState()).v).toBe(SCHEMA_VERSION)
+    // ogni versione dalla 0 alla penultima deve sapere come arrivare alla dopo:
+    // un buco nella catena vuol dire uno stato salvato che non torna più su
+    for (let v = 1; v < SCHEMA_VERSION; v++) {
+      expect(typeof MIGRATIONS[v], `manca la migrazione da v${v}`).toBe('function')
+    }
+  })
+
+  it('uno stato della v1 arriva a oggi senza perdere niente', () => {
+    const vecchio = {
+      v: 1,
+      characters: { a: { meta: { name: 'Kyra' } } },
+      activeId: 'a',
+      settings: { theme: 'light', lang: 'en', xpMode: 'milestone', edition: '2024' },
+      diceLog: [{ total: 7 }],
+    }
+    const oggi = migrate(structuredClone(vecchio))
+    expect(oggi.v).toBe(SCHEMA_VERSION)
+    expect(oggi.characters).toEqual(vecchio.characters)
+    expect(oggi.activeId).toBe('a')
+    expect(oggi.diceLog).toEqual(vecchio.diceLog)
+    // le scelte che aveva restano sue
+    expect(oggi.settings.theme).toBe('light')
+    expect(oggi.settings.edition).toBe('2024')
+    // le nuove arrivano accese
+    expect(oggi.settings.schermoSveglio).toBe(true)
+    expect(oggi.settings.vibrazione).toBe(true)
+  })
+
+  it('e se le aveva già scelte, non gliele si sovrascrive', () => {
+    const oggi = migrate({
+      v: 1, characters: {}, activeId: null, diceLog: [],
+      settings: { theme: 'dark', lang: 'it', xpMode: 'xp', edition: 'auto', vibrazione: false },
+    })
+    expect(oggi.settings.vibrazione).toBe(false)
+    expect(oggi.settings.schermoSveglio).toBe(true)
   })
 })
 
