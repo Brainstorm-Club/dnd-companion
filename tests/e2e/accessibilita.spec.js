@@ -61,6 +61,8 @@ test.describe('accessibilità', () => {
     ['dadi', '#/dadi'],
     ['prove', '#/prove'],
     ['compendio', '#/incantesimi'],
+    ['privilegi', '#/privilegi'],
+    ['razze', '#/razze'],
     ['impostazioni', '#/impostazioni'],
   ]) {
     test(`${nome} non ha violazioni WCAG che una macchina sappia vedere`, async ({ page }) => {

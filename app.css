@@ -307,6 +307,10 @@ body {
 
 /* Un gruppo di dadi del tiro: le facce sopra, la formula sotto. */
 .dc-gruppo { display: grid; gap: var(--bsc-space-1); }
+/* `display: grid` batte il `[hidden]` dello user agent: senza questa riga un
+   gruppo nascosto — il filtro di sottorazza, dove sottorazze non ce ne sono —
+   resterebbe a occupare spazio. */
+.dc-gruppo[hidden] { display: none; }
 .dc-gruppo .bsc-code { margin: 0; }
 
 /* Le condizioni attive: chip che vanno a capo, non una riga che sfora. */
@@ -702,6 +706,10 @@ ul.dc-elenco > li { min-width: 0; }
 
 /* Le note di sessione: si scrive di fretta, quindi largo e senza fronzoli. */
 .dc-note { inline-size: 100%; resize: vertical; font-family: var(--bsc-font-body); }
+
+/* Il filtro delle sottorazze, chiuso finché non serve. */
+.dc-sotto > summary { display: inline-flex; align-items: center; min-height: var(--bsc-tap-min); }
+.dc-sotto[open] > summary { margin-block-end: var(--bsc-space-2); }
 
 /* La nota su un errore della fonte: si legge, non urla. */
 .dc-errata { margin-top: var(--bsc-space-2); font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); }

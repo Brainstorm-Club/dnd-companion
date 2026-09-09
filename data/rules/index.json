@@ -1,20 +1,20 @@
 {
   "packs": [
     {
-      "bytes": 97813,
+      "bytes": 107545,
       "edizione": "2014",
       "file": "2014.json",
       "id": "srd-2014",
       "srd": "5.1",
-      "version": "1410e7cd6cad"
+      "version": "115d4202e828"
     },
     {
-      "bytes": 135552,
+      "bytes": 148824,
       "edizione": "2024",
       "file": "2024.json",
       "id": "srd-2024",
       "srd": "5.2.1",
-      "version": "d1ebc747f789"
+      "version": "bbf7ffe83159"
     }
   ],
   "v": 1

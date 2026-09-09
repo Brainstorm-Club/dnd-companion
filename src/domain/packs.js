@@ -132,6 +132,49 @@ export function spellSources(registro, id) {
 }
 
 /**
+ * I pacchetti che si possono mettere **sopra** a quello di un personaggio.
+ *
+ * Sono le regole di casa: un tavolo che gioca Brancalonia con il suo grimorio
+ * non gioca un'altra variante, gioca la stessa con qualcosa in più. Il builder
+ * non lo sa e non può saperlo — esporta `variant: "brancalonia"` e basta —
+ * quindi questi pacchetti non dichiarano varianti e non si beccano per
+ * deduzione: si scelgono, scheda per scheda.
+ *
+ * Torna anche il pacchetto di partenza, primo, perché «nessuna regola di casa»
+ * è una scelta come le altre e deve stare nello stesso elenco.
+ *
+ * @param {PackRegistry} registro
+ * @param {string} packId  il pacchetto del personaggio, o quello scelto ora
+ * @returns {Pack[]}
+ */
+export function regoleDiCasa(registro, packId) {
+  const suo = packById(registro, packId)
+  if (!suo) return []
+  // La radice della catena: se il personaggio sta già usando delle regole di
+  // casa, le alternative sono quelle del pacchetto su cui poggia — non le sue.
+  const radice = suo.base && packById(registro, suo.base) ? catenaFino(registro, suo) : suo
+  const sopra = registro.packs.filter(p => p.base === radice.id && !p.varianti.length)
+  return sopra.length ? [radice, ...sopra] : []
+}
+
+/**
+ * Il pacchetto «vero» del personaggio: risalendo, il primo che una variante del
+ * builder sa nominare.
+ * @param {PackRegistry} registro @param {Pack} p @returns {Pack}
+ */
+function catenaFino(registro, p) {
+  let corrente = p
+  const visti = new Set([p.id])
+  while (!corrente.varianti.length && corrente.base) {
+    const su = packById(registro, corrente.base)
+    if (!su || visti.has(su.id)) break
+    visti.add(su.id)
+    corrente = su
+  }
+  return corrente
+}
+
+/**
  * Vero se il testo di questo pacchetto si può spedire con l'app.
  *
  * I due SRD sono CC-BY: il testo viaggia con l'app. Brancalonia e Apocalisse

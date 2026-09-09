@@ -8,7 +8,8 @@
  * si misura il motore, non i dati.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { packById, packChain, spellSources, testoSpedibile } from '../../src/domain/packs.js'
+import { readFileSync } from 'node:fs'
+import { packById, packChain, spellSources, testoSpedibile, regoleDiCasa } from '../../src/domain/packs.js'
 import { loadRules, rulesFor, mergeRules, _resetRules } from '../../src/domain/rules.js'
 
 /** @param {Partial<any>} p @returns {any} */
@@ -201,5 +202,47 @@ describe('il caricatore', () => {
 
   it('prima di caricare, `rulesFor` non inventa niente', () => {
     expect(rulesFor('base')).toBeNull()
+  })
+})
+
+describe('le regole di casa', () => {
+  const REG = {
+    v: 1,
+    packs: [
+      pacchetto({ id: 'srd-2014', varianti: ['dnd5e'] }),
+      pacchetto({ id: 'brancalonia', base: 'srd-2014', varianti: ['brancalonia'] }),
+      pacchetto({ id: 'grimorio', base: 'brancalonia', varianti: [] }),
+      pacchetto({ id: 'altre-regole', base: 'brancalonia', varianti: [] }),
+      pacchetto({ id: 'srd-2024', varianti: ['dnd2024'] }),
+    ],
+  }
+
+  it('sono i pacchetti che si mettono sopra al proprio, più il proprio', () => {
+    expect(regoleDiCasa(REG, 'brancalonia').map(p => p.id))
+      .toEqual(['brancalonia', 'grimorio', 'altre-regole'])
+  })
+
+  it('chi ne sta già usando una vede le stesse alternative, non le sue', () => {
+    // Altrimenti scegliendo il grimorio si perderebbe la strada per tornare
+    // indietro, o per passare all'altra.
+    expect(regoleDiCasa(REG, 'grimorio').map(p => p.id))
+      .toEqual(['brancalonia', 'grimorio', 'altre-regole'])
+  })
+
+  it('dove non ce ne sono, l\'elenco è vuoto: non si mostra una scelta di uno', () => {
+    expect(regoleDiCasa(REG, 'srd-2024')).toEqual([])
+    expect(regoleDiCasa(REG, 'srd-2014')).toEqual([])
+  })
+
+  it('un pacchetto che non esiste non fa danni', () => {
+    expect(regoleDiCasa(REG, 'mai-visto')).toEqual([])
+  })
+
+  it('e nel registro vero il grimorio si offre a chi gioca Brancalonia', () => {
+    const vero = JSON.parse(readFileSync('data/packs.json', 'utf8'))
+    expect(regoleDiCasa(vero, 'brancalonia').map((/** @type {any} */ p) => p.id))
+      .toEqual(['brancalonia', 'brancalonia-brainstorm'])
+    // ma non a chi gioca D&D: non c'entrano niente
+    expect(regoleDiCasa(vero, 'srd-2024')).toEqual([])
   })
 })

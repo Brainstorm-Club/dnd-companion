@@ -23,6 +23,11 @@
  *
  * **I due PDF degli SRD italiani**, che il builder non copre:
  *  · le **condizioni** (nessuna delle due edizioni le ha nel builder);
+ *  · il testo dei **tratti razziali** e dei **privilegi di background**: del
+ *    builder si prendono gli id e i nomi italiani, del PDF la prosa. Le due
+ *    edizioni sono fatte in modo diverso e hanno quindi due strade, come le
+ *    condizioni — il 5.1 stampa una sola sottorazza per razza, il 5.2.1 mette
+ *    lignaggi e retaggi in tabella e i privilegi di background nei talenti;
  *  · la colonna **Incantesimi preparati** del 2024 — il builder la dichiara
  *    esplicitamente mancante in `src/data/index.ts` e si rifiuta di indovinarla;
  *  · gli **slot dei semi-incantatori del 2024** — il builder riusa la tabella
@@ -454,6 +459,454 @@ function prossimaUtile(righe, da) {
   return null
 }
 
+// ── I tratti razziali e i background, dalla prosa dei due SRD ──────────────
+
+/**
+ * @typedef {object} TrattoSrd
+ * @property {string} id        id del tratto nel builder
+ * @property {string} titolo    come l'SRD scrive il nome del tratto, senza il punto
+ * @property {string} [sotto]   id della sottorazza, se il tratto è di una sottorazza
+ * @property {{salta: string, riprendi: string}} [ponte] tabella che spezza il tratto in due
+ *
+ * @typedef {object} BloccoSrd
+ * @property {string} titolo    riga isolata con cui l'SRD apre la razza
+ * @property {string} razza     id della razza nel builder
+ * @property {TrattoSrd[]} tratti
+ * @property {string[]} [stop]  altre intestazioni che chiudono un tratto (voci non nostre,
+ *                              titoli di tabella): senza di esse l'ultimo tratto del blocco
+ *                              si mangerebbe ciò che segue
+ *
+ * @typedef {object} RigaTabella
+ * @property {string} id        id del tratto nel builder
+ * @property {string} sotto     id della sottorazza
+ * @property {string} etichetta prima cella della riga, com'è scritta sulla *prima* riga fisica
+ *
+ * @typedef {object} TabellaSrd
+ * @property {string} titolo    riga isolata che precede l'intestazione della tabella
+ * @property {string[]} colonne intestazioni delle colonne di testo, in ordine
+ * @property {string} razza
+ * @property {RigaTabella[]} righe
+ *
+ * @typedef {object} SpecSrd
+ * @property {{da: string, a: string}} sezione
+ * @property {BloccoSrd[]} blocchi        nell'ordine in cui compaiono nel PDF
+ * @property {TabellaSrd[]} [tabelle]
+ * @property {Array<{background: string, privilegio: string, da: string, a: string, salta?: string[]}>} background
+ */
+
+/**
+ * Le voci di contorno che il 5.1 ripete sotto ogni razza. Non sono tratti, ma
+ * vanno dichiarate lo stesso: sono ciò che chiude il tratto che le precede.
+ * @type {string[]}
+ */
+const CONTORNO_5_1 = [
+  'Incremento dei punteggi di caratteristica', 'Allineamento', 'Età', 'Taglia', 'Velocità',
+  'Linguaggi', 'Sottorazze',
+]
+
+/**
+ * Dove sta, nei due SRD italiani, il testo di ogni tratto razziale.
+ *
+ * La mappa è esplicita e non euristica, e la ragione è che appaiare per nome
+ * produrrebbe il solo errore davvero dannoso qui — il testo giusto sotto il
+ * tratto sbagliato. Il builder e il PDF traducono lo stesso tratto in modo
+ * diverso («Retaggio fatato» contro «Eredità Fatata»), e lo stesso id compare
+ * in razze diverse con testi diversi: `extra-language` è il linguaggio in più
+ * dell'alto elfo, non quello dell'umano, e `stonecunning` nel 5.2.1 è la
+ * percezione tellurica, non la prova di Storia del 5.1.
+ *
+ * Ciò che l'SRD non pubblica resta fuori: il 5.1 stampa **una sola sottorazza
+ * per razza**, e il 5.2.1 riduce gli antenati draconici a una tabella di soli
+ * tipi di danno, che il nome del tratto già dice.
+ *
+ * @type {Record<'2014'|'2024', SpecSrd>}
+ */
+const TRATTI_SRD = {
+  '2014': {
+    sezione: { da: 'Razze', a: 'Barbaro' },
+    // Nel 5.1 ogni razza ripete le stesse voci di contorno (Allineamento, Età,
+    // Taglia…), che non sono tratti ma chiudono quello prima.
+    blocchi: [
+      { titolo: 'Elfo', razza: 'elf', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'keen-senses', titolo: 'Sensi acuti' },
+        { id: 'fey-ancestry', titolo: 'Retaggio fatato' },
+        { id: 'trance', titolo: 'Trance' },
+      ] },
+      { titolo: 'Elfo alto', razza: 'elf', stop: CONTORNO_5_1, tratti: [
+        { id: 'elf-weapon-training', titolo: 'Addestramento nelle armi elfiche', sotto: 'high-elf' },
+        { id: 'cantrip', titolo: 'Trucchetto', sotto: 'high-elf' },
+        { id: 'extra-language', titolo: 'Linguaggio extra', sotto: 'high-elf' },
+      ] },
+      { titolo: 'Halfling', razza: 'halfling', stop: CONTORNO_5_1, tratti: [
+        { id: 'lucky', titolo: 'Fortunato' },
+        { id: 'brave', titolo: 'Coraggioso' },
+        { id: 'halfling-nimbleness', titolo: 'Agilità halfling' },
+      ] },
+      { titolo: 'Piedelesto', razza: 'halfling', stop: CONTORNO_5_1, tratti: [
+        { id: 'naturally-stealthy', titolo: 'Furtività innata', sotto: 'lightfoot-halfling' },
+      ] },
+      { titolo: 'Nano', razza: 'dwarf', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'dwarven-resilience', titolo: 'Resilienza nanica' },
+        { id: 'dwarven-combat-training', titolo: 'Addestramento da combattimento nanico' },
+        { id: 'tool-proficiency', titolo: 'Competenza negli strumenti' },
+        { id: 'stonecunning', titolo: 'Esperto minatore' },
+      ] },
+      { titolo: 'Nano delle colline', razza: 'dwarf', stop: CONTORNO_5_1, tratti: [
+        { id: 'dwarven-toughness', titolo: 'Robustezza nanica', sotto: 'hill-dwarf' },
+      ] },
+      // L'umano del 5.1 non ha un tratto «Linguaggio extra»: il linguaggio in
+      // più è una riga dentro «Linguaggi», e `extra-language` resta senza testo.
+      { titolo: 'Umano', razza: 'human', stop: CONTORNO_5_1, tratti: [] },
+      { titolo: 'Dragonide', razza: 'dragonborn', stop: CONTORNO_5_1, tratti: [
+        { id: 'draconic-ancestry', titolo: 'Discendenza draconica' },
+        { id: 'breath-weapon', titolo: 'Soffio' },
+        { id: 'damage-resistance', titolo: 'Resistenza ai danni' },
+      ] },
+      { titolo: 'Gnomo', razza: 'gnome', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'gnome-cunning', titolo: 'Astuzia gnomesca' },
+      ] },
+      { titolo: 'Gnomo delle rocce', razza: 'gnome', stop: CONTORNO_5_1, tratti: [
+        { id: 'artificers-lore', titolo: "Conoscenze dell'artefice", sotto: 'rock-gnome' },
+        { id: 'tinker', titolo: 'Inventore', sotto: 'rock-gnome' },
+      ] },
+      { titolo: 'Mezzelfo', razza: 'half-elf', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'fey-ancestry', titolo: 'Retaggio fatato' },
+        { id: 'skill-versatility', titolo: 'Versatilità nelle abilità' },
+      ] },
+      { titolo: 'Mezzorco', razza: 'half-orc', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'menacing', titolo: 'Minaccioso' },
+        { id: 'relentless-endurance', titolo: 'Resistenza implacabile' },
+        { id: 'savage-attacks', titolo: 'Attacchi selvaggi' },
+      ] },
+      { titolo: 'Tiefling', razza: 'tiefling', stop: CONTORNO_5_1, tratti: [
+        { id: 'darkvision', titolo: 'Scurovisione' },
+        { id: 'hellish-resistance', titolo: 'Resistenza infernale' },
+        { id: 'infernal-legacy', titolo: 'Eredità infernale' },
+      ] },
+    ],
+    // Dei tredici background del builder l'SRD 5.1 pubblica solo l'accolito.
+    background: [
+      { background: 'acolyte', privilegio: 'shelter-of-the-faithful',
+        da: 'Privilegio: Rifugio dei Fedeli', a: 'Caratteristiche suggerite' },
+    ],
+  },
+  '2024': {
+    sezione: { da: 'Descrizioni delle specie', a: 'Talenti' },
+    blocchi: [
+      { titolo: 'Dragonide', razza: 'dragonborn', stop: ['Antenati draconici'], tratti: [
+        { id: 'draconic-ancestry', titolo: 'Discendenza draconica' },
+        { id: 'breath-weapon', titolo: 'Soffio' },
+        { id: 'damage-resistance-draconic', titolo: 'Resistenza ai danni' },
+        { id: 'darkvision-60', titolo: 'Scurovisione' },
+        { id: 'draconic-flight', titolo: 'Volo draconico' },
+      ] },
+      { titolo: 'Elfo', razza: 'elf', tratti: [
+        { id: 'darkvision-60', titolo: 'Scurovisione' },
+        // La tabella dei lignaggi è impaginata in mezzo a questo tratto: si
+        // salta e si riprende, invece di troncarlo a metà frase.
+        { id: 'elven-lineage', titolo: 'Lignaggio elfico',
+          ponte: { salta: 'Lignaggi elfici', riprendi: 'gli incantesimi lanciati con questo tratto' } },
+        { id: 'fey-ancestry', titolo: 'Retaggio fatato' },
+        { id: 'keen-senses', titolo: 'Sensi acuti' },
+        { id: 'trance', titolo: 'Trance' },
+      ] },
+      { titolo: 'Gnomo', razza: 'gnome', tratti: [
+        { id: 'gnomish-cunning', titolo: 'Astuzia gnomesca' },
+        { id: 'gnomish-lineage', titolo: 'Lignaggio gnomesco' },
+        { id: 'gnome-forest-gnome', titolo: 'Gnomo delle foreste', sotto: 'forest-gnome' },
+        { id: 'gnome-rock-gnome', titolo: 'Gnomo delle rocce', sotto: 'rock-gnome' },
+        { id: 'darkvision-60', titolo: 'Scurovisione' },
+      ] },
+      { titolo: 'Goliath', razza: 'goliath', tratti: [
+        { id: 'powerful-build', titolo: 'Costituzione robusta' },
+        { id: 'giant-ancestry', titolo: 'Discendenza gigantica' },
+        { id: 'goliath-frosts-chill', titolo: 'Brivido gelante (gigante del gelo)', sotto: 'frosts-chill' },
+        { id: 'goliath-hills-tumble', titolo: 'Forza della collina (gigante delle colline)', sotto: 'hills-tumble' },
+        { id: 'goliath-fires-burn', titolo: 'Fuoco bruciante (gigante del fuoco)', sotto: 'fires-burn' },
+        { id: 'goliath-stones-endurance', titolo: 'Resistenza della pietra (gigante delle pietre)', sotto: 'stones-endurance' },
+        { id: 'goliath-clouds-jaunt', titolo: 'Salta-nuvole (gigante delle nuvole)', sotto: 'clouds-jaunt' },
+        { id: 'goliath-storms-thunder', titolo: 'Tuono tempestoso (gigante delle tempeste)', sotto: 'storms-thunder' },
+        { id: 'large-form', titolo: 'Forma Grande' },
+      ] },
+      { titolo: 'Halfling', razza: 'halfling', tratti: [
+        { id: 'halfling-nimbleness', titolo: 'Agilità halfling' },
+        { id: 'brave', titolo: 'Coraggioso' },
+        { id: 'luck', titolo: 'Fortuna' },
+        { id: 'naturally-stealthy', titolo: 'Furtività innata' },
+      ] },
+      { titolo: 'Nano', razza: 'dwarf', tratti: [
+        { id: 'stonecunning', titolo: 'Esperto minatore' },
+        { id: 'dwarven-resilience', titolo: 'Resilienza nanica' },
+        { id: 'dwarven-toughness', titolo: 'Robustezza nanica' },
+        { id: 'darkvision-120', titolo: 'Scurovisione' },
+      ] },
+      { titolo: 'Orco', razza: 'orc', tratti: [
+        { id: 'relentless-endurance', titolo: 'Resistenza implacabile' },
+        { id: 'adrenaline-rush', titolo: 'Scarica di adrenalina' },
+        { id: 'darkvision-120', titolo: 'Scurovisione' },
+      ] },
+      { titolo: 'Tiefling', razza: 'tiefling', stop: ['Retaggi immondi'], tratti: [
+        { id: 'fiendish-legacy', titolo: 'Retaggio immondo' },
+        { id: 'otherworldly-presence', titolo: 'Presenza ultraterrena' },
+        { id: 'darkvision-60', titolo: 'Scurovisione' },
+      ] },
+      // L'umano è impaginato *dentro* la tabella dei retaggi immondi: senza lo
+      // stop, «Versatile» si porterebbe dietro le righe della tabella.
+      { titolo: 'Umano', razza: 'human', stop: ['Retaggio'], tratti: [
+        { id: 'resourceful', titolo: 'Intraprendente' },
+        { id: 'skillful', titolo: 'Pluriabilità' },
+        { id: 'versatile', titolo: 'Versatile' },
+      ] },
+    ],
+    tabelle: [
+      { titolo: 'Lignaggi elfici', razza: 'elf', colonne: ['Livello 1', 'Livello 3', 'Livello 5'], righe: [
+        { id: 'elf-drow', sotto: 'drow', etichetta: 'Drow' },
+        { id: 'elf-high-elf', sotto: 'high-elf', etichetta: 'Elfo alto' },
+        { id: 'elf-wood-elf', sotto: 'wood-elf', etichetta: 'Elfo dei' },
+      ] },
+      { titolo: 'Retaggi immondi', razza: 'tiefling', colonne: ['Livello 1', 'Livello 3', 'Livello 5'], righe: [
+        { id: 'tiefling-abyssal', sotto: 'abyssal', etichetta: 'Abissale' },
+        { id: 'tiefling-chthonic', sotto: 'chthonic', etichetta: 'Ctonio' },
+        { id: 'tiefling-infernal', sotto: 'infernal', etichetta: 'Infernale' },
+      ] },
+    ],
+    // I quattro background del 5.2.1 concedono un talento, e il testo del
+    // talento sta nel capitolo «Talenti». «Iniziato alla magia» è un talento
+    // solo: il builder lo sdoppia per lista, l'SRD la fa scegliere.
+    background: [
+      { background: 'soldier', privilegio: 'savage-attacker',
+        da: 'Aggressore selvaggio', a: 'Allerta', salta: ['Talento Origini'] },
+      { background: 'criminal', privilegio: 'alert',
+        da: 'Allerta', a: 'Iniziato alla magia', salta: ['Talento Origini'] },
+      { background: 'acolyte', privilegio: 'magic-initiate-cleric',
+        da: 'Iniziato alla magia', a: 'Talenti Generali', salta: ['Talento Origini'] },
+      { background: 'sage', privilegio: 'magic-initiate-wizard',
+        da: 'Iniziato alla magia', a: 'Talenti Generali', salta: ['Talento Origini'] },
+    ],
+  },
+}
+
+/**
+ * Vero se la riga apre il paragrafo di `titolo`. Il vincolo sulla riga
+ * precedente è ciò che distingue un'intestazione da un nome di tratto che
+ * chiude una frase: nel 5.2.1 «Resistenza ai danni» finisce con «…del tipo
+ * determinato dal tratto / Discendenza draconica.», che a inizio riga è
+ * indistinguibile da un'intestazione.
+ * @param {string} riga
+ * @param {string} titolo
+ * @param {string|null} precedente ultima riga utile raccolta, o null se siamo all'inizio
+ * @returns {boolean}
+ */
+function apreParagrafo(riga, titolo, precedente) {
+  if (riga !== `${titolo}.` && !riga.startsWith(`${titolo}. `)) return false
+  return precedente === null || /[.:!?»")\]]$/.test(precedente)
+}
+
+/**
+ * Il testo dei tratti razziali di un'edizione, indicizzato
+ * `razza/sottorazza/idTratto` (la sottorazza è vuota per i tratti della razza).
+ * Un tratto che non si trova non viene indovinato: manca dalla mappa e a valle
+ * resta `description: null`.
+ *
+ * @param {string[]} flat    PDF estratto **senza** -layout: a due colonne è
+ *                           l'unico che rispetta l'ordine di lettura e ricuce
+ *                           le parole spezzate dalla sillabazione
+ * @param {string[]} layout  PDF estratto **con** -layout, per le tabelle
+ * @param {SpecSrd} spec
+ * @param {string} edizione
+ * @param {string[]} mancanti  vi si accumula ciò che non si è trovato
+ * @returns {Map<string, string>}
+ */
+function trattiRazziali(flat, layout, spec, edizione, mancanti) {
+  /** @type {Map<string, string>} */
+  const out = new Map()
+  const inizio = flat.findIndex(r => r.trim() === spec.sezione.da)
+  const fine = flat.findIndex((r, i) => i > inizio && r.trim() === spec.sezione.a)
+  if (inizio < 0 || fine < 0) {
+    throw new Error(`${edizione}: sezione delle razze non trovata («${spec.sezione.da}» → «${spec.sezione.a}»)`)
+  }
+
+  // I blocchi sono dichiarati nell'ordine del PDF: cercarli in avanti impedisce
+  // che «Nano» agganci l'occorrenza dentro un'altra razza.
+  /** @type {number[]} */
+  const posizioni = []
+  let cursore = inizio
+  for (const b of spec.blocchi) {
+    const p = flat.findIndex((r, i) => i > cursore && i < fine && r.trim() === b.titolo)
+    posizioni.push(p)
+    if (p >= 0) cursore = p
+    else mancanti.push(`${edizione}/${b.razza}: blocco «${b.titolo}» non trovato`)
+  }
+
+  for (let k = 0; k < spec.blocchi.length; k++) {
+    const b = spec.blocchi[k]
+    const p = posizioni[k]
+    if (b === undefined || p === undefined || p < 0) continue
+    const f = posizioni.slice(k + 1).find(q => q !== undefined && q > p) ?? fine
+    const titoli = [...b.tratti.map(t => t.titolo), ...(b.stop ?? [])]
+    for (const t of b.tratti) {
+      /** @type {string[]} */
+      const corpo = []
+      /** @type {string|null} */
+      let precedente = null
+      let dentro = false
+      let saltando = false
+      // Dopo il titolo di una tabella le righe sono celle, e una cella non
+      // chiude una frase: senza questo, l'intestazione che segue la tabella
+      // non verrebbe riconosciuta come tale.
+      let fraLeCelle = false
+      for (let i = p + 1; i < f; i++) {
+        const r = (flat[i] ?? '').trim()
+        if (saltando) {
+          if (t.ponte && r.startsWith(t.ponte.riprendi)) { saltando = false; corpo.push(r); precedente = r }
+          continue
+        }
+        if (!r || artefattoDiPagina(r)) continue
+        if (!dentro) {
+          if ((b.stop ?? []).includes(r)) { fraLeCelle = true; precedente = null; continue }
+          if (apreParagrafo(r, t.titolo, precedente)) {
+            dentro = true
+            fraLeCelle = false
+            const resto = r.slice(t.titolo.length + 1).trim()
+            if (resto) corpo.push(resto)
+            precedente = resto || r
+            continue
+          }
+          if (!fraLeCelle) precedente = r
+          continue
+        }
+        if (t.ponte && r === t.ponte.salta) { saltando = true; continue }
+        if (titoli.some(x => apreParagrafo(r, x, precedente)) || (b.stop ?? []).includes(r)) break
+        corpo.push(r)
+        precedente = r
+      }
+      if (!dentro || corpo.length === 0) {
+        mancanti.push(`${edizione}/${b.razza}${t.sotto ? '/' + t.sotto : ''}/${t.id}: «${t.titolo}» non trovato`)
+        continue
+      }
+      out.set(`${b.razza}/${t.sotto ?? ''}/${t.id}`,
+        pulisci(corpo.join(' '), `${edizione}/razza/${b.razza}/${t.id}`))
+    }
+  }
+
+  for (const tab of spec.tabelle ?? []) {
+    for (const [chiave, testo] of tabellaTratti(layout, tab, edizione, mancanti)) out.set(chiave, testo)
+  }
+  return out
+}
+
+/**
+ * Le sottorazze che il 5.2.1 pubblica come righe di tabella (lignaggi elfici,
+ * retaggi immondi). Qui serve `-layout`: senza, le celle escono in colonna e
+ * non si sa più quale beneficio appartiene a quale riga.
+ *
+ * Le colonne si ricavano dalle posizioni delle intestazioni, e si verifica che
+ * nessuna parola scavalchi un confine — è il modo in cui una tabella letta
+ * storta si fa notare subito invece di uscire come testo plausibile.
+ *
+ * @param {string[]} layout
+ * @param {TabellaSrd} tab
+ * @param {string} edizione
+ * @param {string[]} mancanti
+ * @returns {Map<string, string>}
+ */
+function tabellaTratti(layout, tab, edizione, mancanti) {
+  /** @type {Map<string, string>} */
+  const out = new Map()
+  const titolo = layout.findIndex(r => r.trim() === tab.titolo)
+  if (titolo < 0) { mancanti.push(`${edizione}: tabella «${tab.titolo}» non trovata`); return out }
+  const intestazione = titolo + 1
+  const riga = layout[intestazione] ?? ''
+  const bordi = tab.colonne.map(c => riga.indexOf(c))
+  if (bordi.some(b => b < 0)) {
+    mancanti.push(`${edizione}/${tab.titolo}: intestazione delle colonne illeggibile`)
+    return out
+  }
+  let fine = intestazione + 1
+  while (fine < layout.length && (layout[fine] ?? '').trim() !== '') fine++
+
+  /** @param {string} r @param {number} n @returns {string} */
+  const cella = (r, n) => {
+    const bordo = bordi[n]
+    const successivo = n + 1 < bordi.length ? bordi[n + 1] : undefined
+    return r.slice(bordo, successivo).trim()
+  }
+
+  for (const b of bordi) {
+    for (let i = intestazione + 1; i < fine; i++) {
+      const r = layout[i] ?? ''
+      if (r.length > b && r[b - 1] !== ' ' && r[b - 1] !== undefined) {
+        mancanti.push(`${edizione}/${tab.titolo}: una parola scavalca il confine di colonna ${b}`)
+        return out
+      }
+    }
+  }
+
+  const inizi = tab.righe.map(v =>
+    layout.findIndex((r, i) => i > intestazione && i < fine && r.slice(0, bordi[0]).trim() === v.etichetta))
+  for (let k = 0; k < tab.righe.length; k++) {
+    const v = tab.righe[k]
+    const da = inizi[k]
+    if (v === undefined || da === undefined || da < 0) {
+      if (v) mancanti.push(`${edizione}/${tab.titolo}: riga «${v.etichetta}» non trovata`)
+      continue
+    }
+    const a = inizi.slice(k + 1).find(q => q !== undefined && q > da) ?? fine
+    /** @type {string[][]} */
+    const colonne = tab.colonne.map(() => [])
+    for (let i = da; i < a; i++) {
+      for (let n = 0; n < tab.colonne.length; n++) {
+        const c = cella(layout[i] ?? '', n)
+        if (c) (colonne[n] ?? []).push(c)
+      }
+    }
+    // Le tre colonne diventano una frase sola, etichettata con le intestazioni
+    // della tabella: è l'unico modo di non perdere quale beneficio arriva a
+    // quale livello, e non aggiunge una parola che l'SRD non abbia già scritto.
+    const testo = tab.colonne
+      .map((c, n) => `${c}: ${(colonne[n] ?? []).join(' ').replace(/\.?$/, '.')}`)
+      .join(' ')
+    out.set(`${tab.razza}/${v.sotto}/${v.id}`, pulisci(testo, `${edizione}/tabella/${tab.titolo}/${v.id}`))
+  }
+  return out
+}
+
+/**
+ * Il testo dei privilegi di background, indicizzato `background/privilegio`.
+ * @param {string[]} flat
+ * @param {SpecSrd} spec
+ * @param {string} edizione
+ * @param {string[]} mancanti
+ * @returns {Map<string, string>}
+ */
+function privilegiBackground(flat, spec, edizione, mancanti) {
+  /** @type {Map<string, string>} */
+  const out = new Map()
+  for (const b of spec.background) {
+    const da = flat.findIndex(r => r.trim() === b.da)
+    const a = flat.findIndex((r, i) => i > da && r.trim() === b.a)
+    if (da < 0 || a < 0) {
+      mancanti.push(`${edizione}/${b.background}/${b.privilegio}: «${b.da}» non trovato`)
+      continue
+    }
+    const corpo = flat.slice(da + 1, a)
+      .map(r => r.trim())
+      .filter(r => r && !artefattoDiPagina(r) && !(b.salta ?? []).includes(r))
+    if (corpo.length === 0) {
+      mancanti.push(`${edizione}/${b.background}/${b.privilegio}: blocco vuoto`)
+      continue
+    }
+    out.set(`${b.background}/${b.privilegio}`,
+      pulisci(corpo.join(' '), `${edizione}/background/${b.background}`))
+  }
+  return out
+}
+
 // ── Costruzione di un pacchetto ────────────────────────────────────────────
 
 /**
@@ -558,22 +1011,28 @@ function costruisciClassi(edizione, fonti, extra) {
  * in kebab-case sulla scheda. Da cui questa chiave e la prossima.
  *
  * Il builder tiene i tratti come soli id, e i **nomi** italiani sono in
- * `traitNamesIt`; il testo no, in nessuna delle due edizioni, e `description`
- * resta quindi `null` invece di essere riempito con l'inglese.
+ * `traitNamesIt`; il testo no, in nessuna delle due edizioni. Quello arriva
+ * dai PDF degli SRD, appaiato tratto per tratto da `TRATTI_SRD`; dove l'SRD
+ * non pubblica il tratto, `description` resta `null`.
  *
  * @param {readonly any[]} razze
  * @param {Record<string, string>} nomiRazza     nome inglese → italiano
  * @param {Record<string, string>} nomiSottorazza
  * @param {Record<string, string>} nomiTratto    id → italiano
+ * @param {Map<string, string>} testi            `razza/sottorazza/idTratto` → testo
  * @returns {Record<string, any>}
  */
-function costruisciRazze(razze, nomiRazza, nomiSottorazza, nomiTratto) {
-  /** @param {any} id @returns {{id: string, name: string, nameEn: string, description: null}} */
-  const tratto = id => ({
+function costruisciRazze(razze, nomiRazza, nomiSottorazza, nomiTratto, testi) {
+  /**
+   * @param {string} razza
+   * @param {string} sotto
+   * @returns {(id: any) => {id: string, name: string, nameEn: string, description: string|null}}
+   */
+  const tratto = (razza, sotto) => id => ({
     id: String(id),
     name: nomiTratto[id] ?? leggibile(String(id)),
     nameEn: leggibile(String(id)),
-    description: null,
+    description: testi.get(`${razza}/${sotto}/${id}`) ?? null,
   })
   /** @type {Record<string, any>} */
   const out = {}
@@ -585,14 +1044,14 @@ function costruisciRazze(razze, nomiRazza, nomiSottorazza, nomiTratto) {
         id: String(s.id),
         name: nomiSottorazza[s.name] ?? String(s.name),
         nameEn: String(s.name),
-        traits: [...s.traits].sort(per).map(tratto),
+        traits: [...s.traits].sort(per).map(tratto(String(r.id), String(s.id))),
       }
     }
     out[r.id] = {
       id: String(r.id),
       name: nomiRazza[r.name] ?? String(r.name),
       nameEn: String(r.name),
-      traits: [...r.traits].sort(per).map(tratto),
+      traits: [...r.traits].sort(per).map(tratto(String(r.id), '')),
       subraces: sottorazze,
     }
   }
@@ -600,28 +1059,30 @@ function costruisciRazze(razze, nomiRazza, nomiSottorazza, nomiTratto) {
 }
 
 /**
- * I background con il loro privilegio. Il testo italiano non c'è nel builder;
- * l'inglese sì, e sta in un campo che dichiara di esserlo, così chi lo mostra
- * sa cosa sta mostrando.
+ * I background con il loro privilegio. Il testo italiano non c'è nel builder e
+ * viene dai PDF; l'inglese sì, e resta in un campo che dichiara di esserlo,
+ * così chi lo mostra sa cosa sta mostrando.
  * @param {readonly any[]} background
  * @param {Record<string, string>} nomiBackground
  * @param {Record<string, string>} nomiPrivilegio
+ * @param {Map<string, string>} testi  `background/privilegio` → testo italiano
  * @returns {Record<string, any>}
  */
-function costruisciBackground(background, nomiBackground, nomiPrivilegio) {
+function costruisciBackground(background, nomiBackground, nomiPrivilegio, testi) {
   /** @type {Record<string, any>} */
   const out = {}
   for (const b of [...background].sort((a, b) => per(a.id, b.id))) {
     const f = b.feature
+    const id = f ? slug(String(f.name)) : ''
     out[b.id] = {
       id: String(b.id),
       name: nomiBackground[b.name] ?? String(b.name),
       nameEn: String(b.name),
       features: f ? [{
-        id: slug(String(f.name)),
+        id,
         name: nomiPrivilegio[f.name] ?? String(f.name),
         nameEn: String(f.name),
-        description: null,
+        description: testi.get(`${b.id}/${id}`) ?? null,
         descriptionEn: pulisci(String(f.description ?? ''), `background/${b.id}`) || null,
       }] : [],
     }
@@ -852,8 +1313,18 @@ async function main() {
   }
 
   // ── Condizioni ────────────────────────────────────────────────────────────
-  const cond2014 = condizioni2014(righePdf(pdf2014, false))
-  const cond2024 = condizioni2024(righePdf(pdf2024, false))
+  const flat2014 = righePdf(pdf2014, false)
+  const flat2024 = righePdf(pdf2024, false)
+  const cond2014 = condizioni2014(flat2014)
+  const cond2024 = condizioni2024(flat2024)
+
+  // ── Tratti razziali e privilegi di background, dalla prosa dei due SRD ────
+  /** @type {string[]} */
+  const scoperti = []
+  const tratti2014 = trattiRazziali(flat2014, righePdf(pdf2014, true), TRATTI_SRD['2014'], '2014', scoperti)
+  const tratti2024 = trattiRazziali(flat2024, layout, TRATTI_SRD['2024'], '2024', scoperti)
+  const bgTesti2014 = privilegiBackground(flat2014, TRATTI_SRD['2014'], '2014', scoperti)
+  const bgTesti2024 = privilegiBackground(flat2024, TRATTI_SRD['2024'], '2024', scoperti)
 
   /** @param {Map<string, string>} mappa @returns {any[]} */
   const elencoCondizioni = mappa => CONDIZIONI.map(c => ({
@@ -929,13 +1400,13 @@ async function main() {
   const pacchetti = [
     {
       edizione: '2014', srd: '5.1', fonti: fonti2014, condizioni: cond2014, extra: {},
-      razze: costruisciRazze(razze2014['races'], termini['raceNamesIt'], termini['subraceNamesIt'], termini['traitNamesIt']),
-      background: costruisciBackground(bg2014['backgrounds'], termini['backgroundNamesIt'], termini['featureNamesIt']),
+      razze: costruisciRazze(razze2014['races'], termini['raceNamesIt'], termini['subraceNamesIt'], termini['traitNamesIt'], tratti2014),
+      background: costruisciBackground(bg2014['backgrounds'], termini['backgroundNamesIt'], termini['featureNamesIt'], bgTesti2014),
     },
     {
       edizione: '2024', srd: '5.2.1', fonti: fonti2024, condizioni: cond2024, extra: { padronanza: padronanza2024 },
-      razze: costruisciRazze(razze2024['dnd2024Species'], termini['raceNamesIt'], termini['subraceNamesIt'], termini['traitNamesIt']),
-      background: costruisciBackground(bg2024['dnd2024Backgrounds'], termini['backgroundNamesIt'], termini['featureNamesIt']),
+      razze: costruisciRazze(razze2024['dnd2024Species'], termini['raceNamesIt'], termini['subraceNamesIt'], termini['traitNamesIt'], tratti2024),
+      background: costruisciBackground(bg2024['dnd2024Backgrounds'], termini['backgroundNamesIt'], termini['featureNamesIt'], bgTesti2024),
     },
   ]
 
@@ -999,14 +1470,21 @@ async function main() {
       0)
     const nBg = Object.keys(p.background).length
     const nBgPriv = Object.values(p.background).reduce((n, b) => n + b.features.length, 0)
+    /** @param {any[]} v @returns {number} */
+    const conTesto = v => v.filter(x => x.description !== null).length
+    const trattiConTesto = razze.reduce(
+      (n, r) => n + conTesto(r.traits) + Object.values(r.subraces).reduce(
+        /** @param {number} m @param {any} s */ (m, s) => m + conTesto(s.traits), 0),
+      0)
+    const bgConTesto = Object.values(p.background).reduce((n, b) => n + conTesto(b.features), 0)
     rapporto.push(
       `${p.edizione} (SRD ${p.srd}) — ${nClassi} classi, ${nPriv} privilegi di classe, ` +
       `${nSub} sottoclassi con ${nSubPriv} privilegi, ${bytes} byte` +
       `\n    ${razze.length} razze (${nSottorazze} sottorazze, ${nTratti} tratti), ` +
       `${nBg} background (${nBgPriv} privilegi), ${Object.keys(armature).length} armature` +
       (senzaTesto ? `\n    ⚠ ${senzaTesto} privilegi di classe senza testo italiano` : '') +
-      `\n    ⚠ ${nTratti} tratti razziali e ${nBgPriv} privilegi di background senza testo: ` +
-      `il builder ne ha i nomi italiani, non le descrizioni` +
+      `\n    testo dall'SRD: ${trattiConTesto}/${nTratti} tratti razziali, ` +
+      `${bgConTesto}/${nBgPriv} privilegi di background` +
       (condVuote ? `\n    ⚠ ${condVuote} condizioni su ${CONDIZIONI.length} senza testo nel PDF` : '')
     )
   }
@@ -1022,6 +1500,10 @@ async function main() {
   for (const r of rapporto) console.log('  ' + r)
   console.log('')
   console.log('  controlli incrociati PDF↔builder: ' + controlli.join(', '))
+  if (scoperti.length) {
+    console.log(`  tratti e privilegi non agganciati nei PDF: ${scoperti.length}`)
+    for (const s of scoperti) console.log(`    · ${s}`)
+  }
   await sondaSporcizia()
   const totaleTagli = Object.values(tagli).reduce((a, b) => a + b, 0)
   if (totaleTagli === 0) {

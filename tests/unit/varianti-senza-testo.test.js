@@ -1,16 +1,18 @@
 /**
- * I pacchetti delle varianti non spediscono testo di regole.
+ * Apocalisse non spedisce testo di regole. Brancalonia sì.
  *
- * Brancalonia e Apocalisse sono di Acheron Games: non sono SRD, non sono
- * CC-BY, e il permesso di ripubblicarne il testo non c'è. I pacchetti portano
- * quindi **nomi, id, numeri e parole chiave** — quanto basta a riconoscere un
- * personaggio e a fare i conti — e nient'altro.
+ * Le due varianti sono di Acheron Games e nessuna delle due è SRD, ma non
+ * stanno più sullo stesso piano: per Brancalonia il proprietario del progetto
+ * ha deciso di pubblicare i testi, avendone i manuali; per Apocalisse no.
  *
- * Questo file è la guardia di quel vincolo. Se un giorno il permesso arriva e
- * si rigenera con i testi, **questi test devono fallire**: pubblicare dev'essere
- * una decisione presa, non l'effetto collaterale di un comando rilanciato.
+ * Questo file è la guardia di quella differenza, ed è puntato su Apocalisse:
+ * se un giorno si rigenera con i testi anche quel pacchetto, **questi test
+ * devono fallire**, perché pubblicare dev'essere una decisione presa e non
+ * l'effetto collaterale di un comando rilanciato. La rete opposta — che
+ * Brancalonia i testi ce li abbia davvero, e giusti — sta in
+ * `brancalonia-testi.test.js`.
  *
- * Ci sono due reti, di proposito diverse:
+ * Su Apocalisse le reti sono due, di proposito diverse:
  *
  * 1. i campi descrittivi noti, elencati a mano;
  * 2. un tetto sulla lunghezza di *qualunque* stringa, che è l'unica difesa
@@ -38,8 +40,6 @@ const TETTO = 80
 
 /** Campi che possono superare il tetto perché non sono prosa di regole. */
 const ESENTI = new Set(['attribuzione', 'licenza', 'generatedAt', 'sourceCommit', 'fonte'])
-
-const PACCHETTI = ['brancalonia', 'apocalisse']
 
 /**
  * Ogni stringa del documento, con la chiave sotto cui sta e il percorso.
@@ -89,8 +89,8 @@ function fileDi(id) {
   return out
 }
 
-describe.each(PACCHETTI)('il pacchetto %s', (id) => {
-  const file = fileDi(id)
+describe('il pacchetto apocalisse', () => {
+  const file = fileDi('apocalisse')
 
   it('esiste, e ha almeno le regole', () => {
     expect(file.length).toBeGreaterThan(0)
@@ -123,6 +123,10 @@ describe.each(PACCHETTI)('il pacchetto %s', (id) => {
     }
     expect(lunghe).toEqual([])
   })
+})
+
+describe.each(['brancalonia', 'apocalisse'])('il pacchetto %s', (id) => {
+  const file = fileDi(id)
 
   it('dichiara da dove viene e su cosa poggia', () => {
     const regole = /** @type {any} */ (file[0]?.dato)
@@ -137,12 +141,36 @@ describe.each(PACCHETTI)('il pacchetto %s', (id) => {
 
 describe('il registro', () => {
   const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
+  /** @param {string} id */
+  const pack = id => registro.packs.find((/** @type {any} */ p) => p.id === id)
 
-  it.each(PACCHETTI)('%s dichiara di non essere materiale libero', (id) => {
-    const pack = registro.packs.find((/** @type {any} */ p) => p.id === id)
-    expect(pack).toBeDefined()
-    expect(pack.licenza).not.toBe('CC-BY-4.0')
-    expect(pack.attribuzione).toMatch(/Acheron Games/)
-    expect(pack.attribuzione).toMatch(/non è materiale SRD/i)
+  it.each(['brancalonia', 'apocalisse'])('%s dichiara di non essere materiale libero', (id) => {
+    const p = pack(id)
+    expect(p).toBeDefined()
+    // Avere il permesso dell'editore per ripubblicare il testo non rende il
+    // testo libero: la licenza non diventa CC-BY perché il testo adesso c'è.
+    expect(p.licenza).not.toBe('CC-BY-4.0')
+    expect(p.attribuzione).toMatch(/Acheron Games/)
+    expect(p.attribuzione).toMatch(/non è materiale SRD/i)
+    expect(p.attribuzione).toMatch(/non è distribuito sotto licenza Creative Commons/i)
+  })
+
+  it('Apocalisse dice di non avere il testo, e non ce l\'ha', () => {
+    expect(pack('apocalisse').attribuzione).toMatch(/[Nn]essun testo di regole è incluso/)
+    expect(pack('apocalisse').licenza).toMatch(/senza testo/)
+  })
+
+  it('Brancalonia dice di avere il testo, e da quali manuali', () => {
+    const p = pack('brancalonia')
+    // La frase vecchia («questo pacchetto ne riporta soltanto nomi, struttura e
+    // valori numerici… Nessun testo di regole è incluso») adesso sarebbe una
+    // bugia, e questo test è ciò che impedisce di rimetterla.
+    expect(p.attribuzione).not.toMatch(/[Nn]essun testo di regole/)
+    expect(p.attribuzione).not.toMatch(/soltanto nomi, struttura e valori numerici/)
+    expect(p.attribuzione).toMatch(/Manuale di Ambientazione/)
+    expect(p.attribuzione).toMatch(/Macaronicon/)
+    expect(p.attribuzione).toMatch(/Impero Randella Ancora/)
+    expect(p.attribuzione).toMatch(/[Mm]archi, testi e contenuti restano di Acheron Games/)
+    expect(p.licenza).not.toMatch(/senza testo/)
   })
 })

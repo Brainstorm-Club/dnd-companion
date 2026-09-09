@@ -1,5 +1,5 @@
 /**
- * Il cassetto di consultazione: dadi, incantesimi, privilegi.
+ * Il cassetto di consultazione: dadi, incantesimi, privilegi, razze.
  *
  * Si apre dal basso **da qualunque vista**, perché tirare non deve costare la
  * perdita di quello che stai guardando (PIANO § 5.2). Non è una vista: il
@@ -20,9 +20,9 @@
  * **Perché i compendi stanno qui e non sono destinazioni.** Consultare una
  * regola non deve costare il posto in cui sei: si apre il cassetto sopra la
  * scheda, si legge, si chiude, e sei ancora nello zaino da cui eri partito.
- * Le due viste dei compendi non sono duplicate — sono le stesse di
- * `#/incantesimi` e `#/privilegi`, disegnate qui dentro con una rotta finta,
- * che è esattamente ciò per cui sono parametrizzate da una rotta.
+ * Le tre viste dei compendi non sono duplicate — sono le stesse di
+ * `#/incantesimi`, `#/privilegi` e `#/razze`, disegnate qui dentro con una
+ * rotta finta, che è esattamente ciò per cui sono parametrizzate da una rotta.
  */
 
 import { h, clear } from '../dom.js'
@@ -43,19 +43,21 @@ import { facciaDado, animaDadi } from '../anima-dadi.js'
 
 /** @typedef {import('../storage.js').DiceLogEntry} Voce */
 
+/** Le schede del cassetto. @typedef {'dadi'|'incantesimi'|'privilegi'|'razze'} Scheda */
+
 /** @type {{pannello: HTMLElement, gesto: ReturnType<typeof maniglia>, suTiro: () => void}|null} */
 let montato = null
 
 /**
  * Come chi non conosce il cassetto può aprirlo lo stesso.
- * @type {((quale: 'dadi'|'incantesimi'|'privilegi', id?: string|null) => void)|null}
+ * @type {((quale: Scheda, id?: string|null) => void)|null}
  */
 let aperturaEsterna = null
 
 /**
  * Apre il cassetto da fuori: la scheda del personaggio la usa per mostrare un
  * incantesimo senza portare via la pagina a chi la stava guardando.
- * @param {'dadi'|'incantesimi'|'privilegi'} quale
+ * @param {Scheda} quale
  * @param {string|null} [id]
  */
 export function apriCassetto(quale, id = null) {
@@ -97,7 +99,10 @@ export function mount(root, ctx) {
     h('span', {}, t('nav.dadi')),
   ])
 
-  // La scheda «dadi» è quella che c'era: le altre due ospitano i compendi.
+  // La scheda «dadi» è quella che c'era: le altre tre ospitano i compendi.
+  // Le etichette sono quelle della barra da pollice (`tab.*`) e non i nomi
+  // lunghi: quattro schede in 375 px non li reggono, e chiamare la stessa
+  // cosa in due modi diversi nei due menù è comunque un difetto.
   const paneDadi = h('div', { class: 'dc-tray__pane', 'data-pane': 'dadi' }, [
     dadi,
     risultato,
@@ -122,7 +127,7 @@ export function mount(root, ctx) {
   root.appendChild(pannello)
 
   /** Quale scheda si sta guardando, e su cosa. */
-  let scheda = /** @type {'dadi'|'incantesimi'|'privilegi'} */ ('dadi')
+  let scheda = /** @type {Scheda} */ ('dadi')
   /** @type {string|null} */
   let dettaglio = null
 
@@ -130,7 +135,8 @@ export function mount(root, ctx) {
   function mostraSchede() {
     clear(schede)
     for (const [id, chiave] of /** @type {const} */ ([
-      ['dadi', 'nav.dadi'], ['incantesimi', 'nav.incantesimi'], ['privilegi', 'nav.privilegi'],
+      ['dadi', 'tab.dadi'], ['incantesimi', 'tab.incantesimi'],
+      ['privilegi', 'tab.privilegi'], ['razze', 'tab.razze'],
     ])) {
       const attiva = id === scheda
       schede.appendChild(h('button', {
@@ -143,7 +149,7 @@ export function mount(root, ctx) {
   }
 
   /**
-   * @param {'dadi'|'incantesimi'|'privilegi'} quale
+   * @param {Scheda} quale
    * @param {string|null} [id]  un incantesimo da aprire direttamente
    */
   async function vaiA(quale, id = null) {
@@ -156,9 +162,9 @@ export function mount(root, ctx) {
 
     clear(paneAltro)
     paneAltro.appendChild(h('p', { class: 'dc-avvio' }, t('comune.caricamento')))
-    const modulo = quale === 'incantesimi'
-      ? await import('../views/spells.js')
-      : await import('../views/features.js')
+    const modulo = quale === 'incantesimi' ? await import('../views/spells.js')
+      : quale === 'privilegi' ? await import('../views/features.js')
+      : await import('../views/races.js')
     // La rotta finta è tutto ciò che serve: le viste dei compendi sono già
     // scritte per riceverne una, e così qui non ne esiste una seconda copia.
     clear(paneAltro)
@@ -186,7 +192,7 @@ export function mount(root, ctx) {
    *
    * È così che una riga della scheda del personaggio mostra la descrizione di
    * un suo incantesimo: senza navigare, e senza perdere il posto.
-   * @param {'dadi'|'incantesimi'|'privilegi'} quale
+   * @param {Scheda} quale
    * @param {string|null} [id]
    */
   function apriSu(quale, id = null) {

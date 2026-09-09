@@ -260,11 +260,12 @@ test.describe('il cassetto di consultazione', () => {
     await expect(page.locator('#principale')).toContainText('CD incantesimi')
   })
 
-  test('le tre schede ci sono tutte, e i dadi restano dov\'erano', async ({ page }) => {
+  test('le quattro schede ci sono tutte, e i dadi restano dov\'erano', async ({ page }) => {
     await page.goto('/#/libreria')
     await page.locator('.dc-tray__maniglia').click()
     const schede = page.locator('.dc-tray__schede .bsc-tab')
-    await expect(schede).toHaveCount(3)
+    // dadi, magia, classi, razze: i tre compendi si consultano da qui come i dadi
+    await expect(schede).toHaveCount(4)
     await expect(schede.first()).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.dc-tray .bsc-die').first()).toBeVisible()
   })

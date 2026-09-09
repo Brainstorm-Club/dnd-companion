@@ -17,13 +17,30 @@ function sorgenti(dir = 'src') {
   })
 }
 
+/**
+ * Il sorgente senza commenti.
+ *
+ * Grezzo di proposito: non distingue un `//` dentro una stringa, e va bene —
+ * l'unico effetto sarebbe nascondere una riga a un controllo, e per farlo
+ * bisognerebbe scrivere apposta una stringa che contiene `//` e il nome di una
+ * variante. Chi lo facesse sta già barando.
+ * @param {string} src
+ */
+function senzaCommenti(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
+}
+
 describe('architettura', () => {
   it('nessun confronto sulla variante di gioco fuori da packs.js', () => {
     // La v3 aggiunge Brancalonia scrivendo una voce nel registro. Se le
     // varianti compaiono sparse nel codice, quella promessa è già rotta.
+    // I commenti si tolgono prima di guardare. La regola vieta di *confrontare*
+    // la variante, non di nominarla: la spiegazione più chiara del perché il
+    // motore non debba conoscerle è proprio quella che ne nomina una, e un test
+    // che vieta di scriverla punisce chi documenta.
     const colpevoli = sorgenti()
       .filter(f => !f.endsWith('packs.js'))
-      .filter(f => /['"`](brancalonia|apocalisse|dnd5e|dnd2024)['"`]/.test(readFileSync(f, 'utf8')))
+      .filter(f => /['"`](brancalonia|apocalisse|dnd5e|dnd2024)['"`]/.test(senzaCommenti(readFileSync(f, 'utf8'))))
     expect(colpevoli).toEqual([])
   })
 

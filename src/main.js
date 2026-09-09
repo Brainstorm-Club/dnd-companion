@@ -19,12 +19,21 @@ import { tieniAcceso, seguiVisibilita, vibra } from './schermo.js'
  * Le cinque voci della barra da pollice. Le etichette sono corte di proposito:
  * cinque parole intere non stanno in 375 px, e una parola troncata è peggio di
  * una parola breve.
+ *
+ * La quinta voce ha costretto a rinominare la quarta. In un quinto di 375 px
+ * ci stanno 65 px di testo, e «Privilegi» ne chiede 69: si tagliava. I due
+ * compendi si indicizzano per classe e per razza, quindi si chiamano «Classi»
+ * e «Razze» — corte, simmetriche, e si leggono come la coppia che sono. La
+ * strada alternativa (voci di larghezza diversa, ognuna quanto le serve) è
+ * stata scartata: in una barra da pollice i bersagli devono essere uguali e
+ * prevedibili, e i più stretti sarebbero finiti a ridosso dei 44 px.
  */
 const SEZIONI = /** @type {const} */ ([
   { rotta: '#/libreria', chiave: 'tab.libreria' },
   { rotta: '#/dadi', chiave: 'tab.dadi' },
   { rotta: '#/incantesimi', chiave: 'tab.incantesimi' },
   { rotta: '#/privilegi', chiave: 'tab.privilegi' },
+  { rotta: '#/razze', chiave: 'tab.razze' },
 ])
 
 async function main() {

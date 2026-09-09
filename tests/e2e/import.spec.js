@@ -288,3 +288,62 @@ test.describe('quello che si segna al tavolo', () => {
     await expect(page.locator('#dc-note')).toHaveValue(/Beppe/)
   })
 })
+
+/**
+ * Le regole di casa: un tavolo che gioca Brancalonia col proprio grimorio non
+ * gioca un'altra variante, gioca la stessa con qualcosa in più. Il builder non
+ * lo sa e non può saperlo — esporta `variant: "brancalonia"` e basta — quindi
+ * la scelta si fa qui, scheda per scheda.
+ */
+test.describe('le regole del tavolo', () => {
+  test('si scelgono dalla scheda, e cambiano il compendio', async ({ page }) => {
+    await importa(page, BRANCALONIA)
+    await page.locator('.dc-pg__testa').first().click()
+
+    const riga = page.locator('#principale [data-sezione="gioco"] .bsc-kv', { hasText: /regole del tavolo/i })
+    await expect(riga).toContainText('Brancalonia')
+    await riga.click()
+
+    // due scelte: il pacchetto suo e il grimorio che ci si appoggia sopra
+    const foglio = page.locator('.bsc-sheet')
+    await expect(foglio.locator('[data-pacchetto]')).toHaveCount(2)
+    await foglio.locator('[data-pacchetto="brancalonia-brainstorm"]').click()
+
+    await expect(page.locator('#principale [data-sezione="gioco"] .bsc-kv', { hasText: /regole del tavolo/i }))
+      .toContainText('Grimorio')
+
+    // il compendio ora parla la lingua del grimorio, non quella del builder…
+    await page.goto('/#/incantesimi')
+    await page.locator('#principale input[type=search]').fill('Dito')
+    await expect(page.locator('#principale')).toContainText('Dito della Sorte')
+    // …e non tutt'e due: appaiati per id, non sdoppiati
+    await expect(page.locator('#principale')).not.toContainText('Dito del Fato')
+
+    // e ogni fonte in pagina porta la sua attribuzione: SRD, Acheron, il tavolo
+    const fonti = page.locator('#principale details summary')
+    await expect(fonti).toHaveCount(3)
+    await expect(fonti.last()).toContainText(/Grimorio/)
+  })
+
+  test('a chi gioca D&D non si offre una scelta che non ha', async ({ page }) => {
+    await importa(page, CHIERICO)
+    await page.locator('.dc-pg__testa').first().click()
+    await expect(page.locator('#principale [data-sezione="gioco"] .bsc-kv', { hasText: /regole del tavolo/i }))
+      .toHaveCount(0)
+  })
+
+  test('un incantesimo del Regno si apre col testo della campagna', async ({ page }) => {
+    await importa(page, BRANCALONIA)
+    await page.locator('.dc-pg__testa').first().click()
+    await page.locator('#principale [data-sezione="gioco"] .bsc-kv', { hasText: /regole del tavolo/i }).click()
+    await page.locator('.bsc-sheet [data-pacchetto="brancalonia-brainstorm"]').click()
+
+    await page.goto('/#/incantesimi')
+    await page.locator('#principale input[type=search]').fill('Dito della')
+    await page.locator('#principale a', { hasText: 'Dito della Sorte' }).click()
+    // il difetto che ha fatto nascere questo test: la scheda cadeva su
+    // «Qualcosa non ha funzionato» perché alle voci mancavano due campi
+    await expect(page.locator('#principale')).not.toContainText('Qualcosa non ha funzionato')
+    await expect(page.locator('#principale')).toContainText(/parole di buona sorte/i)
+  })
+})

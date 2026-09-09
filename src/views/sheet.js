@@ -11,7 +11,7 @@
  */
 
 import { h, clear, append } from '../dom.js'
-import { loadRegistry, spellSources } from '../domain/packs.js'
+import { loadRegistry, spellSources, regoleDiCasa } from '../domain/packs.js'
 import { loadRules } from '../domain/rules.js'
 import {
   derive, features, formatModifier, diceModifier, ABILITIES, ABILITY_LABELS,
@@ -26,6 +26,7 @@ import {
   tracciaUsi, smettiUsi, segnaUsi,
 } from '../domain/session.js'
 import { errataDi } from '../domain/errata.js'
+
 import { rollNotation } from '../domain/dice.js'
 import { cryptoRng } from '../domain/rng.js'
 
@@ -76,6 +77,7 @@ let staccaScroll = null
  * @property {CharacterEntry} entry
  * @property {Derived} d
  * @property {unknown} rules
+ * @property {import('../domain/packs.js').PackRegistry|null} registro
  * @property {HTMLElement} root
  * @property {Map<string, HTMLElement>} pagine
  * @property {PlayState|null} annulla  lo stato prima dell'ultimo riposo
@@ -109,13 +111,16 @@ export default {
       return
     }
 
-    // regole e nomi italiani degli incantesimi insieme: due fetch in parallelo
-    // invece di due attese in fila, e la scheda si disegna una volta sola.
-    const [rules] = await Promise.all([
+    // regole, nomi italiani degli incantesimi e registro insieme: tre fetch in
+    // parallelo invece di tre attese in fila, e la scheda si disegna una volta
+    // sola. Il registro serve a sapere se questo tavolo ha delle regole di casa
+    // fra cui scegliere.
+    const [rules, , registro] = await Promise.all([
       regoleDi(entry),
       caricaNomiIncantesimo(entry),
+      loadRegistry().catch(() => null),
     ])
-    disegna(contenitore, ctx, id, entry, rules)
+    disegna(contenitore, ctx, id, entry, rules, registro)
   },
 
   dispose() {
@@ -149,12 +154,13 @@ async function regoleDi(entry) {
  * @param {string} id
  * @param {CharacterEntry} entry
  * @param {unknown} rules
+ * @param {import('../domain/packs.js').PackRegistry|null} registro
  */
-function disegna(contenitore, ctx, id, entry, rules) {
+function disegna(contenitore, ctx, id, entry, rules, registro) {
   const attiva = sezioneValida(ctx.route.params['sezione'])
   const d = derive(entry, rules)
   digitato = ''
-  vista = { ctx, id, entry, d, rules, root: contenitore, pagine: new Map(), annulla: null }
+  vista = { ctx, id, entry, d, rules, registro, root: contenitore, pagine: new Map(), annulla: null }
 
   const pagine = SEZIONI.map(s => h('section', {
     class: 'bsc-pager__page',
@@ -371,6 +377,7 @@ function gioco(ctx, entry, d, rules) {
 
     riposi(ctx, entry, d, rules, livello, dado),
     condizioni(ctx, play, rules),
+    regoleDelTavolo(ctx, entry),
   ]
 }
 
@@ -436,6 +443,76 @@ function rigaMorte(ctx, play, chiave, glifo) {
     h('span', { class: 'bsc-kv__label' }, `${glifo} ${ctx.t('prove.tiroSalvezza')}`),
     pipsTappabili(3, n, glifo, (quanti) => applica(
       modifica(play, p => { p.deaths[chiave] = quanti }))),
+  ])
+}
+
+/**
+ * Con quali regole si sta giocando questa scheda.
+ *
+ * Compare **solo** se c'è qualcosa da scegliere: il registro deve avere un
+ * pacchetto che si mette sopra al suo. Per un personaggio di D&D non c'è
+ * niente da scegliere, e una riga che dice sempre la stessa cosa è rumore.
+ *
+ * Serve perché il builder non sa che le regole di casa esistono: esporta
+ * `variant: "brancalonia"` e basta. Il tavolo che ci gioca sopra il proprio
+ * grimorio lo dice qui, una volta, e da quel momento la scheda legge quella
+ * lista di incantesimi e quelle regole.
+ *
+ * @param {ViewCtx} ctx
+ * @param {CharacterEntry} entry
+ * @returns {Node|null}
+ */
+function regoleDelTavolo(ctx, entry) {
+  const registro = vista?.registro
+  if (!registro) return null
+  const scelte = regoleDiCasa(registro, entry.meta.packId)
+  if (scelte.length < 2) return null
+
+  const suo = scelte.find(p => p.id === entry.meta.packId) ?? scelte[0]
+  return h('button', {
+    class: 'bsc-kv bsc-kv--azione', type: 'button',
+    onclick: () => chiediRegole(ctx, entry, scelte),
+  }, [
+    h('span', { class: 'bsc-kv__label' }, ctx.t('regole.titolo')),
+    h('span', { class: 'bsc-kv__value' }, suo?.nome ?? ''),
+  ])
+}
+
+/**
+ * @param {ViewCtx} ctx
+ * @param {CharacterEntry} entry
+ * @param {import('../domain/packs.js').Pack[]} scelte
+ */
+function chiediRegole(ctx, entry, scelte) {
+  apriFoglio(ctx, ctx.t('regole.titolo'), (chiudi) => [
+    h('p', { class: 'bsc-lead' }, ctx.t('regole.nota')),
+    h('div', { class: 'dc-elenco' }, scelte.map(p => {
+      const suo = p.id === entry.meta.packId
+      return h('button', {
+        class: ['bsc-kv', 'bsc-kv--azione', suo && 'is-attiva'],
+        type: 'button', 'aria-pressed': suo ? 'true' : 'false',
+        dataset: { pacchetto: p.id },
+        onclick: () => {
+          if (vista) {
+            const id = vista.id
+            ctx.update(['characters'], (st) => {
+              const e = st.characters[id]
+              // Solo il pacchetto: l'edizione la dà il pacchetto stesso, e lo
+              // snapshot del builder non si tocca mai.
+              if (e) e.meta = { ...e.meta, packId: p.id }
+            })
+          }
+          chiudi()
+          // Cambiano regole e compendio: la scheda va rifatta da capo, non
+          // ridisegnata a pezzi.
+          ctx.go(`#/scheda/${encodeURIComponent(vista?.id ?? '')}/gioco`)
+          location.reload()
+        },
+      }, [
+        h('span', { class: 'bsc-kv__label' }, p.nome),
+        suo ? h('span', { class: 'bsc-kv__value' }, '◉') : null,
+      ])
+    })),
   ])
 }
 

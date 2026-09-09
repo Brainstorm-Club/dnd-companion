@@ -18,7 +18,7 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v8'
+const VERSION = 'v10'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
@@ -41,10 +41,12 @@ const SHELL = [
   'src/views/index.js', 'src/views/library.js', 'src/views/sheet.js', 'src/views/dice.js',
   'src/views/checks.js', 'src/views/spells.js', 'src/views/progress.js', 'src/views/levelup.js',
   'src/views/settings.js', 'src/views/parti.js', 'src/views/features.js', 'src/views/scan.js',
+  'src/views/races.js',
   'src/gestures.js', 'src/anima-dadi.js', 'src/schermo.js', 'src/components/dice-tray.js',
   'src/domain/character.js', 'src/domain/check.js', 'src/domain/dice.js', 'src/domain/edition.js', 'src/domain/errata.js',
   'src/domain/importer.js', 'src/domain/packs.js', 'src/domain/progress.js', 'src/domain/rng.js',
   'src/domain/session.js', 'src/domain/spells.js', 'src/domain/reimport.js', 'src/domain/privilegi.js', 'src/domain/rules.js',
+  'src/domain/razze.js',
   // Il lettore di QR: pesa, e si carica solo inquadrando — ma va precaricato
   // lo stesso, perché al tavolo si importa una scheda anche senza campo.
   'src/domain/qr/index.js', 'src/domain/qr/immagine.js', 'src/domain/qr/moduli.js',
@@ -57,6 +59,9 @@ const SHELL = [
   // Le due varianti Acheron: le regole servono a leggere la scheda, e senza
   // l'indice il compendio di Brancalonia non si elenca.
   'data/rules/brancalonia.json', 'data/rules/apocalisse.json',
+  // Il grimorio del tavolo: poggia su Brancalonia, e senza di lui una scheda
+  // che lo usa a rete spenta perderebbe metà delle sue regole.
+  'data/rules/brancalonia-brainstorm.json', 'data/spells/brancalonia-brainstorm/index.json',
   'data/spells/brancalonia/index.json',
 ]
 

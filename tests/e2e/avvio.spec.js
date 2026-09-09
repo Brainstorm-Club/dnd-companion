@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 test('la shell si carica e naviga', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/Character Companion/)
-  await expect(page.locator('#tabbar a')).toHaveCount(4)
+  await expect(page.locator('#tabbar a')).toHaveCount(5)
 
   const tab = page.locator('#tabbar a', { hasText: 'Dadi' })
   await tab.click()
@@ -64,14 +64,14 @@ test('il corpo non scorre in orizzontale', async ({ page }) => {
 test('la tab bar sta in basso, dentro la safe-area, con le voci intere', async ({ page }) => {
   await page.goto('/')
   const voci = page.locator('#tabbar a')
-  // Quattro destinazioni dell'app: schede, dadi, magia, privilegi. Le
+  // Cinque destinazioni dell'app: schede, dadi, magia, classi, razze. Le
   // impostazioni sono salite nell'app bar, perché non sono un posto dove si va
   // durante una sessione.
-  await expect(voci).toHaveCount(4)
+  await expect(voci).toHaveCount(5)
   const box = await page.locator('#tabbar').boundingBox()
   const vp = page.viewportSize()
   expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1)
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     const b = await voci.nth(i).boundingBox()
     expect(b.width, `voce ${i} larga ${b.width}`).toBeGreaterThan(0)
     expect(b.x + b.width).toBeLessThanOrEqual(vp.width + 1)

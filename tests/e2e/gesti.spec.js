@@ -136,7 +136,7 @@ test.describe('il vassoio dei dadi', () => {
     await apri(page, '/#/dadi')
     await vassoio(page)
     await page.locator('#tabbar a').last().click()
-    await expect(page).toHaveURL(/#\/privilegi$/)
+    await expect(page).toHaveURL(/#\/razze$/)
   })
 
   test('a 1024 px non si apre: è già la terza colonna', async ({ page }) => {

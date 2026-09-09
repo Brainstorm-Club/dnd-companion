@@ -38,11 +38,11 @@
       ],
       "incluso": true,
       "base": "srd-2014",
-      "licenza": "Materiale non libero — citato per nome, senza testo",
-      "kb": 44,
+      "licenza": "Materiale non libero — di Acheron Games",
+      "kb": 112,
       "regole": "data/rules/brancalonia.json",
       "incantesimi": "data/spells/brancalonia/",
-      "attribuzione": "Brancalonia è un'ambientazione di Acheron Games (Setting Book, Macaronicon, L'Impero Randella Ancora). Non è materiale SRD e non è distribuito sotto licenza Creative Commons: questo pacchetto ne riporta soltanto nomi, struttura e valori numerici, necessari a leggere una scheda già creata. Nessun testo di regole è incluso, e per giocare serve il manuale. Marchi e contenuti restano di Acheron Games."
+      "attribuzione": "Brancalonia è un'ambientazione di Acheron Games. Non è materiale SRD e non è distribuito sotto licenza Creative Commons. I testi di regole riportati in questo pacchetto sono tratti dalle edizioni italiane dei manuali — Manuale di Ambientazione 2.6, Macaronicon 2.2, L'Impero Randella Ancora 1.0 — e sono opera di Acheron Games e dei suoi autori. Marchi, testi e contenuti restano di Acheron Games: questo pacchetto non concede su di essi alcun diritto, serve a giocare una scheda al tavolo e non sostituisce il manuale. Dove il testo non è stato riportato l'app lo dichiara."
     },
     {
       "id": "apocalisse",
@@ -58,6 +58,19 @@
       "regole": "data/rules/apocalisse.json",
       "incantesimi": "",
       "attribuzione": "Apocalisse è un'ambientazione di Acheron Games. Non è materiale SRD e non è distribuito sotto licenza Creative Commons: questo pacchetto ne riporta soltanto nomi, struttura e valori numerici, necessari a leggere una scheda già creata. Nessun testo di regole è incluso, e per giocare serve il manuale. Marchi e contenuti restano di Acheron Games."
+    },
+    {
+      "id": "brancalonia-brainstorm",
+      "nome": "Grimorio di Bassa Lega",
+      "edizione": "2014",
+      "varianti": [],
+      "incluso": true,
+      "base": "brancalonia",
+      "licenza": "Regole di casa — Brainstorm Club",
+      "kb": 22,
+      "regole": "data/rules/brancalonia-brainstorm.json",
+      "incantesimi": "data/spells/brancalonia-brainstorm/",
+      "attribuzione": "Il «Grimorio di Bassa Lega» raccoglie le regole di casa della campagna «L’Impero Randella Ancora» del Brainstorm Club: la magia scadente, il Tiro di Cilecca, gli ingredienti e la lista degli incantesimi del Regno. Le regole di casa sono opera del tavolo; gli incantesimi sono riassunti dai manuali di Brancalonia, che è un’ambientazione di Acheron Games — marchi, testi e contenuti restano loro. In caso di dubbio fa fede il manuale, e in caso di lite fa fede il Condottiero."
     }
   ]
 }

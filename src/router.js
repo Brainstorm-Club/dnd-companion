@@ -6,7 +6,7 @@
  * e non ne vale la pena per sei viste.
  *
  * Le rotte sono `#/libreria`, `#/inquadra`, `#/scheda/<id>/<sezione>`, `#/dadi`,
- * `#/prove`, `#/px`, `#/incantesimi`, `#/impostazioni`.
+ * `#/prove`, `#/px`, `#/incantesimi`, `#/privilegi`, `#/razze`, `#/impostazioni`.
  */
 
 /** @typedef {{ nome: string, params: Record<string, string> }} Route */
@@ -23,6 +23,7 @@ const ROTTE = [
   { re: /^#\/livello\/([^/]+)$/,                    nome: 'livello',      chiavi: ['id'] },
   { re: /^#\/incantesimi(?:\/([^/]+))?$/,           nome: 'incantesimi',  chiavi: ['id'] },
   { re: /^#\/privilegi$/,                           nome: 'privilegi',    chiavi: [] },
+  { re: /^#\/razze$/,                               nome: 'razze',        chiavi: [] },
   { re: /^#\/impostazioni$/,                        nome: 'impostazioni', chiavi: [] },
 ]
 
