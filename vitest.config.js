@@ -14,7 +14,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/domain/**/*.js'],
-      thresholds: { statements: 90, branches: 78, functions: 90, lines: 90 },
+      // Le soglie stanno **appena sotto** il valore raggiunto, non dieci punti
+      // sotto: una soglia più bassa del reale non ferma nessuna regressione —
+      // si possono cancellare due file di test interi e restare verdi, e lo si
+      // è verificato. Si alzano quando la copertura sale, non si abbassano
+      // quando scende.
+      thresholds: { statements: 93, branches: 83.5, functions: 93.5, lines: 96 },
       reporter: ['text-summary'],
     },
   },

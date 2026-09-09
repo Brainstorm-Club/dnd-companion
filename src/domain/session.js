@@ -301,8 +301,9 @@ export function slotsMassimi(rules, snapshot) {
   /** @type {number[]} */
   const out = []
   for (const v of vociDiClasse(snapshot)) {
-    const tipo = oggetto(classi[v.classId])['casterType']
-    if (typeof tipo !== 'string' || !tipo) continue
+    const classe = oggetto(classi[v.classId])
+    const tipo = tipoDiIncantatore(classe, v.sottoclasseId)
+    if (!tipo) continue
     const riga = lista(tabelle[tipo])[Math.min(Math.max(v.livello, 1), 20) - 1]
     rigaSlot(riga).forEach((n, i) => { out[i] = Math.max(out[i] ?? 0, n) })
   }
@@ -452,17 +453,50 @@ function curaFinoA(cur, quanto, pfMax) {
  * Le classi del personaggio col loro livello. Uno snapshot monoclasse tiene
  * tutto nei campi in cima e ha `classes: []`: i due casi si appianano qui.
  * @param {Record<string, unknown>} s
- * @returns {Array<{classId: string, livello: number}>}
+ * @returns {Array<{classId: string, livello: number, sottoclasseId: string}>}
  */
 function vociDiClasse(s) {
   const multi = lista(s['classes']).map(c => oggetto(c))
     .filter(o => typeof o['classId'] === 'string' && o['classId'])
-    .map(o => ({ classId: String(o['classId']), livello: intero(o['level']) }))
+    .map(o => ({
+      classId: String(o['classId']),
+      livello: intero(o['level']),
+      sottoclasseId: typeof o['subclassId'] === 'string' ? o['subclassId'] : String(o['subclass'] ?? ''),
+    }))
   if (multi.length) return multi
   const id = s['className']
   return typeof id === 'string' && id
-    ? [{ classId: id, livello: Math.max(1, intero(s['level'])) }]
+    ? [{
+      classId: id,
+      livello: Math.max(1, intero(s['level'])),
+      sottoclasseId: typeof s['subclass'] === 'string' ? s['subclass'] : '',
+    }]
     : []
+}
+
+/**
+ * Che incantatore è, davvero.
+ *
+ * Un **terzo-incantatore** la magia non ce l'ha per classe: gliela dà la
+ * sottoclasse — Cavaliere Mistico, Furfante Arcano — e il pacchetto marca
+ * `casterType: "third"` sulla classe intera perché è lì che la tabella degli
+ * slot vive. Leggerla così com'è dava slot a ogni guerriero e a ogni ladro:
+ * un Campione di 3° si ritrovava due slot di 1° nella sezione Magia, e
+ * l'SRD 5.1 non spedisce nemmeno una sottoclasse che li conceda.
+ *
+ * Pieni e mezzi incantatori invece lo sono per classe, e non serve chiedere
+ * alla sottoclasse.
+ *
+ * @param {Record<string, unknown>} classe
+ * @param {string} sottoclasseId
+ * @returns {string}
+ */
+function tipoDiIncantatore(classe, sottoclasseId) {
+  const suo = oggetto(oggetto(classe['subclasses'])[sottoclasseId])['casterType']
+  if (typeof suo === 'string' && suo) return suo
+  const tipo = classe['casterType']
+  if (typeof tipo !== 'string' || !tipo) return ''
+  return tipo === 'third' ? '' : tipo
 }
 
 /** @param {unknown} riga @returns {number[]} */

@@ -18,11 +18,24 @@
  * Uno per uno, con `allSettled`, e i mancanti finiscono a console.
  */
 
-const VERSION = 'v10'
+const VERSION = 'v11'
 const CACHE = `dndc-${VERSION}`
 
 /** Le due edizioni, nell'ordine di default se la pagina non dice la sua. */
-const EDIZIONI = ['2024', '2014']
+/**
+ * Il precache lungo non conosce le edizioni: legge il **registro**.
+ *
+ * Prima questa era una lista di due edizioni scritta a mano, e i pacchetti che
+ * non sono un'edizione — Brancalonia, il grimorio del tavolo — avevano in
+ * cache il solo indice: a rete spenta l'app mostrava i nomi degli incantesimi
+ * e, al posto del testo, la frase sulla licenza. Cioè dava la colpa al
+ * permesso di pubblicare per un file che non era stato scaricato.
+ *
+ * Era anche una crepa nella promessa dell'architettura — «aggiungere una
+ * variante è scrivere una voce nel registro» — perché bisognava anche
+ * ricordarsi di editare questo file.
+ */
+const REGISTRO = 'data/packs.json'
 
 /** Quanti blocchi di testo per edizione: i livelli da 0 (trucchetti) a 9. */
 const LIVELLI = 10
@@ -57,24 +70,36 @@ const SHELL = [
   // I due indici: senza, il compendio non si può nemmeno elencare.
   'data/spells/2014/index.json', 'data/spells/2024/index.json',
   // Le due varianti Acheron: le regole servono a leggere la scheda, e senza
-  // l'indice il compendio di Brancalonia non si elenca.
-  'data/rules/brancalonia.json', 'data/rules/apocalisse.json',
-  // Il grimorio del tavolo: poggia su Brancalonia, e senza di lui una scheda
-  // che lo usa a rete spenta perderebbe metà delle sue regole.
-  'data/rules/brancalonia-brainstorm.json', 'data/spells/brancalonia-brainstorm/index.json',
-  'data/spells/brancalonia/index.json',
+  // l'indice il compendio non si elenca. Gli **altri** pacchetti non stanno
+  // qui: li dà il registro, ai tempi 2 e 3, catena compresa.
 ]
 
 /**
- * Tempi 2 e 3 — una edizione per intero: il pacchetto regole e i dieci blocchi
- * di testo del compendio.
- * @param {string} ed
+ * Tempi 2 e 3 — un pacchetto per intero: le regole e i dieci blocchi di testo
+ * del suo compendio, se ne ha uno.
+ * @param {{regole?: string, incantesimi?: string}} pack
  * @returns {string[]}
  */
-function fileEdizione(ed) {
-  const lista = [`data/rules/${ed}.json`, `data/spells/${ed}/index.json`, `data/spells/${ed}/ponte.json`]
-  for (let l = 0; l < LIVELLI; l++) lista.push(`data/spells/${ed}/l${l}.json`)
+function filePacchetto(pack) {
+  const lista = pack.regole ? [pack.regole] : []
+  const inc = pack.incantesimi
+  if (inc) {
+    lista.push(`${inc}index.json`, `${inc}ponte.json`)
+    for (let l = 0; l < LIVELLI; l++) lista.push(`${inc}l${l}.json`)
+  }
   return lista
+}
+
+/** I pacchetti dichiarati nel registro. @returns {Promise<any[]>} */
+async function pacchetti() {
+  try {
+    const c = await caches.open(CACHE)
+    const res = (await c.match(REGISTRO)) ?? (await fetch(REGISTRO))
+    const reg = await res.json()
+    return Array.isArray(reg.packs) ? reg.packs : []
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -109,16 +134,36 @@ self.addEventListener('activate', (e) => {
 let inCorso = null
 
 /**
- * Tempi 2 e 3, in sequenza. L'edizione in uso per prima; l'altra dopo, che è
- * il senso di «in coda».
- * @param {string|null} prima
+ * Tempi 2 e 3, in sequenza: prima il pacchetto in uso e tutta la sua catena —
+ * un pacchetto che eredita senza il suo base è mezzo pacchetto — poi gli altri.
+ * @param {string|null} suo  l'id del pacchetto del personaggio aperto
  */
-function precaricaEdizioni(prima) {
+function precaricaPacchetti(suo) {
   if (inCorso) return inCorso
-  const ordine = EDIZIONI.includes(prima) ? [prima, ...EDIZIONI.filter(x => x !== prima)] : [...EDIZIONI]
   inCorso = (async () => {
-    await precache(fileEdizione(ordine[0]), `tempo 2 (edizione ${ordine[0]})`)
-    await precache(fileEdizione(ordine[1]), `tempo 3 (edizione ${ordine[1]})`)
+    const packs = await pacchetti()
+    if (!packs.length) return
+
+    /** @param {string|null} id @returns {string[]} */
+    const catena = (id) => {
+      const out = []
+      let corrente = id
+      while (corrente && !out.includes(corrente)) {
+        const p = packs.find(x => x.id === corrente)
+        if (!p) break
+        out.push(p.id)
+        corrente = p.base ?? null
+      }
+      return out
+    }
+
+    const primi = catena(suo)
+    const ordine = [...primi, ...packs.map(p => p.id).filter(id => !primi.includes(id))]
+    let n = 2
+    for (const id of ordine) {
+      const p = packs.find(x => x.id === id)
+      if (p) await precache(filePacchetto(p), `tempo ${n++} (${id})`)
+    }
   })().finally(() => { inCorso = null })
   return inCorso
 }
@@ -156,5 +201,5 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('message', (e) => {
   const d = e.data
   if (d === 'skip-waiting' || (d && d.tipo === 'skip-waiting')) { self.skipWaiting(); return }
-  if (d && d.tipo === 'precarica') e.waitUntil(precaricaEdizioni(d.edizione ?? null))
+  if (d && d.tipo === 'precarica') e.waitUntil(precaricaPacchetti(d.pacchetto ?? null))
 })

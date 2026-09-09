@@ -471,7 +471,7 @@ function pfDaDadoVita(s) {
  * @param {Record<string, unknown>} s
  * @returns {import('../storage.js').PlayState}
  */
-function statoIniziale(s) {
+export function statoIniziale(s) {
   const max = numero(s['maxHp']) ?? 1
   const ora = numero(s['currentHp'])
   /** @type {Record<string, number>} */

@@ -226,7 +226,16 @@ function paragrafi(righe) {
   righe.forEach((r, i) => {
     // Il capoverso lo segna il rientro, non il cambio di colonna: una frase che
     // scavalca la fine della pagina resta una frase sola.
-    if (i === 0 || r.rientro) blocchi.push([])
+    //
+    // Ma una **parola** spezzata non lo segna mai: se la riga prima finisce
+    // col trattino della sillabazione, quella dopo la completa, quale che sia
+    // il suo rientro. Senza questa eccezione la parola restava divisa a
+    // cavallo di due capoversi — «chilome-\ntri», «termi-\nnando» — e a
+    // schermo, dove i ritorni a capo si appiattiscono, si leggeva
+    // «chilome- tri». Diciannove incantesimi del 2024.
+    const prima = blocchi.length ? (blocchi[blocchi.length - 1]?.slice(-1)[0] ?? '') : ''
+    const continua = /[a-zà-ù]-$/.test(prima) && /^[a-zà-ù]/.test(r.testo)
+    if (i === 0 || (r.rientro && !continua)) blocchi.push([])
     at(blocchi, blocchi.length - 1).push(r.testo)
   })
   return blocchi

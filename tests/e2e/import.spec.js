@@ -347,3 +347,54 @@ test.describe('le regole del tavolo', () => {
     await expect(page.locator('#principale')).toContainText(/parole di buona sorte/i)
   })
 })
+
+test('una scheda illeggibile non si porta dietro le altre', async ({ page }) => {
+  // `derive()` legge lo snapshot senza guardie, ed è giusto: è il cuore dei
+  // conti. Ma una voce corrotta faceva cadere l'intera libreria, e chi aveva
+  // tre personaggi ne perdeva la vista di tre per colpa di uno.
+  await importa(page, CHIERICO)
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('dndc') ?? '{}')
+    s.characters['rotta'] = { meta: {}, play: {}, levels: [] }
+    localStorage.setItem('dndc', JSON.stringify(s))
+  })
+  await page.reload()
+
+  await expect(page.locator('#principale')).toContainText('Ulric')
+  await expect(page.locator('.dc-pg--rotta')).toHaveCount(1)
+  await expect(page.locator('#principale')).not.toContainText(/qualcosa non ha funzionato/i)
+})
+
+test('duplicare dà una scheda nuova, non una copia della partita', async ({ page }) => {
+  await importa(page, CHIERICO)
+  await page.locator('.dc-pg__testa').first().click()
+  // si gioca un po': una ferita e una nota
+  await page.locator('#principale [data-sezione="gioco"] .bsc-stepper__btn').first().click()
+  await page.goto(page.url().replace(/\/[^/]+$/, '/storia'))
+  await page.locator('#dc-note').fill('la partita di ieri sera')
+
+  await page.goto('/#/libreria')
+  await page.locator('.dc-pg', { hasText: 'Ulric' }).getByRole('button', { name: /duplica/i }).click()
+  await expect(page.locator('.dc-pg')).toHaveCount(2)
+
+  // Il salvataggio è raggruppato (`setTimeout(0)`): si aspetta che sia sceso
+  // su disco invece di leggere subito e sperare.
+  await expect.poll(async () => page.evaluate(() =>
+    Object.keys(JSON.parse(localStorage.getItem('dndc') ?? '{}').characters ?? {}).length)).toBe(2)
+
+  const stato = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('dndc') ?? '{}')
+    return Object.values(s.characters).map((/** @type {any} */ c) => ({
+      nome: c.meta.name, note: c.play.notes, snapId: c.snapshot.id ?? null,
+    }))
+  })
+  const copia = stato.find(c => /copia/.test(c.nome))
+  const suo = stato.find(c => !/copia/.test(c.nome))
+
+  // la copia non si porta dietro la partita…
+  expect(copia.note).toBe('')
+  expect(suo.note).toBe('la partita di ieri sera')
+  // …e non è indistinguibile dall'originale per chi ri-importa
+  expect(copia.snapId).toBeNull()
+  expect(suo.snapId).toBeTruthy()
+})

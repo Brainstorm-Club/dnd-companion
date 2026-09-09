@@ -55,8 +55,33 @@ export function update(sezioni, muta) {
 
 function scheduleSave() {
   if (pending !== undefined) return
-  pending = setTimeout(() => { pending = undefined; save(state) }, 0)
+  pending = setTimeout(() => { pending = undefined; salvaEAvvisa() }, 0)
 }
+
+/**
+ * Salva, e se non ci riesce **lo dice**.
+ *
+ * `save()` restituiva un esito che nessuno leggeva. Con `localStorage` pieno
+ * l'app continuava a funzionare benissimo — in memoria — e non salvava più
+ * niente: i personaggi c'erano, i punti ferita si muovevano, le note si
+ * scrivevano, e alla riapertura non c'era più niente di tutto questo. Il modo
+ * peggiore di perdere dati è farlo mentre l'interfaccia dice di sì.
+ *
+ * L'avviso passa da un evento perché questo modulo non conosce il DOM: chi
+ * disegna decide come mostrarlo.
+ */
+function salvaEAvvisa() {
+  const esito = save(state)
+  if (esito.ok) { guasto = false; return }
+  // Una volta sola: a schermo pieno ogni tap fallisce, e non serve un toast
+  // per ognuno.
+  if (guasto) return
+  guasto = true
+  dispatchEvent(new CustomEvent('dc:salvataggio-fallito', { detail: { errore: esito.error } }))
+}
+
+/** Se l'ultimo salvataggio è fallito: evita di ripetere l'avviso a ogni tap. */
+let guasto = false
 
 /**
  * Scrive subito, se c'era qualcosa in attesa.
@@ -70,7 +95,7 @@ export function flush() {
   if (pending === undefined) return
   clearTimeout(pending)
   pending = undefined
-  save(state)
+  salvaEAvvisa()
 }
 
 if (typeof document !== 'undefined') {

@@ -102,6 +102,17 @@ describe('la fusione', () => {
     expect(out.features[0]).toEqual({ id: 'ira', name: 'Ira feroce', description: 'testo' })
   })
 
+  it('un elemento sbadato senza id non fa cancellare tutto il resto', () => {
+    // La garanzia dichiarata è che un figlio non possa **togliere** niente al
+    // base. Cadeva su una svista: bastava un elemento senza `id` perché
+    // l'elenco fosse letto come una tabella, e una tabella si sostituisce
+    // intera. Due privilegi sparivano da una scheda senza un errore.
+    const base = { features: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }] }
+    const sopra = { features: [{ id: 'a', name: 'A2' }, { name: 'senza id' }] }
+    const out = /** @type {any} */ (mergeRules(base, sopra))
+    expect(out.features.map((/** @type {any} */ f) => f.name)).toEqual(['A2', 'B', 'C', 'senza id'])
+  })
+
   it('le tabelle si sostituiscono intere, perché sono sequenze posizionali', () => {
     // Concatenarle darebbe una tabella di quaranta livelli; fonderle per indice
     // darebbe una tabella metà di uno e metà dell'altro, che è peggio.
@@ -168,6 +179,44 @@ describe('il caricatore', () => {
     expect(chiesti.filter(u => u.endsWith('.json') && u !== 'data/packs.json')).toEqual(['base.json'])
   })
 
+  /**
+   * La precedenza lungo la catena, su un campo **conteso**.
+   *
+   * Prima i pacchetti finti non si contraddicevano su niente — `hitDie` solo
+   * nel base, `burattinaio` solo nel figlio — e invertire il ciclo della
+   * fusione (base che vince sul figlio, cioè l'opposto esatto della regola)
+   * lasciava tutta la suite verde. `mergeRules` era provata da sola; la catena
+   * no, ed è la catena che l'app usa.
+   */
+  it('lungo la catena vince chi sta più in alto, non chi sta sotto', async () => {
+    /** @type {any} */
+    const conteso = {
+      'data/packs.json': REGISTRO,
+      'base.json': { chi: 'base', soloBase: 1, classes: { barbarian: { hitDie: 12 } } },
+      'figlio.json': { chi: 'figlio', soloFiglio: 2, classes: { barbarian: { hitDie: 10 } } },
+      'nipote.json': { chi: 'nipote' },
+    }
+    /** @type {any} */
+    const f = async (/** @type {string} */ url) => ({
+      ok: conteso[url] !== undefined, status: 200, json: async () => conteso[url],
+    })
+
+    const figlio = /** @type {any} */ (await loadRules('figlio', f))
+    expect(figlio.chi).toBe('figlio')
+    expect(figlio.classes.barbarian.hitDie).toBe(10)   // non 12
+    expect(figlio.soloBase).toBe(1)                    // e il resto lo eredita
+
+    _resetRules()
+    const { _setRegistry } = await import('../../src/domain/packs.js')
+    _setRegistry(null)
+
+    // e con tre gradini vince il più alto, non quello di mezzo
+    const nipote = /** @type {any} */ (await loadRules('nipote', f))
+    expect(nipote.chi).toBe('nipote')
+    expect(nipote.soloFiglio).toBe(2)
+    expect(nipote.classes.barbarian.hitDie).toBe(10)
+  })
+
   it('un pacchetto che eredita vede anche ciò che non ridefinisce', async () => {
     const r = /** @type {any} */ (await loadRules('nipote', fetcher))
     expect(Object.keys(r.classes.barbarian.subclasses).sort()).toEqual(['berserker', 'pagano', 'terzo'])
@@ -188,6 +237,25 @@ describe('il caricatore', () => {
     const [a, b] = await Promise.all([loadRules('figlio', fetcher), loadRules('figlio', fetcher)])
     expect(a).toBe(b)
     expect(chiesti.filter(u => u === 'figlio.json')).toHaveLength(1)
+  })
+
+  it('un buco di rete non diventa un ricordo', async () => {
+    // `leggi()` torna `null` sia per un file assente sia per una rete caduta,
+    // e sono due cose diverse. Ricordare il secondo caso avvelenava la
+    // sessione intera — regole nulle, sottoclassi mancanti, compendi vuoti —
+    // anche dopo che la rete era tornata, e non si riparava senza ricaricare
+    // la pagina.
+    let giu = true
+    /** @type {any} */
+    const intermittente = async (/** @type {string} */ url) => {
+      if (giu && url !== 'data/packs.json') return { ok: false, status: 503, json: async () => null }
+      return fetcher(url)
+    }
+
+    expect(await loadRules('base', intermittente)).toBeNull()
+    giu = false
+    const dopo = /** @type {any} */ (await loadRules('base', intermittente))
+    expect(dopo?.classes?.barbarian?.hitDie).toBe(12)
   })
 
   it('un pacchetto che non è nel registro dà null, non un\'eccezione', async () => {
@@ -227,6 +295,30 @@ describe('le regole di casa', () => {
     // indietro, o per passare all'altra.
     expect(regoleDiCasa(REG, 'grimorio').map(p => p.id))
       .toEqual(['brancalonia', 'grimorio', 'altre-regole'])
+  })
+
+  it('con tre gradini il pacchetto in uso è fra le scelte, non fuori', () => {
+    // Prima tornava `['brancalonia', 'grimorio', 'altre-regole']` per un
+    // personaggio che sta usando un pacchetto appeso al grimorio: la scheda
+    // dichiarava come regole correnti quelle della radice, cioè non le sue.
+    const tre = {
+      v: 1,
+      packs: [
+        pacchetto({ id: 'srd-2014', varianti: ['dnd5e'] }),
+        pacchetto({ id: 'brancalonia', base: 'srd-2014', varianti: ['brancalonia'] }),
+        pacchetto({ id: 'grimorio', base: 'brancalonia', varianti: [] }),
+        pacchetto({ id: 'sotto-grimorio', base: 'grimorio', varianti: [] }),
+      ],
+    }
+    expect(regoleDiCasa(tre, 'sotto-grimorio').map(p => p.id)).toContain('sotto-grimorio')
+  })
+
+  it('un anello nel registro non manda in giro all\'infinito il menù', () => {
+    const anello = {
+      v: 1,
+      packs: [pacchetto({ id: 'a', base: 'b', varianti: [] }), pacchetto({ id: 'b', base: 'a', varianti: [] })],
+    }
+    expect(() => regoleDiCasa(anello, 'a')).not.toThrow()
   })
 
   it('dove non ce ne sono, l\'elenco è vuoto: non si mostra una scelta di uno', () => {

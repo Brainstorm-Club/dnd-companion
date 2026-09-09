@@ -1,7 +1,7 @@
 /**
  * I pacchetti regole e l'aumento di livello.  ── Lotto C ──
  *
- * I `it.todo` di `contratti.test.js` sotto «lotto C» sono diventati i test qui
+ * I comportamenti dichiarati per il lotto C sono diventati i test qui
  * sotto. Si leggono i **file generati**, non il generatore: `build-rules.mjs`
  * ha bisogno dei due PDF degli SRD, che non stanno nel repo, mentre i JSON sì.
  * Quello che qui si verifica è perciò il contratto del dato — che è anche

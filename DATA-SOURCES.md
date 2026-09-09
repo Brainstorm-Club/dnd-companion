@@ -34,7 +34,7 @@ con una sottoclasse ciascuna, i talenti, la maestria d'arma.
 |---|---|
 | *Blade Ward* e *Hex* | Sono del *Player's Handbook*, non dell'SRD 5.1. L'app ne mostra il nome, senza testo. Sono gli unici due dei 317 incantesimi del builder che il ponte non aggancia — il builder ne dichiara tredici fuori SRD, ma sui dati veri i non agganciati sono due |
 | Sottoclassi oltre a quella per classe dell'SRD | Idem |
-| Le sottorazze del 2014, tranne una per razza | L'SRD 5.1 ne pubblica una sola: mancano elfo scuro, elfo dei boschi, gnomo delle foreste, nano delle montagne e halfling tozzo. Dodici tratti su 46, e mancano **alla fonte**, non all'estrazione |
+| Il **testo** di dodici tratti di razza su 46, nel 2014 | Le sottorazze ci sono tutte — il pacchetto le porta, e i test lo verificano: quello che manca sono le loro *descrizioni*. L'SRD 5.1 pubblica il testo di una sola sottorazza per razza, quindi elfo scuro, elfo dei boschi, gnomo delle foreste, nano delle montagne e halfling tozzo restano senza. Undici mancano alla fonte; il dodicesimo — il linguaggio extra dell'umano — è nell'SRD sotto «Linguaggi» e non si aggancia perché il builder lo chiama in un altro modo: quello è un buco nostro |
 | Dodici background su tredici, nel 2014 | L'SRD 5.1 pubblica solo l'accolito. Gli altri sono del *Player's Handbook* |
 | Gli antenati draconici del 2024 | La tabella dà solo il tipo di danno, che il nome del tratto già dice per intero («Antenato Draconico: Nero (Acido)»). Una descrizione di due parole sarebbe rumore |
 | Apocalisse (Acheron Games) | Materiale protetto, spedito senza testi: nomi, struttura e numeri, quanto basta a leggere una scheda già creata. `tests/unit/varianti-senza-testo.test.js` fa la guardia |
@@ -51,11 +51,27 @@ testo della campagna — riassunto di proposito, «in caso di dubbio fa fede il 
 forma leggibile da un programma, così l'app la può *fare* invece di mostrarla soltanto. È la prima catena a
 tre del registro: brainstorm → brancalonia → srd-2014.
 
-Il grimorio traduce a modo suo, e non come il builder: «Dito della Sorte» dove il builder dice «Dito del
-Fato», «Emettere Fattura» dove dice «Chex». Il generatore li appaia per livello e classi — i due dati che
-nessuna traduzione cambia — con la scuola a sciogliere gli ex aequo, e **si ferma** invece di indovinare
-quando restano due candidati. Da lì è uscito un errore del builder: *Storia Spaventosa* vi è classificata
-come Trasmutazione, mentre è Ammaliamento.
+Il grimorio e il builder chiamano gli stessi incantesimi in modo diverso, e **è il grimorio ad avere
+ragione**: usa i nomi stampati sui manuali — «Dito della Sorte», «Emettere Fattura», «Mondare» — mentre il
+builder ne ha coniati di suoi che in nessun manuale compaiono («Dito del Fato», «Chex», «Bonificare»). Otto
+nomi su quattordici divergono, e il caso più visibile è *Bonificare*, il cui testo estratto dal manuale
+**cita sé stesso** col nome giusto: «un'area sotto l'effetto di un incantesimo *mondare*».
+
+Il generatore li appaia per livello e classi — i due dati che nessuna traduzione cambia — con la scuola a
+sciogliere gli ex aequo, e **si ferma** invece di indovinare quando restano due candidati. Da lì è uscito un
+errore del builder: *Storia Spaventosa* vi era classificata come Trasmutazione mentre il Macaronicon la dà
+come Ammaliamento, ed è stato corretto a monte.
+
+## Le tabelle stampate dentro un incantesimo
+
+Tre incantesimi del 2024 — *Teletrasporto*, *Spruzzo prismatico*, *Muro prismatico* — hanno una tabella
+stampata in mezzo al testo. L'estrattore legge il PDF a due colonne e quelle celle finiscono intrecciate alla
+prosa: la tabella del teletrasporto esce colonna per colonna e non è più leggibile, e in due casi una parola
+resta spezzata da un numero di riga («il bersaglio è tratte- / 6 / nuto»).
+
+È l'unico difetto di estrazione noto e non risolto, ed è dichiarato invece che nascosto: un test fissa
+l'elenco di quei tre, così non può allungarsi in silenzio. Prima erano diciannove, ma gli altri sedici erano
+sillabazione ordinaria e sono stati ricongiunti.
 
 ## I PDF
 

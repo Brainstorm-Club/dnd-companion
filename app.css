@@ -296,7 +296,8 @@ body {
     transform: none;
   }
 
-  .dc-tray__maniglia, .dc-tray__chiudi { display: none; }
+  .dc-tray__maniglia, .dc-tray__chiudi {
+  display: none; }
 
   /* Qui «chiuso» non vuol dire niente: nessuno l'ha mai aperto e nessuno deve.
      Torna il fondo, torna il contenuto. */
@@ -431,8 +432,8 @@ a.bsc-wordmark:focus-visible {
 .dc-vista .bsc-kv,
 .dc-vista .bsc-field,
 .dc-vista button {
-  scroll-margin-block-start: calc(var(--dc-appbar-h, 4rem) + var(--bsc-space-3));
-  scroll-margin-block-end: calc(var(--bsc-tabbar-h, 4rem) + var(--bsc-space-3));
+  scroll-margin-block-start: calc(var(--dc-appbar-h) + var(--bsc-space-3));
+  scroll-margin-block-end: calc(var(--bsc-tabbar-h) + var(--bsc-space-3));
 }
 
 /* Una riga di incantesimo: nome, livello, e il bottone per segnarne l'uso.
@@ -600,7 +601,7 @@ ul.dc-elenco > li { min-width: 0; }
    finisce sotto la presa — che è esattamente dove si tocca. */
 .dc-main {
   padding-block-end: calc(
-    var(--bsc-tabbar-h, 4rem) + var(--dc-maniglia-h, 2.75rem) + var(--bsc-space-5)
+    var(--bsc-tabbar-h) + var(--dc-maniglia-h) + var(--bsc-space-5)
     + env(safe-area-inset-bottom, 0px)
   );
 }
@@ -654,6 +655,16 @@ ul.dc-elenco > li { min-width: 0; }
   outline-offset: 2px;
   border-radius: var(--bsc-radius-sm);
 }
+
+/* Il marchio è anche il modo di tornare a casa dalla barra: è un bersaglio, e
+   come tale vuole i suoi 44 px di altezza. Ne aveva 26. */
+.dc-barra .bsc-wordmark { display: inline-flex; align-items: center; min-height: var(--bsc-tap-min); }
+
+/* Sotto i 375 px il marchio non stava, e la barra spingeva fuori dallo schermo
+   il pulsante del tema: per premerlo bisognava scorrere la pagina di lato. Il
+   marchio si restringe, i controlli no — sono bersagli da dito e non si toccano. */
+.dc-barra .bsc-wordmark { min-width: 0; overflow: hidden; }
+.dc-barra .bsc-theme-toggle, .dc-barra .dc-barra__azione { flex: 0 0 auto; }
 
 /* Il nome di chi si sta giocando, nella barra: è la voce più grossa lassù,
    perché è l'unica che cambia da personaggio a personaggio.
@@ -710,6 +721,10 @@ ul.dc-elenco > li { min-width: 0; }
 /* Il filtro delle sottorazze, chiuso finché non serve. */
 .dc-sotto > summary { display: inline-flex; align-items: center; min-height: var(--bsc-tap-min); }
 .dc-sotto[open] > summary { margin-block-end: var(--bsc-space-2); }
+
+/* L'attribuzione: un paragrafo di licenza, che si legge poco e si deve poter
+   leggere tutto. Corpo piccolo, ma prosa che va a capo. */
+.dc-attribuzione { font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); overflow-wrap: anywhere; }
 
 /* La nota su un errore della fonte: si legge, non urla. */
 .dc-errata { margin-top: var(--bsc-space-2); font-size: var(--bsc-text-sm); color: var(--bsc-text-muted); }
@@ -861,3 +876,6 @@ ul.dc-elenco > li { min-width: 0; }
 }
 
 .dc-qr__stato[data-tono="errore"] { color: var(--bsc-text); }
+
+/* Anche chiudere il cassetto è un bersaglio da dito: ne aveva 28 di altezza. */
+.dc-tray__chiudi { min-block-size: var(--bsc-tap-min); }

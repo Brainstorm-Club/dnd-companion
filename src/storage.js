@@ -145,7 +145,37 @@ export function migrate(raw) {
     s = step(s)
     v = s.v
   }
-  return /** @type {AppState} */ (s)
+  // Arrivare alla versione giusta non basta: uno stato che *dichiara* la
+  // versione corrente non passava da nessun controllo, e se gli mancava un
+  // campo l'app moriva all'avvio su «Caricamento…», su ogni rotta, senza modo
+  // di raggiungere le impostazioni per azzerare. Sul telefono di chi gioca è un
+  // mattone, e la via sanzionata per far evolvere lo stato — una migrazione —
+  // è esattamente ciò che può produrlo.
+  return sano(s) ? /** @type {AppState} */ (s) : emptyState()
+}
+
+/**
+ * Uno stato ha la forma che il resto dell'app dà per scontata.
+ *
+ * Non è una validazione di schema: è l'elenco dei campi che qualcuno legge
+ * senza chiedere permesso, e la cui assenza non dà un dato sbagliato ma una
+ * schermata bianca.
+ * @param {any} s
+ * @returns {boolean}
+ */
+function sano(s) {
+  return !!s
+    && oggetto(s.characters)
+    && oggetto(s.settings)
+    && typeof s.settings.lang === 'string'
+    && typeof s.settings.theme === 'string'
+    && Array.isArray(s.diceLog)
+    && (s.activeId === null || typeof s.activeId === 'string')
+}
+
+/** @param {unknown} v */
+function oggetto(v) {
+  return !!v && typeof v === 'object' && !Array.isArray(v)
 }
 
 /**

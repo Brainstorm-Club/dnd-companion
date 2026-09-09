@@ -111,18 +111,17 @@ if ('serviceWorker' in navigator) {
       nuovo.addEventListener('statechange', () => { if (nuovo.state === 'installed') proponi(reg) })
     })
 
-    // Tempi 2 e 3 del precache (PIANO.md § 7): l'edizione in uso per prima,
-    // l'altra in coda. Il service worker non può leggere localStorage: glielo
-    // diciamo noi, e se non lo sappiamo decide lui un ordine.
-    let edizione = null
+    // Tempi 2 e 3 del precache (PIANO.md § 7): il pacchetto in uso per primo,
+    // gli altri in coda. Il service worker non può leggere localStorage:
+    // glielo diciamo noi, e se non lo sappiamo decide lui un ordine.
+    let pacchetto = null
     try {
       const s = JSON.parse(localStorage.getItem('dndc') || '{}')
-      const pref = s && s.settings && s.settings.edition
       const attivo = s && s.characters && s.activeId && s.characters[s.activeId]
-      edizione = (pref && pref !== 'auto') ? pref : (attivo && attivo.meta && attivo.meta.edition) || null
+      pacchetto = (attivo && attivo.meta && attivo.meta.packId) || null
     } catch { /* stato illeggibile: l'ordine di default va benissimo */ }
     const dest = reg.active || sw.controller
-    if (dest) dest.postMessage({ tipo: 'precarica', edizione })
+    if (dest) dest.postMessage({ tipo: 'precarica', pacchetto })
   })
 }
 </script>

@@ -346,8 +346,12 @@ function gioco(ctx, entry, d, rules) {
     h('div', { class: 'bsc-kv' }, [
       h('span', { class: 'bsc-kv__label' }, `${ctx.t('scheda.pf')} +`),
       h('span', { class: 'bsc-kv__value' }, String(play.hp.temp)),
+      // L'etichetta: senza, i due bottoni si chiamano «−1» e «+1» e chi
+      // naviga con un lettore di schermo non sa di cosa. Gli altri tre
+      // stepper della scheda la passavano già.
       stepper(String(play.hp.temp), (delta) => applica(
-        modifica(play, p => { p.hp.temp = Math.max(0, p.hp.temp + delta) }))),
+        modifica(play, p => { p.hp.temp = Math.max(0, p.hp.temp + delta) })),
+      `${ctx.t('scheda.pf')} ${ctx.t('scheda.temporanei')}`),
     ]),
 
     h('h2', { class: 'bsc-label' }, `${ctx.t('prove.tiroSalvezza')} ☠`),

@@ -1,5 +1,5 @@
 /**
- * I contratti del lotto B, lato import (`tests/unit/contratti.test.js`).
+ * I contratti del lotto B, lato import.
  *
  * Le fixture sono di due specie e servono a due cose diverse: quelle scritte a
  * mano descrivono i casi che ci interessano, quelle `reale-*` sono export veri

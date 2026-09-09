@@ -1,7 +1,7 @@
 /**
  * Il tracker di sessione.  ── Lotto G ──
  *
- * Sono i quattro comportamenti dichiarati in `contratti.test.js` più quelli che
+ * Sono i quattro comportamenti che il lotto doveva rendere veri, più quelli che
  * il piano (§ 5.6) dà per scontati e che al tavolo si notano subito: il riposo
  * breve che non tira, gli slot che non scendono sotto zero, i temporanei che
  * una cura non ridà.
@@ -341,6 +341,63 @@ describe('slot che non esistevano ancora', () => {
   it('livelli senza senso non creano niente', () => {
     expect(useSlot(vuoto(), 0, 4).slots['0']).toBeUndefined()
     expect(useSlot(vuoto(), -1, 4).slots['-1']).toBeUndefined()
+  })
+})
+
+describe('i limiti che nessuno guardava', () => {
+  it('il danno riporta dentro i limiti uno stato che ne era già fuori', () => {
+    // È il caso dichiarato nel commento di `applyDamage`, e non c'era un test:
+    // togliendo il clamp la suite restava verde.
+    const p = stato({ hp: { cur: 40, temp: 0 } })
+    expect(applyDamage(p, 5, 20).hp.cur).toBe(15)
+  })
+
+  it('un contatore di usi nella forma vecchia si legge come tutto speso', () => {
+    // Un numero da solo non dice quanti usi restino: la lettura prudente è
+    // «nessuno». Mettendo `spesi: 0` la suite restava verde, e un contatore
+    // migrato tornava pieno da solo.
+    const p = modifica(stato({ uses: /** @type {any} */ ({ rage: 3 }) }), () => {})
+    expect(p.uses['rage']).toEqual({ max: 3, spesi: 3, recupero: 'lungo' })
+  })
+
+  it('il recupero fuori dai due ammessi diventa «lungo»', () => {
+    const p = tracciaUsi(stato({}), 'x', 2, /** @type {any} */ ('quando-mi-va'))
+    expect(p.uses['x'].recupero).toBe('lungo')
+  })
+
+  it('i dadi vita spesi non scendono sotto zero con un riposo strambo', () => {
+    const p = stato({ hitDice: { spent: 1 } })
+    expect(shortRest(p, { dadiSpesi: -5, tiri: [] }, null).hitDice.spent).toBe(1)
+  })
+
+  it('un terzo-incantatore non ha slot se la sottoclasse non glieli dà', () => {
+    // Il pacchetto marca `casterType: "third"` sulla **classe** perché è lì che
+    // vive la tabella, ma un Cavaliere Mistico prende la magia dall'archetipo:
+    // ogni guerriero e ogni ladro del 2014 si ritrovava slot che non ha, e
+    // l'SRD 5.1 non spedisce nemmeno una sottoclasse che li conceda.
+    const venti = Array.from({ length: 20 }, () => [2])
+    const rules = {
+      classes: {
+        fighter: { casterType: 'third', subclasses: { champion: {}, 'eldritch-knight': { casterType: 'third' } } },
+        wizard: { casterType: 'full', subclasses: { evocation: {} } },
+      },
+      spellSlots: { third: venti, full: venti },
+    }
+    expect(slotsMassimi(rules, { className: 'fighter', subclass: 'champion', level: 5 })).toEqual([])
+    expect(slotsMassimi(rules, { className: 'fighter', subclass: 'eldritch-knight', level: 5 })).toEqual([2])
+    // un incantatore pieno lo è per classe, e non deve chiedere alla sottoclasse
+    expect(slotsMassimi(rules, { className: 'wizard', subclass: 'evocation', level: 5 })).toEqual([2])
+  })
+
+  it('slotsMassimi tiene il livello dentro la tabella', () => {
+    // Un livello 0 o 99 non deve leggere fuori dalla tabella: senza il clamp
+    // la riga sarebbe `undefined`, e nessun test lo esercitava.
+    // La tabella ha venti righe come quelle vere: il clamp è a [1,20].
+    const venti = Array.from({ length: 20 }, (_, i) => [i + 1])
+    const rules = { classes: { bard: { casterType: 'full' } }, spellSlots: { full: venti } }
+    expect(slotsMassimi(rules, { className: 'bard', level: 0 })).toEqual([1])
+    expect(slotsMassimi(rules, { className: 'bard', level: 99 })).toEqual([20])
+    expect(slotsMassimi(rules, { className: 'bard', level: 7 })).toEqual([7])
   })
 })
 

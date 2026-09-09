@@ -27,7 +27,7 @@
 
 /**
  * @typedef {object} Cambiamento
- * @property {'livello'|'pf-max'|'pf-clampati'|'nome'|'slot-nuovi'} tipo
+ * @property {'livello'|'pf-max'|'pf-clampati'|'dv-clampati'|'slot-persi'|'nome'|'slot-nuovi'} tipo
  * @property {number|string} [da]
  * @property {number|string} [a]
  */
@@ -83,6 +83,8 @@ export function riportaSopra(vecchia, nuova) {
     cambiamenti.push({ tipo: 'nome', da: vecchia.meta.name, a: nuova.meta.name })
   }
 
+  // I dadi vita spesi si riportano dentro i limiti come i punti ferita, e come
+  // loro lo si dice: prima il taglio era silenzioso.
   const pfVecchi = intero(vecchia.snapshot['maxHp'])
   const pfNuovi = intero(nuova.snapshot['maxHp'])
   if (pfVecchi !== pfNuovi) cambiamenti.push({ tipo: 'pf-max', da: pfVecchi, a: pfNuovi })
@@ -99,8 +101,19 @@ export function riportaSopra(vecchia, nuova) {
   }
 
   // I dadi vita spesi non possono essere più di quelli che si hanno.
-  const dvNuovi = livNuovo || intero(nuova.snapshot['level'])
-  if (dvNuovi > 0 && play.hitDice.spent > dvNuovi) play.hitDice.spent = dvNuovi
+  if (livNuovo > 0 && play.hitDice.spent > livNuovo) {
+    cambiamenti.push({ tipo: 'dv-clampati', da: play.hitDice.spent, a: livNuovo })
+    play.hitDice.spent = livNuovo
+  }
+
+  // Slot e usi di privilegi che il personaggio non ha più: restano nello stato
+  // e non si vedono, ma un riposo lungo continua a iterarci sopra. Si tolgono
+  // solo quelli che non esistono più, e si dice quanti.
+  const persi = Object.keys(play.slots).filter(l => Number(l) > livNuovo)
+  if (persi.length) {
+    for (const l of persi) delete play.slots[l]
+    cambiamenti.push({ tipo: 'slot-persi', da: persi.length })
+  }
 
   if (livNuovo > livVecchio) cambiamenti.push({ tipo: 'slot-nuovi' })
 
@@ -112,7 +125,11 @@ export function riportaSopra(vecchia, nuova) {
       // successo al tavolo, e non smette di essere vero perché la scheda
       // arriva aggiornata da fuori.
       levels: vecchia.levels,
-      meta: { ...nuova.meta, importedAt: nuova.meta.importedAt },
+      // Il pacchetto resta quello scelto al tavolo. Il builder non sa che le
+      // regole di casa esistono — riesporta `variant: "brancalonia"` e basta —
+      // quindi prendere `packId` dal nuovo import le azzerava a ogni
+      // aggiornamento di scheda, in silenzio: la partita restava, il tavolo no.
+      meta: { ...nuova.meta, packId: vecchia.meta.packId },
     },
     cambiamenti,
   }

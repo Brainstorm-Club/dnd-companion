@@ -27,6 +27,9 @@ let sottorazzaScelta = ''
 /** Se il filtro delle sottorazze è aperto: chiuso di suo, vedi `mostraSotto`. */
 let sottoAperto = false
 
+/** La razza del personaggio all'ultimo disegno: serve ad accorgersi che è cambiato. */
+let ultimaSua = ''
+
 /** @type {import('./index.js').View} */
 export default {
   async render(contenitore, ctx) {
@@ -100,10 +103,18 @@ function disegna(contenitore, ctx, ed, rules, conTesto) {
   // essere cambiato (si importa un personaggio, si cambia edizione). Una razza
   // che lì non esiste lascerebbe l'elenco vuoto e nessun chip acceso, cioè una
   // schermata che non si sa come si è ottenuta.
-  if (!razze.some(r => r.id === razzaScelta)) {
+  // Si riparte dalla razza del personaggio aperto **ogni volta che cambia**,
+  // non solo quando quella ricordata non esiste più: aprendo Ulric il
+  // dragonide e poi Vittoria l'umana, il compendio restava sul dragonide con
+  // la stella sull'umano — e nel frattempo era cambiata anche l'edizione
+  // sotto la stessa selezione.
+  const cambiato = sua && sua !== ultimaSua
+  if (cambiato || !razze.some(r => r.id === razzaScelta)) {
     razzaScelta = razze.some(r => r.id === sua) ? sua : razze[0]?.id ?? ''
     sottorazzaScelta = razzaScelta === sua ? suaSotto : ''
+    sottoAperto = false
   }
+  ultimaSua = sua
 
   const elenco = h('div', { class: 'dc-elenco' })
   const chip = h('div', { class: 'dc-chip-riga', role: 'group', 'aria-label': t('razze.razza') })

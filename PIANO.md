@@ -80,7 +80,7 @@ dnd-companion/
 │   ├── dom.js                  helper di rendering + delega eventi
 │   ├── gestures.js             pressione lunga e trascinamento maniglia (~90 righe)
 │   ├── i18n.js                 t() minimale
-│   ├── domain/                 ── LOGICA PURA, zero DOM, 100% unit-testata ──
+│   ├── domain/                 ── LOGICA PURA, zero DOM, coperta al 93% ──
 │   │   ├── rng.js              RNG crypto iniettabile (seedabile nei test)
 │   │   ├── dice.js             parser + valutatore della notazione
 │   │   ├── check.js            prove, tiri salvezza, contrapposti
@@ -200,7 +200,7 @@ Ogni personaggio importato riceve un'**edizione**, dedotta dalla variante e non 
 Da lì in avanti la scheda parla una lingua sola: privilegi, incantesimi, slot e avanzamento vengono tutti
 dall'SRD di quell'edizione. Chi vuole guardare l'altra può (§ 5.1.1), ma deve **scegliere di farlo**.
 
-**Cosa resta senza testo, e lo dice.** I tredici incantesimi che il builder prende dal Player's Handbook non
+**Cosa resta senza testo, e lo dice.** I due incantesimi che il builder prende dal Player's Handbook e che il ponte non aggancia — *Blade Ward* e *Hex* — non
 sono nell'SRD: l'app ne mostra il **nome** salvato nello snapshot e una riga che spiega perché non c'è altro.
 Meglio un buco dichiarato che un testo inventato — o copiato da dove non si può.
 
@@ -449,7 +449,7 @@ che il builder documenta**, raggiunta per una strada del tutto indipendente; 23 
 **Il ponte.** Il builder salva gli incantesimi come **id inglesi** (`fire-bolt`, `1-bane`). `build-bridge.mjs`
 costruisce due tabelle id → incantesimo italiano, una per edizione, agganciando per (livello, scuola, lista di
 classi) e rifinendo a mano i residui, che vanno **elencati in un rapporto**, non ignorati. Ciò che non aggancia —
-i tredici incantesimi del Player's Handbook, per esempio — resta visibile col nome e senza testo.
+*Blade Ward* e *Hex*, che sono del Player's Handbook — resta visibile col nome e senza testo.
 
 **Attribuzione, obbligatoria e verbatim**, una per edizione, in app, nel README e in `DATA-SOURCES.md`:
 
@@ -553,8 +553,11 @@ default, `prefers-reduced-motion` rispettato, contrasto AA in entrambi i temi.
 
 ## 9. Test: cosa si verifica, e quando
 
-1. **Unit (Vitest)** su `src/domain/`, che è puro apposta. Copertura **≥ 90 %** su `dice`, `check`, `progress`,
-   `character`, `importer`, `spells`. Include test di proprietà sul parser dei dadi (mille espressioni casuali:
+1. **Unit (Vitest)** su `src/domain/`, che è puro apposta. Le soglie in `vitest.config.js` stanno **appena
+   sotto** il valore raggiunto (93 % statement, 83,5 % branch) e non dieci punti sotto: una soglia più bassa
+   del reale non ferma nessuna regressione — si possono cancellare due file di test interi e restare verdi, e
+   lo si è verificato. Non tutti i moduli sono coperti allo stesso modo: `spells` sta al 73 %, `character` e
+   `progress` all'88. Include test di proprietà sul parser dei dadi (mille espressioni casuali:
    nessuna deve lanciare, ogni risultato dentro il minimo e il massimo teorici), il rifiuto delle facce fuori
    insieme, l'uniformità dell'RNG, e i livelli di ASI **per classe** (il guerriero ne ha sei, non quattro).
 2. **Estrazione**, con invarianti esatte **per edizione**: intestazioni = blocchi di campi = record prodotti
@@ -569,14 +572,15 @@ default, `prefers-reduced-motion` rispettato, contrasto AA in entrambi i temi.
    importa → apri scheda → swipe fra sezioni → tira → prova con CD → contrapposto → apri un incantesimo →
    **cambia edizione e torna indietro** → assegna PX → sali di livello → riposo lungo → ricarica e ritrova tutto
    → rete spenta (entrambi i compendi compresi). Un percorso dedicato importa un personaggio di **Brancalonia** e
-   verifica che l'app si fermi con il messaggio giusto — «serve un pacchetto che arriva nella v3» — invece di
-   importarlo a metà.
-4. **Gesti e zone morte**, automatizzato: per ogni vista si misurano i bounding box di tutti gli elementi
-   interattivi e si asserisce che nessuno sia entro 24 px dai bordi verticali né più piccolo di 44 × 44 px.
+   verifica che entri con il suo pacchetto, e che a rete spenta il grimorio del tavolo abbia i suoi testi.
+4. **Gesti e zone morte**, automatizzato: su **sette rotte** si misurano i bounding box di ogni elemento
+   interattivo del documento — barra in alto, barra da pollice e cassetto compresi, non solo `#principale` —
+   e si asserisce che nessuno sia entro 24 px dai bordi verticali né più piccolo di 44 × 44 px. Finché il
+   controllo guardava una rotta sola, rimpicciolire un chip a 30 × 28 px non lo faceva cadere.
 5. **Accessibilità e budget**: axe-core dentro Playwright su ogni vista + Lighthouse CI + `size-check`.
 
 **Fixture**: personaggi veri esportati dal builder — 2024 (livello 1, livello 20 multiclasse, incantatore pieno,
-campi mancanti), **uno 2014 puro**, più **uno di Brancalonia** che serve a provare il rifiuto garbato.
+campi mancanti), **uno 2014 puro**, più **uno di Brancalonia** con cui si prova la catena dei pacchetti.
 
 Regola di lotto: **un lotto non si chiude senza i suoi test.** Nessuna eccezione, nemmeno per la UI.
 
@@ -669,7 +673,7 @@ Commit in italiano, nello stile del builder («Il tiro contrapposto non teneva c
 
 ## 13. Dove siamo, e cosa resta
 
-**Fatto**, con 524 test di unità e 160 end-to-end su due viewport:
+**Fatto**, con 616 test di unità e 190 end-to-end su due viewport:
 
 | | |
 |---|---|

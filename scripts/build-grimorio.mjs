@@ -39,7 +39,7 @@
  * un nome giusto, cioè l'errore che nessuno vede finché non fa danno.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -51,6 +51,9 @@ const ID = 'brancalonia-brainstorm'
 const BASE = 'brancalonia'
 const USCITA_REGOLE = join(RADICE, 'data', 'rules', `${ID}.json`)
 const USCITA_INCANTESIMI = join(RADICE, 'data', 'spells', ID)
+
+/** Il grimorio effettivamente letto: serve alla data di generazione. */
+let PERCORSO_USATO = PREDEFINITO
 
 /** Le sigle delle fonti, come le scrive il grimorio. */
 const FONTI = {
@@ -80,6 +83,7 @@ function main() {
     process.exit(1)
   }
 
+  PERCORSO_USATO = percorso
   const testo = readFileSync(percorso, 'utf8')
   const incantesimi = leggiIncantesimi(testo)
   const regole = leggiRegole(testo)
@@ -146,9 +150,16 @@ function leggiIncantesimi(md) {
       throw new Error(`«${nome}»: la tabella dice livello ${dalla.livello}, la scheda ${livello}`)
     }
 
+    // L'ultimo incantesimo di ogni sezione si portava dentro il titolo della
+    // sezione dopo — «## Incantesimi di 2° livello» — e l'ultimo di tutti la
+    // riga di chiusura del documento. Lo stesso errore, in un altro
+    // generatore, che si è mangiato una razza intera: un blocco che non sa
+    // dove finire prosegue.
     const prosa = corpo
       .slice(corsivo.index + corsivo[0].length)
       .replace(/^[\s\S]*?\*\*Durata:\*\*[^\n]*\n/, '')   // via i campi in grassetto
+      .split(/\n(?=#{1,6}\s)/)[0] ?? ''                   // fino al titolo dopo
+      .replace(/\n-{3,}\s*$/, '')                         // e non oltre la fine del documento
       .trim()
 
     voci.push({
@@ -400,7 +411,10 @@ function scriviRegole(regole, quanti) {
     base: BASE,
     edizione: '2014',
     fonte: 'Grimorio di Bassa Lega — regole di casa della campagna «L\'Impero Randella Ancora»',
-    generatedAt: new Date().toISOString(),
+    // La data del grimorio, non l'ora di adesso: due rigenerazioni dello stesso
+    // documento devono dare lo stesso file, altrimenti l'hash del pacchetto
+    // cambia da solo e invalida la cache di chi non ha visto niente di nuovo.
+    generatedAt: dataDelGrimorio(),
     incantesimiDelRegno: quanti,
     ...regole,
   })
@@ -408,6 +422,11 @@ function scriviRegole(regole, quanti) {
 }
 
 /* ── attrezzi ──────────────────────────────────────────────────────────── */
+
+/** L'ultima modifica del grimorio: è la sua data, e non cambia da sola. */
+function dataDelGrimorio() {
+  try { return statSync(PERCORSO_USATO).mtime.toISOString() } catch { return '1970-01-01T00:00:00.000Z' }
+}
 
 /** @param {string} v */
 function slug(v) {
@@ -434,7 +453,11 @@ function maiuscola(v) {
 function ripulisci(v) {
   return v
     .replace(/\r/g, '')
+    // Il grassetto e il corsivo se ne vanno tutt'e due: prima cadeva solo il
+    // grassetto, e i titoli degli incantesimi citati restavano fra asterischi
+    // — a schermo si leggeva «*illusione minore*», asterischi compresi.
     .replace(/\*\*/g, '')
+    .replace(/(?<![A-Za-zÀ-ù0-9])\*(?=\S)|(?<=\S)\*(?![A-Za-zÀ-ù0-9])/g, '')
     .replace(/(?<!\n)\n(?![\n\-•])/g, ' ')
     .replace(/[ \t]{2,}/g, ' ')
     .trim()

@@ -35,21 +35,46 @@ test('nessuna console rossa all\'avvio', async ({ page }) => {
   expect(errori).toEqual([])
 })
 
-test('nessun controllo nelle zone di sistema, nessun target sotto i 44 px', async ({ page }) => {
-  await page.goto('/')
-  const larghezza = page.viewportSize().width
-  const problemi = await page.evaluate((w) => {
-    const MORTA = 24, MIN = 44
-    const out = []
-    for (const el of document.querySelectorAll('#principale button, #principale a, #principale input, #principale select')) {
-      const r = el.getBoundingClientRect()
-      if (r.width === 0 || r.height === 0) continue
-      if (r.left < MORTA || r.right > w - MORTA) out.push(`${el.tagName} tocca il bordo`)
-      if (r.height < MIN || r.width < MIN) out.push(`${el.tagName} è ${Math.round(r.width)}×${Math.round(r.height)}`)
-    }
-    return out
-  }, larghezza)
-  expect(problemi).toEqual([])
+/**
+ * La regola 3 del progetto, misurata **davvero**.
+ *
+ * Questo test guardava `#principale` sulla sola rotta `/`, a libreria vuota:
+ * restavano fuori la barra in alto, quella da pollice, il cassetto, e ogni
+ * schermata con dentro qualcosa. Rimpicciolire i chip delle razze a 30×28 px
+ * non lo faceva cadere — verificato — mentre `PIANO.md` prometteva «per ogni
+ * vista si misurano i bounding box di tutti gli elementi interattivi».
+ *
+ * Adesso li misura per davvero: tutte le rotte, tutto il documento.
+ */
+const ROTTE = ['/', '/#/dadi', '/#/prove', '/#/incantesimi', '/#/privilegi', '/#/razze', '/#/impostazioni']
+
+test.describe('i bersagli da dito', () => {
+  for (const rotta of ROTTE) {
+    test(`${rotta}: niente sotto i 44 px, niente nelle zone di sistema`, async ({ page }) => {
+      await page.goto(rotta)
+      await expect(page.locator('#principale .dc-vista')).toBeVisible()
+      const larghezza = page.viewportSize().width
+      const problemi = await page.evaluate((w) => {
+        const MORTA = 24, MIN = 44
+        /** @type {string[]} */
+        const out = []
+        const nome = (/** @type {Element} */ el) =>
+          `${el.tagName}.${(typeof el.className === 'string' ? el.className.split(' ')[0] : '')}`
+        for (const el of document.querySelectorAll('button, a, input, select, [role=switch], summary')) {
+          const r = el.getBoundingClientRect()
+          if (r.width === 0 || r.height === 0) continue
+          // Un elemento fuori dallo schermo non è un bersaglio: lo si misura
+          // dove sta, e il pager tiene sei sezioni su sette fuori vista. Sopra
+          // il bordo ci sta il salto al contenuto, che scende solo col fuoco.
+          if (r.right < 0 || r.left > w || r.bottom < 0) continue
+          if (r.left < MORTA || r.right > w - MORTA) out.push(`${nome(el)} tocca il bordo (${Math.round(r.left)}…${Math.round(r.right)})`)
+          if (r.height < MIN || r.width < MIN) out.push(`${nome(el)} è ${Math.round(r.width)}×${Math.round(r.height)}`)
+        }
+        return [...new Set(out)]
+      }, larghezza)
+      expect(problemi).toEqual([])
+    })
+  }
 })
 
 test('il corpo non scorre in orizzontale', async ({ page }) => {

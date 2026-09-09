@@ -17,7 +17,13 @@ import { loadRegistry, packById, packChain } from './packs.js'
 
 /** @typedef {(url: string) => Promise<Response>} Fetcher */
 
-/** Le regole già fuse, per id di pacchetto. `null` = provato e non c'è. */
+/** Un pezzo della catena non è arrivato: non è un'assenza, è un buco di rete. */
+class NonCaricato extends Error {
+  /** @param {string} packId */
+  constructor(packId) { super(`pacchetto «${packId}»: un file della catena non si è caricato`) }
+}
+
+/** Le regole già fuse, per id di pacchetto. Solo i caricamenti riusciti. */
 /** @type {Map<string, unknown>} */
 const caricate = new Map()
 
@@ -51,7 +57,13 @@ export async function loadRules(packId, fetcher = fetch) {
     if (!packById(registro, packId)) return null
     const catena = packChain(registro, packId)   // lancia se la catena è rotta
     const pezzi = await Promise.all(catena.map(pack => leggi(pack.regole, fetcher)))
-    if (pezzi.some(x => x === null)) return null
+    // Un pezzo che non arriva non si mette in cache come «non c'è»: `leggi()`
+    // torna `null` sia per un file assente sia per una rete caduta, e sono due
+    // cose diverse. Ricordare il secondo caso avvelenava la sessione intera —
+    // regole nulle, sottoclassi mancanti, compendi vuoti — anche dopo che la
+    // rete era tornata, e non si riparava senza ricaricare la pagina. Chi apre
+    // l'app mentre il service worker sta ancora installando ci finiva dentro.
+    if (pezzi.some(x => x === null)) throw new NonCaricato(packId)
 
     // Si parte dalla radice e si sale verso il figlio: ogni passo sovrappone
     // chi ha più diritto di ridefinire. Un pacchetto senza base non passa
@@ -63,6 +75,8 @@ export async function loadRules(packId, fetcher = fetch) {
     return out
   })()
     .then(r => { caricate.set(packId, r); return r })
+    // Un buco di rete non diventa un ricordo: si riproverà al prossimo giro.
+    .catch(e => { if (e instanceof NonCaricato) return null; throw e })
     .finally(() => { inCorso.delete(packId) })
 
   inCorso.set(packId, p)
@@ -161,7 +175,7 @@ function fondiArray(base, sopra) {
   const out = base.slice()
   /** @type {Map<string, number>} */
   const dove = new Map()
-  out.forEach((x, i) => { dove.set(idDi(x), i) })
+  out.forEach((x, i) => { const k = idDi(x); if (k) dove.set(k, i) })
   for (const v of sopra) {
     const i = dove.get(idDi(v))
     if (i === undefined) { dove.set(idDi(v), out.length); out.push(v) }
@@ -178,7 +192,19 @@ function fondiArray(base, sopra) {
  * @returns {v is Record<string, unknown>[]}
  */
 function collezione(v) {
-  return Array.isArray(v) && v.length > 0 && v.every(x => semplice(x) && typeof x['id'] === 'string' && x['id'] !== '')
+  if (!Array.isArray(v) || v.length === 0) return false
+  const conId = v.filter(x => semplice(x) && typeof x['id'] === 'string' && x['id'] !== '')
+  // Basta **un** elemento con un id, non che ce l'abbiano tutti. Prima serviva
+  // la totalità: un solo elemento sbadato — una svista del generatore — faceva
+  // ricadere l'array fra le «tabelle», e una tabella si sostituisce intera. Il
+  // figlio cancellava così tutto ciò che il base aveva messo lì, in silenzio:
+  // privilegi spariti da una scheda senza un errore.
+  //
+  // Nel dubbio si conserva, perché fra i due errori possibili — tenere una
+  // riga di troppo o perdere un privilegio — solo il secondo si nota al tavolo,
+  // e solo quando è tardi. Le tabelle vere non hanno **nessun** id
+  // (`spellSlots.pact`, le voci del patatrac) e restano tabelle.
+  return conId.length > 0
 }
 
 /** @param {unknown} x @returns {string} */

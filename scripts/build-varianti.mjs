@@ -592,6 +592,8 @@ class Testi {
     this.divergenze = []
     this.presi = 0
     this.chiesti = 0
+    /** I campi della scheda del manuale letta per ultima. @type {any} */
+    this.ultimaScheda = null
     /** @type {Map<string, any[]>} */
     this.cache = new Map()
     /** @type {Map<string, {colonne: Map<string, string>, piano: Map<string, string>}>} */
@@ -846,7 +848,7 @@ class Testi {
    * una chiave. Si indicizza per quella, si controlla che la riga della scuola
    * sia lì accanto, e un incantesimo che non torna esce senza testo.
    *
-   * @returns {{colonne: Map<string, {testo: string, scuole: string[]}>, piano: Map<string, {testo: string, scuole: string[]}>}}
+   * @returns {{colonne: Map<string, {testo: string, scuole: string[], campi?: Record<string, string>}>, piano: Map<string, {testo: string, scuole: string[], campi?: Record<string, string>}>}}
    */
   schede() {
     if (this.schedeCache) return this.schedeCache
@@ -870,6 +872,7 @@ class Testi {
    */
   incantesimo(v, dove) {
     this.chiesti++
+    this.ultimaScheda = null
     const k = chiaveScheda(v.tempoDiLancio, v.gittata, v.componenti, v.durata)
     const sch = this.schede()
     // La riga della scuola del manuale, se è lì accanto. Il livello deve
@@ -889,6 +892,10 @@ class Testi {
       if (chiave(scuolaSulManuale) !== chiave(v.scuola)) {
         this.divergenze.push(`${dove} — il builder dice «${v.scuola}», il manuale «${scuolaSulManuale}»`)
       }
+      // I campi della scheda del manuale, che sono più completi di quelli del
+      // builder: la parentesi delle componenti porta il costo in monete e il
+      // consumo, e l'innesco di una reazione *è* la sua regola.
+      this.ultimaScheda = c.campi ?? null
       return c.testo
     }
     const a = prendi('colonne')
@@ -928,7 +935,7 @@ const CAMPI_SCHEDA = /^(Tempo di Lancio|Gittata|Componenti|Durata):\s*(.*)$/
  * @returns {Map<string, {testo: string, scuole: string[]}>}
  */
 function schedeDelFlusso(righe, sillabate) {
-  /** @type {Map<string, {testo: string, scuole: string[]}>} */
+  /** @type {Map<string, {testo: string, scuole: string[], campi?: Record<string, string>}>} */
   const out = new Map()
   /** @type {Set<string>} */
   const ambigue = new Set()
@@ -979,6 +986,7 @@ function schedeDelFlusso(righe, sillabate) {
       const voce = {
         chiave: chiaveScheda(campi['Tempo di Lancio'] ?? '', campi['Gittata'] ?? '', campi['Componenti'] ?? '', campi['Durata'] ?? ''),
         scuole,
+        campi,
         corpo: [],
       }
       pendenti.push(voce)
@@ -995,11 +1003,13 @@ function schedeDelFlusso(righe, sillabate) {
     } else prosa(par)
     i = j
   }
-  /** @type {Map<string, {testo: string, scuole: string[]}>} */
+  /** @type {Map<string, {testo: string, scuole: string[], campi: Record<string, string>}>} */
   const finito = new Map()
   for (const [k, v] of out) {
     if (ambigue.has(k)) continue
-    finito.set(k, { testo: unisci(/** @type {any} */ (v).corpo, sillabate), scuole: v.scuole })
+    // `campi` viaggia insieme al testo: sono i valori come li stampa il
+    // manuale, più completi di quelli del builder.
+    finito.set(k, { testo: unisci(/** @type {any} */ (v).corpo, sillabate), scuole: v.scuole, campi: /** @type {any} */ (v).campi ?? {} })
   }
   return finito
 }
@@ -1241,6 +1251,51 @@ function costruisciTalenti(talenti, testi) {
 }
 
 /**
+ * Taglia le descrizioni che si sono mangiate la voce dopo.
+ *
+ * L'estrattore delimita ogni blocco fermandosi al titolo successivo, e quasi
+ * sempre funziona. Quando cede — una colonna che finisce, un titolo di sezione
+ * che il manuale stampa in mezzo — il blocco prosegue e si porta dentro la
+ * sezione seguente: «Resistenza Strutturale (Contundenti)», una frase di 84
+ * caratteri, ne aveva 1.524 con dentro l'intera razza Bieconiglio, società,
+ * soprannomi e nomi tipici compresi.
+ *
+ * Le reti che c'erano guardavano l'inizio del testo, la sua fine, la sua
+ * brevità. Non c'era niente contro un testo che **continua troppo**.
+ *
+ * Il taglio è al nome dell'altra voce, non all'intera descrizione: fin lì il
+ * testo è quello giusto e finisce con un punto, e buttarlo via perderebbe un
+ * dato buono per colpa di quello che gli sta dietro. Un tetto sulla lunghezza
+ * non servirebbe: «Malitratti Infernali» sta legittimamente a 1.980 caratteri.
+ *
+ * @param {any} pacchetto  modificato sul posto
+ * @param {Testi|null} testi  per riferire il taglio nel rapporto finale
+ */
+function potaLeInvasioni(pacchetto, testi) {
+  const nomi = titoliDelPacchetto(pacchetto).filter(n => n.length > 8)
+  /** @param {any} v @param {string} suo */
+  const cammina = (v, suo) => {
+    if (Array.isArray(v)) return v.forEach(x => cammina(x, suo))
+    if (!v || typeof v !== 'object') return
+    const mio = typeof v.name === 'string' ? v.name : suo
+    if (typeof v.description === 'string' && v.description.length > 120) {
+      for (const altro of nomi) {
+        if (altro === mio) continue
+        const re = new RegExp(`([.!?»])\\s+${altro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+[A-ZÀ-Ù]`)
+        const m = re.exec(v.description)
+        if (!m) continue
+        const prima = v.description.length
+        v.description = v.description.slice(0, m.index + 1).trim()
+        testi?.scoperti.push(`${mio} — si era mangiato «${altro}»: tagliato da ${prima} a ${v.description.length} caratteri`)
+        break
+      }
+    }
+    for (const x of Object.values(v)) cammina(x, mio)
+  }
+  cammina(pacchetto, '')
+}
+
+/**
  * Tutti i titoli che il pacchetto porta: sono loro a dire a un blocco di testo
  * dove finire. Si raccolgono dal pacchetto già costruito invece che a mano,
  * così una voce nuova nel builder entra nell'elenco da sé.
@@ -1378,6 +1433,28 @@ function durataIt(d) {
 }
 
 /**
+ * Fra il campo del builder e quello del manuale vince il più completo.
+ *
+ * Il builder accorcia: «V, S, M» senza dire quale materiale né quanto costa,
+ * «1 reazione» senza dire a cosa si reagisce. Il manuale li stampa per intero,
+ * e sono regole — un componente da 15 mo che l'incantesimo consuma cambia se
+ * te lo puoi permettere, e l'innesco di una reazione decide quando la puoi
+ * usare. Si tiene quello del manuale quando dice di più e comincia allo stesso
+ * modo, così un appaiamento sbagliato non passa di qui.
+ * @param {string} nostro @param {unknown} suo @returns {string}
+ */
+function piuCompleto(nostro, suo) {
+  const m = typeof suo === 'string' ? suo.replace(/\s+/g, ' ').trim().replace(/[.;]$/, '') : ''
+  if (!m || m.length <= nostro.length) return nostro
+  // Il confronto è sul **prefisso del più corto**: quello lungo ha per forza
+  // caratteri in più, ed è il punto.
+  const pulisci = (/** @type {string} */ v) => v.toLowerCase().replace(/[^a-zà-ù0-9]/g, '')
+  const a = pulisci(nostro)
+  const b = pulisci(m)
+  return a && b.startsWith(a) ? m : nostro
+}
+
+/**
  * Le componenti. Le lettere V/S/M sono le stesse in italiano; la parentesi che
  * elenca il materiale è una frase del manuale, e si taglia.
  * @param {string} c @returns {string}
@@ -1460,10 +1537,25 @@ function costruisciCompendio(incantesimi, nomiIncantesimo, volumi, etichettaFont
       componenti: componentiIt(String(s.components)),
       durata,
     }
+    const testo = testi
+      ? testi.incantesimo({ nome, livello: Number(s.level), scuola, ...scheda }, `brancalonia/incantesimo/${id}`)
+      : null
+    // I campi del manuale battono quelli del builder dove sono più completi:
+    // la parentesi delle componenti porta il costo in monete e il consumo
+    // («polvere d'oro del valore totale di 15 mo»), e l'innesco di una
+    // reazione *è* la sua regola. Il builder li accorcia; qui si perdevano.
+    const dalManuale = testi?.ultimaScheda ?? null
+    const completa = {
+      ...scheda,
+      tempoDiLancio: piuCompleto(scheda.tempoDiLancio, dalManuale?.['Tempo di Lancio']),
+      gittata: piuCompleto(scheda.gittata, dalManuale?.['Gittata']),
+      componenti: piuCompleto(scheda.componenti, dalManuale?.['Componenti']),
+      durata: piuCompleto(scheda.durata, dalManuale?.['Durata']),
+    }
     ;(blocchi[Number(s.level)] ?? []).push({
       ...voce,
-      ...scheda,
-      testo: testi ? testi.incantesimo({ nome, livello: Number(s.level), scuola, ...scheda }, `brancalonia/incantesimo/${id}`) : null,
+      ...completa,
+      testo,
       edizione: '2014',
       fonte: volume ? `${etichettaFonte} — ${volume}` : etichettaFonte,
     })
@@ -1719,6 +1811,7 @@ async function main() {
   const pesi = {}
   for (const pacchetto of [brancalonia, apocalisse]) {
     Object.assign(pacchetto, { ridefinisce: ridefinizioni(pacchetto, base) })
+    potaLeInvasioni(pacchetto, testi)
     const testo = JSON.stringify(ordina(pacchetto), null, 0) + '\n'
     writeFileSync(join(USCITA_REGOLE, `${pacchetto.variante}.json`), testo)
     pesi[pacchetto.variante] = Buffer.byteLength(testo)

@@ -9,7 +9,7 @@
 
 import { h, clear } from '../dom.js'
 import { loadRegistry } from '../domain/packs.js'
-import { fromJson, fromShareUrl, nuovoId, congela } from '../domain/importer.js'
+import { fromJson, fromShareUrl, nuovoId, congela, statoIniziale } from '../domain/importer.js'
 import { derive } from '../domain/character.js'
 import { trovaDaAggiornare, riportaSopra } from '../domain/reimport.js'
 
@@ -101,7 +101,7 @@ function disegna(contenitore, ctx) {
         : ctx.t('libreria.quanti', { n: voci.length }))
       : null,
     voci.length
-      ? h('ul', { class: 'dc-elenco' }, voci.map(([id, entry]) => riga(id, entry, contenitore, ctx)))
+      ? h('ul', { class: 'dc-elenco' }, voci.map(([id, entry]) => rigaSicura(id, entry, contenitore, ctx)))
       : h('p', { class: 'bsc-lead' }, ctx.t('libreria.vuota')),
     zonaImport,
   ]))
@@ -113,6 +113,44 @@ function disegna(contenitore, ctx) {
  * @param {CharacterEntry} entry
  * @param {HTMLElement} contenitore
  * @param {ViewCtx} ctx
+ */
+/**
+ * Una riga che non si sa leggere salta sé stessa, non la pagina.
+ *
+ * `derive()` legge lo snapshot senza guardie, ed è giusto — è il cuore dei
+ * conti e non deve costare un controllo per campo. Ma una voce corrotta in
+ * `localStorage` faceva cadere l'intera libreria su «Qualcosa non ha
+ * funzionato», portandosi dietro tutti i personaggi sani: chi ne aveva tre ne
+ * perdeva la vista di tre per colpa di uno. Qui la voce rotta si dichiara e
+ * si può cancellare, che è l'unica cosa che serve fare.
+ *
+ * @param {string} id
+ * @param {CharacterEntry} entry
+ * @param {HTMLElement} contenitore
+ * @param {ViewCtx} ctx
+ * @returns {Node}
+ */
+function rigaSicura(id, entry, contenitore, ctx) {
+  try {
+    return riga(id, entry, contenitore, ctx)
+  } catch (e) {
+    console.error('voce illeggibile in libreria', id, e)
+    return h('li', { class: 'bsc-card dc-pg dc-pg--rotta', dataset: { id } }, [
+      h('p', { class: 'bsc-lead' }, ctx.t('libreria.rotta')),
+      h('button', {
+        class: 'bsc-btn bsc-btn--outline bsc-btn--sm', type: 'button',
+        onclick: () => { daEliminare = id; disegna(contenitore, ctx) },
+      }, ctx.t('comune.elimina')),
+    ])
+  }
+}
+
+/**
+ * @param {string} id
+ * @param {CharacterEntry} entry
+ * @param {HTMLElement} contenitore
+ * @param {ViewCtx} ctx
+ * @returns {Node}
  */
 function riga(id, entry, contenitore, ctx) {
   const d = derive(entry, null)
@@ -376,7 +414,23 @@ export function accogliImport(r, ctx) {
 function duplica(id, entry, ctx) {
   const copia = /** @type {CharacterEntry} */ (JSON.parse(JSON.stringify(entry)))
   copia.meta = { ...entry.meta, name: `${entry.meta.name} (copia)`, importedAt: new Date().toISOString() }
-  copia.snapshot = congela(copia.snapshot)
+
+  // Lo stato di gioco **si azzera davvero**. Il commento qui sopra lo dichiara
+  // da sempre e il codice non lo faceva: ferite, monete, usi e note di
+  // sessione arrivavano tutte nella copia, e chi duplicava per provare
+  // un'altra strada si portava dietro la partita di ieri sera.
+  copia.play = statoIniziale(copia.snapshot)
+  copia.levels = []
+
+  // E la copia è un **altro** personaggio. Con lo stesso `snapshot.id`
+  // `trovaDaAggiornare()` non sa più quale delle due aggiornare — torna la
+  // prima che incontra, cioè un ordine d'inserimento — e ri-importando si
+  // aggiorna una a caso mentre l'altra resta indietro in silenzio. Meglio due
+  // schede che il builder non riconosce che due che confonde.
+  const snap = { ...copia.snapshot }
+  delete snap['id']
+  copia.snapshot = congela(snap)
+
   ctx.update(['characters'], s => { s.characters[nuovoId()] = copia })
 }
 

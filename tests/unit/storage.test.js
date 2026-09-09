@@ -94,6 +94,34 @@ describe('persistenza', () => {
   })
 })
 
+describe('stato malformato che dichiara la versione giusta', () => {
+  /**
+   * Il caso peggiore che questo modulo possa produrre: non un dato sbagliato,
+   * un telefono immobilizzato. Uno stato con `v` corrente non passava da
+   * nessun controllo, e se gli mancava `settings` l'app moriva all'avvio su
+   * «Caricamento…» — su ogni rotta, quindi senza modo di raggiungere le
+   * impostazioni per azzerare. E la via sanzionata per far evolvere lo stato è
+   * proprio quella che può produrlo: una migrazione che dimentica un campo.
+   */
+  it.each([
+    ['solo la versione', { v: SCHEMA_VERSION }],
+    ['senza settings', { v: SCHEMA_VERSION, characters: {}, activeId: null, diceLog: [] }],
+    ['con tutto a null', { v: SCHEMA_VERSION, characters: null, activeId: 'x', settings: null, diceLog: null }],
+    ['con settings senza lingua', { v: SCHEMA_VERSION, characters: {}, activeId: null, settings: { theme: 'dark' }, diceLog: [] }],
+    ['con characters che è un array', { v: SCHEMA_VERSION, characters: [], activeId: null, settings: { lang: 'it', theme: 'dark' }, diceLog: [] }],
+  ])('%s riparte da zero invece di rompere l\'app', (_nome, rotto) => {
+    const s = migrate(rotto)
+    expect(s.v).toBe(SCHEMA_VERSION)
+    expect(s.settings.lang).toBeTruthy()
+    expect(s.characters).toEqual({})
+  })
+
+  it('ma uno stato sano non si tocca', () => {
+    const buono = { ...emptyState(), characters: { a: { meta: { name: 'Kyra' } } }, activeId: 'a' }
+    expect(migrate(buono)).toEqual(buono)
+  })
+})
+
 describe('stato da una versione futura', () => {
   it('non viene letto: non sappiamo cosa contenga', () => {
     expect(migrate({ v: SCHEMA_VERSION + 1, characters: { a: 1 } })).toEqual(emptyState())

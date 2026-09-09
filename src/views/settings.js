@@ -288,7 +288,10 @@ function attribuzioni() {
   /** @type {Array<Node>} */
   const out = []
   for (const ed of EDITIONS) {
-    out.push(h('p', { class: 'bsc-code', 'data-attribuzione': ed }, ATTRIBUZIONI[ed]))
+    // Prosa, non codice: `.bsc-code` non manda a capo (`white-space: pre`), ed
+    // è giusto per una formula di dadi ma non per un paragrafo di licenza —
+    // faceva scorrere le impostazioni in orizzontale su ogni telefono.
+    out.push(h('p', { class: 'bsc-prose dc-attribuzione', 'data-attribuzione': ed }, ATTRIBUZIONI[ed]))
   }
   return out
 }

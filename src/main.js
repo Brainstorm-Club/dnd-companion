@@ -51,6 +51,10 @@ async function main() {
   // Cambiare lingua non deve lasciare indietro i pezzi disegnati una volta sola.
   addEventListener('dc:lingua', () => { traduciMarcatori(); disegnaTabbar(); segnaTabAttiva() })
   ascoltaTiriRapidi()
+  // Il salvataggio che fallisce non è un dettaglio tecnico: da quel momento
+  // tutto quello che si segna al tavolo esiste solo finché la scheda resta
+  // aperta. Va detto, e va detto una volta sola.
+  addEventListener('dc:salvataggio-fallito', () => mostraToast(t('errore.nonSalva')))
   // Lo schermo che non si spegne a metà turno. Se il browser non sa cosa sia,
   // non succede niente — ed è il punto delle migliorie progressive.
   seguiVisibilita()

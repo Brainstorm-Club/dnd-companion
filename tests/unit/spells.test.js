@@ -38,6 +38,35 @@ function dalDisco() {
   return { fetcher, chiamate }
 }
 
+/**
+ * Le parole spezzate dalla sillabazione del PDF.
+ *
+ * Il generatore le ricongiunge, ma non quando il taglio cade dentro una
+ * **tabella**: lì il PDF intreccia le celle con la prosa e la parola resta
+ * divisa da un numero — «il bersaglio è tratte-\n6\nnuto». Sono tre
+ * incantesimi del 2024, tutti con una tabella stampata dentro, e il numero è
+ * fissato qui perché non cresca in silenzio: erano diciannove.
+ */
+describe('sillabazione', () => {
+  it('resta spezzata solo nei tre incantesimi con una tabella dentro', async () => {
+    const { readdirSync, readFileSync } = await import('node:fs')
+    /** @type {string[]} */
+    const spezzati = []
+    for (const ed of ['2014', '2024']) {
+      for (const f of readdirSync(`data/spells/${ed}`).filter(x => /^l\d\.json$/.test(x))) {
+        for (const s of JSON.parse(readFileSync(`data/spells/${ed}/${f}`, 'utf8'))) {
+          if (/\w-\n\w/.test(s.testo ?? '')) spezzati.push(`${ed}/${s.nome}`)
+        }
+      }
+    }
+    expect(spezzati.sort()).toEqual([
+      '2024/Muro prismatico',
+      '2024/Spruzzo prismatico',
+      '2024/Teletrasporto',
+    ])
+  })
+})
+
 describe('lotto M — conteggi', () => {
   it('2024: 27 trucchetti + 312 livellati = 339', () => {
     const idx = indice('2024')

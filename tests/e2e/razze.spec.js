@@ -18,6 +18,10 @@ const BRANCALONIA = readFileSync('tests/fixtures/brancalonia-rifiuto.json', 'utf
 /** @param {import('@playwright/test').Page} page @param {string} json */
 async function importa(page, json, chi) {
   await page.goto('/#/libreria')
+  // Con dei personaggi già dentro il pannello d'import è chiuso: prima si apre.
+  await expect(page.locator('#principale [data-vista="libreria"]')).toBeVisible()
+  const pannello = page.locator('#principale details.dc-import')
+  if (await pannello.count()) await pannello.first().locator('summary').click()
   await page.locator('#principale textarea').fill(json)
   await page.locator('#principale button', { hasText: /importa/i }).first().click()
   await expect(page.locator('#principale')).toContainText(chi)
@@ -117,4 +121,34 @@ test('e il cassetto le ospita senza far perdere il posto', async ({ page }) => {
 
   await page.locator('.dc-tray__chiudi').click()
   expect(page.url()).toBe(dove)
+})
+
+/**
+ * I due compendi ricordano cosa si stava guardando, ed è giusto: fra un tiro e
+ * l'altro si torna a rileggere lo stesso tratto. Ma il ricordo non deve
+ * sopravvivere al cambio di personaggio, e soprattutto non deve sopravvivere
+ * al cambio di **pacchetto** — lì diventa una schermata vuota che non si sa
+ * come si è ottenuta.
+ */
+test('i compendi seguono il personaggio che si apre', async ({ page }) => {
+  await importa(page, BRANCALONIA, 'Menego')
+  await importa(page, CHIERICO, 'Ulric')
+
+  // il compendio dei privilegi, con la classe di una variante…
+  await page.goto('/#/libreria')
+  await page.locator('.dc-pg', { hasText: 'Menego' }).locator('.dc-pg__testa').click()
+  await page.goto('/#/privilegi')
+  await expect(page.locator('#principale .bsc-chip--on')).toHaveCount(1)
+
+  // …e poi un personaggio di un pacchetto che quella classe non ce l'ha
+  await page.goto('/#/libreria')
+  await page.locator('.dc-pg', { hasText: 'Ulric' }).locator('.dc-pg__testa').click()
+  await page.goto('/#/privilegi')
+  await expect(page.locator('#principale .bsc-chip--on')).toHaveCount(1)
+  await expect(page.locator('#principale')).not.toContainText(/nessun privilegio/i)
+
+  // le razze fanno lo stesso: si riparte dalla sua, non da quella di prima
+  await page.goto('/#/razze')
+  await expect(page.locator('#principale button[data-razza="dragonborn"]'))
+    .toHaveAttribute('aria-pressed', 'true')
 })

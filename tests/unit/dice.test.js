@@ -1,5 +1,5 @@
 /**
- * Lotto A — dadi. I comportamenti elencati in `contratti.test.js`, resi veri.
+ * Lotto A — dadi. I comportamenti che il lotto doveva rendere veri.
  *
  * Tutto qui dentro gira su `seededRng`: un test che dipende da `crypto` è un
  * test che prima o poi fallisce di venerdì sera senza spiegare perché.

@@ -44,6 +44,25 @@ describe('architettura', () => {
     expect(colpevoli).toEqual([])
   })
 
+  /**
+   * La promessa dell'architettura è che aggiungere una variante sia scrivere
+   * una voce nel registro. Non era vera: il service worker elencava i
+   * pacchetti a mano, e uno aggiunto senza toccarlo aveva in cache il solo
+   * indice — a rete spenta i nomi degli incantesimi c'erano e il testo no,
+   * con l'app che dava la colpa alla licenza invece che al file mancante.
+   */
+  it('il service worker non elenca i pacchetti a mano: li legge dal registro', () => {
+    const sw = readFileSync('sw.js', 'utf8')
+    const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
+    const citati = registro.packs
+      .filter((/** @type {any} */ p) => p.base)   // i due SRD stanno nella shell, ed è giusto
+      .flatMap((/** @type {any} */ p) => [p.regole, p.incantesimi].filter(Boolean))
+      .filter((/** @type {string} */ percorso) => sw.includes(percorso))
+    expect(citati).toEqual([])
+    // e la strada che li carica passa dal registro
+    expect(sw).toMatch(/data\/packs\.json/)
+  })
+
   it('i fogli di stile si leggono per intero', () => {
     // Un commento senza apertura, o una graffa in più, non danno nessun errore:
     // il browser smette di leggere da lì in poi e il resto del foglio non
@@ -109,12 +128,44 @@ describe('architettura', () => {
     expect(cattivi).toEqual([])
   })
 
+  /**
+   * La regola 4 per intero.
+   *
+   * Prima questo test cercava solo `#hex` e `rgb()`/`hsl()`: `color: red`,
+   * `background: papayawhip` e `oklch(...)` passavano, e delle **spaziature**
+   * — che il titolo della regola nomina — non sapeva niente. `padding: 13px`
+   * era verde. Un design system che vale solo per i colori non è un design
+   * system, è una tavolozza.
+   */
   it('nessun colore o dimensione scritti a mano in app.css', () => {
     const css = readFileSync('app.css', 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')          // via i commenti
       .replace(/--dc-[a-z-]+:[^;]+;/g, '')       // i token locali dichiarano, non usano
-    expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
-    expect(css).not.toMatch(/\b(rgb|hsl)a?\(/i)
+
+    expect(css, 'colore esadecimale').not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    expect(css, 'funzione di colore').not.toMatch(/\b(rgb|hsl|hwb|lab|lch|oklab|oklch)a?\(/i)
+    // I nomi CSS dei colori: si cercano dove un colore può stare, per non
+    // inciampare in `border: 1px solid var(--x)` o in una parola qualunque.
+    // `none`, `transparent`, `inherit` e `currentColor` non sono colori
+    // scelti: sono il modo di dire «nessuno» e «quello di sopra».
+    const NEUTRI = new Set(['none', 'transparent', 'inherit', 'currentcolor', 'initial', 'unset', 'revert', 'auto'])
+    const perNome = [...css.matchAll(
+      /(?:^|[;{])\s*(color|background(?:-color)?|border-color|outline-color|fill|stroke)\s*:\s*([a-z]{3,})\s*[;}]/gim)]
+      .filter(m => !NEUTRI.has((m[2] ?? '').toLowerCase()))
+      .map(m => `${m[1]}: ${m[2]}`)
+    expect(perNome, 'colori per nome').toEqual([])
+
+    // Le spaziature: px, rem ed em dove si misura uno spazio. Restano fuori i
+    // bordi da un pixel e le misure che i token non coprono (`0`, le
+    // percentuali, `dvh`), e ogni valore che arrivi da una `var()`.
+    const spaziature = [...css.matchAll(
+      /(?:^|[;{])\s*(padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left)(?:-[a-z-]+)?\s*:\s*([^;{}]+)[;}]/gim)]
+      // Uno zero non è una spaziatura scelta: `env(safe-area-inset-*, 0px)` e
+      // `max(0px, …)` dicono «se il sistema non si prenota niente, niente».
+      .map(m => ({ dove: m[1] ?? '', valore: (m[2] ?? '').replace(/\b0(px|rem|em)\b/g, '0') }))
+      .filter(x => /\b\d+(?:\.\d+)?(px|rem|em)\b/.test(x.valore))
+      .map(x => `${x.dove}: ${x.valore.trim()}`)
+    expect(spaziature, 'spaziature scritte a mano').toEqual([])
   })
 })
 

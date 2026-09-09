@@ -20,7 +20,9 @@ npm run serve      # server statico su :4173
 - **Tipi con JSDoc**, verificati da `tsc --checkJs`. Niente TypeScript da compilare.
 - **`src/domain/` è puro**: nessun DOM, nessuna rete. È lì che vive la logica, ed è il motivo per cui si testa.
 - **Router a hash**, perché su GitHub Pages i percorsi richiederebbero il trucco del `404.html`.
-- **Due edizioni**: `2014` (SRD 5.1) e `2024` (SRD 5.2.1), entrambe CC-BY-4.0 e in italiano.
+- **Cinque pacchetti**: i due SRD in italiano (`2014` CC-BY, `2024` CC-BY), Brancalonia e Apocalisse di
+  Acheron Games, e il grimorio di casa di una campagna. Ereditano l'uno dall'altro con `base`, fino a tre
+  gradini. Chi legge le regole passa da `loadRules(packId)`, mai da un percorso costruito su un'edizione.
 
 ## Le cinque regole che non si negoziano
 
@@ -46,7 +48,6 @@ npm run serve      # server statico su :4173
 | Registro dei pacchetti | `data/packs.json` |
 | Regole e compendi generati | `data/rules/`, `data/spells/` |
 | Generatori | `scripts/build-rules.mjs`, `scripts/build-spells.mjs` |
-| Contratti dei lotti | `tests/unit/contratti.test.js` |
 | Regole sul codice | `tests/unit/architettura.test.js` |
 
 ## Sui tipi

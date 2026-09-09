@@ -88,7 +88,16 @@ function disegna(contenitore, ctx, ed, rules, conTesto) {
 
   // La prima volta si parte dalla classe del personaggio aperto: è quasi
   // sempre quella che si sta cercando.
-  if (!classeScelta) classeScelta = sua || classi[0]?.id || ''
+  //
+  // E la stessa riga ripara la scelta **scaduta**. Prima la condizione era
+  // «se non è stata scelta nessuna classe», e bastava guardare il Burattinaio
+  // di Brancalonia e poi aprire un chierico perché il compendio restasse per
+  // il resto della sessione su una classe che quel pacchetto non ha: nessun
+  // chip acceso, «Nessun privilegio con questi filtri», e nessun filtro
+  // visibile da togliere. `races.js` questa riparazione ce l'aveva; qui no.
+  if (!classi.some(c => c.id === classeScelta)) {
+    classeScelta = classi.some(c => c.id === sua) ? sua : classi[0]?.id ?? ''
+  }
 
   const elenco = h('div', { class: 'dc-elenco' })
   const chip = h('div', { class: 'dc-chip-riga', role: 'group', 'aria-label': t('priv.classe') })

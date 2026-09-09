@@ -154,7 +154,12 @@ export function regoleDiCasa(registro, packId) {
   // casa, le alternative sono quelle del pacchetto su cui poggia — non le sue.
   const radice = suo.base && packById(registro, suo.base) ? catenaFino(registro, suo) : suo
   const sopra = registro.packs.filter(p => p.base === radice.id && !p.varianti.length)
-  return sopra.length ? [radice, ...sopra] : []
+  if (!sopra.length) return []
+  // Il pacchetto in uso deve comparire fra le scelte anche quando pende da più
+  // di un gradino sopra la radice: senza, la scheda dichiarava come «regole
+  // correnti» quelle della radice, cioè non le sue.
+  const scelte = [radice, ...sopra]
+  return scelte.some(p => p.id === suo.id) ? scelte : [...scelte, suo]
 }
 
 /**
@@ -167,6 +172,10 @@ function catenaFino(registro, p) {
   const visti = new Set([p.id])
   while (!corrente.varianti.length && corrente.base) {
     const su = packById(registro, corrente.base)
+    // Un anello qui si ferma invece di girare all'infinito. `packChain` in un
+    // caso così lancia, perché sta caricando dei dati e un registro che si
+    // contraddice va detto; questa invece disegna un menù, e un menù non è il
+    // posto dove far cadere l'app.
     if (!su || visti.has(su.id)) break
     visti.add(su.id)
     corrente = su
