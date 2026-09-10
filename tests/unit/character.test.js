@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fromJson } from '../../src/domain/importer.js'
 import {
-  derive, features, modifier, proficiencyBonus, formatModifier, diceModifier, ABILITIES,
+  derive, features, modifier, proficiencyBonus, formatModifier, diceModifier, nomeArma, ABILITIES,
 } from '../../src/domain/character.js'
 
 const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
@@ -240,5 +240,69 @@ describe('lotto B — privilegi stampabili', () => {
     const antenati = f.find(v => v.id === 'draconic-ancestry')
     expect(antenati?.nome).toBe('Ascendenza Draconica')
     expect(antenati?.risolto).toBe(true)
+  })
+})
+
+/**
+ * Due cose che il builder scrive sulla sua scheda e sulle tre PDF, e che qui
+ * non arrivavano: il Factotum del bardo e il bonus magico di un'arma. Al tavolo
+ * la scheda dell'app e quella stampata devono dire lo stesso numero, altrimenti
+ * l'unica che si crede è quella di carta — e allora l'app non serve.
+ */
+describe('lotto B — quello che il builder scrive e qui non arrivava', () => {
+  /** @param {object} extra @returns {any} */
+  function bardo(extra = {}) {
+    return {
+      snapshot: {
+        level: 3,
+        abilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+        racialBonuses: {},
+        skillProficiencies: ['persuasion'],
+        skillExpertise: [],
+        savingThrowProficiencies: ['dex', 'cha'],
+        ...extra,
+      },
+    }
+  }
+
+  it('il Factotum entra dove la competenza non c\'è, e non dove c\'è', () => {
+    const d = derive(bardo({ featureEntries: [{ id: 'jack-of-all-trades' }] }), null)
+    const acrobazia = d.abilita.find(a => a.id === 'acrobatics')
+    const persuasione = d.abilita.find(a => a.id === 'persuasion')
+    expect(acrobazia?.bonus, 'DES +0 più metà competenza').toBe(1)
+    expect(persuasione?.bonus, 'CAR +3 più competenza piena, non una volta e mezza').toBe(5)
+    // Mezza competenza non è competenza: la pastiglia sulla riga non deve accendersi.
+    expect(acrobazia?.competenza).toBe(false)
+  })
+
+  it('e vale per l\'iniziativa, che è una prova di Destrezza', () => {
+    expect(derive(bardo({ featureEntries: [{ id: 'jack-of-all-trades' }] }), null).iniziativa).toBe(1)
+    expect(derive(bardo(), null).iniziativa, 'senza il privilegio resta il modificatore').toBe(0)
+  })
+
+  it('lo riconosce anche in una scheda vecchia, che porta solo i nomi', () => {
+    // `featureEntries` è arrivato con lo schema 2: prima c'era solo l'elenco
+    // piatto dei nomi inglesi, e quelle schede stanno ancora nelle librerie.
+    const d = derive(bardo({ featuresTraits: ['Bardic Inspiration', 'Jack of All Trades'] }), null)
+    expect(d.abilita.find(a => a.id === 'stealth')?.bonus).toBe(1)
+  })
+
+  it('chi non ce l\'ha non prende niente', () => {
+    const d = derive(bardo({ featuresTraits: ['Rage', 'Unarmored Defense'] }), null)
+    expect(d.abilita.find(a => a.id === 'stealth')?.bonus).toBe(0)
+  })
+
+  it('il nome dell\'arma porta il bonus magico, come sul PDF', () => {
+    expect(nomeArma('Spada Lunga', 1)).toBe('Spada Lunga +1')
+    expect(nomeArma('Spada Lunga', 3)).toBe('Spada Lunga +3')
+  })
+
+  it('e le armi comuni restano nude', () => {
+    // `magicBonus` è assente per la stragrande maggioranza delle armi: un «+0»
+    // o un «+undefined» accanto al nome sarebbe peggio del difetto.
+    expect(nomeArma('Randello', undefined)).toBe('Randello')
+    expect(nomeArma('Randello', 0)).toBe('Randello')
+    expect(nomeArma('Randello', 'niente')).toBe('Randello')
+    expect(nomeArma('Randello', -1)).toBe('Randello')
   })
 })
