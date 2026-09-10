@@ -57,9 +57,14 @@ npm run serve      # server statico su :4173
 
 ## Sui dati
 
-I PDF degli SRD **non entrano nel repo** (`.gitignore` esclude `*.pdf`): si committa solo il JSON generato.
-Ogni pacchetto porta la propria attribuzione CC-BY verbatim, e va mostrata in app. Materiale non-SRD non si
-spedisce: se ne mostra il nome e si dichiara perché non c'è il testo.
+I PDF **non entrano nel repo** (`.gitignore` esclude `*.pdf`): si committa solo il JSON generato.
+I due pacchetti SRD portano la propria attribuzione CC-BY verbatim, e va mostrata in app.
+
+Il materiale non-SRD si spedisce **solo se il proprietario del progetto lo ha deciso**, e la decisione è per
+pacchetto. Oggi: i testi di Brancalonia sì, quelli di Apocalisse no — di Apocalisse si mostra il nome e si
+dichiara perché il testo non c'è. `tests/unit/varianti-senza-testo.test.js` tiene ferma la seconda metà: se
+un giorno la si rigenera coi testi, quel test fallisce e costringe a decidere invece di lasciar scivolare
+dentro il materiale di qualcun altro.
 
 ## Stile
 

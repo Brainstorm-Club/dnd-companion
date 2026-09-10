@@ -736,9 +736,12 @@ temi: il modificatore di caratteristica, grigio per mesi, è tornato del colore 
 
 **Resta aperto**, e non è lavoro tecnico:
 
-1. **Il permesso di Acheron Games** sui testi di Brancalonia e Apocalisse. Con quello, rigenerare è un
-   comando; senza, il pacchetto resta un elenco di nomi — corretto, utile per leggere una scheda, muto sulle
-   regole.
+1. **I testi di Apocalisse.** Per Brancalonia il proprietario del progetto ha deciso di pubblicarli, avendone
+   i manuali: `data/rules/brancalonia.json` porta le descrizioni estratte dai tre PDF con `pdftotext`, e dove
+   l'estrazione non era sicura la voce esce `null` invece di indovinare. Per Apocalisse quella decisione non
+   c'è, quindi il pacchetto resta un elenco di nomi — corretto, utile per leggere una scheda, muto sulle
+   regole — e `tests/unit/varianti-senza-testo.test.js` lo tiene tale: se un giorno lo si rigenera coi testi,
+   quel test fallisce e costringe a decidere invece di far scivolare dentro il materiale di qualcun altro.
 
 Tutto il resto della lista è stato chiuso: la nota sull'errore dell'SRD 5.2.1, i pacchetti Acheron, il
 design system, l'accento conforme, il Wake Lock e la vibrazione, il ri-import sopra, gli usi dei privilegi e
