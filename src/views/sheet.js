@@ -14,7 +14,7 @@ import { h, clear, append } from '../dom.js'
 import { loadRegistry, spellSources, regoleDiCasa } from '../domain/packs.js'
 import { loadRules } from '../domain/rules.js'
 import {
-  derive, features, formatModifier, diceModifier, ABILITIES, ABILITY_LABELS,
+  derive, features, formatModifier, diceModifier, nomeArma, ABILITIES, ABILITY_LABELS,
 } from '../domain/character.js'
 import { loadBridge, loadIndex } from '../domain/spells.js'
 import { privilegiDiClasse } from '../domain/privilegi.js'
@@ -765,7 +765,9 @@ function azioni(ctx, entry, d) {
   if (!armi.length) return [h('p', { class: 'bsc-lead' }, '—')]
   return armi.map(a => {
     const arma = oggetto(a)
-    const nome = testo(arma['name']) || '—'
+    // Col bonus magico dentro: sul PDF c'è «Spada Lunga +1», qui c'era «Spada
+    // Lunga», e chi ha due spade uguali non poteva sapere quale stava tirando.
+    const nome = nomeArma(testo(arma['name']) || '—', arma['magicBonus'])
     const bonus = numero(arma['attackBonus'], 0)
     const danno = testo(arma['damage'])
     return h('div', { class: 'bsc-kv' }, [

@@ -147,11 +147,15 @@ export function derive(entry, rules) {
 
   const competenti = new Set(stringhe(s['skillProficiencies']))
   const maestre = new Set(stringhe(s['skillExpertise']))
+  const mezza = mezzaCompetenza(s, competenza)
   const abilita = elencoAbilita(rules).map(sk => {
     const maestria = maestre.has(sk.id)
     const comp = maestria || competenti.has(sk.id)
-    // La maestria **raddoppia** la competenza; la competenza semplice no.
-    const dovuto = maestria ? competenza * 2 : comp ? competenza : 0
+    // La maestria **raddoppia** la competenza; la competenza semplice no. Dove
+    // la competenza non c'è affatto può esserci **metà**: è il Factotum del
+    // bardo, e senza di lui quattordici righe su diciotto portavano il numero
+    // sbagliato.
+    const dovuto = maestria ? competenza * 2 : comp ? competenza : mezza
     return {
       id: sk.id,
       nome: sk.nome,
@@ -171,7 +175,8 @@ export function derive(entry, rules) {
     tiriSalvezza,
     abilita,
     ca: classeArmatura(s, modificatori, rules),
-    iniziativa: modificatori.dex,
+    // L'iniziativa è una prova di Destrezza: il Factotum ci entra come altrove.
+    iniziativa: modificatori.dex + mezza,
     competenza,
     pfMax: puntiFeritaMassimi(s, modificatori.con, livello),
     cdIncantesimi: modMagia === null ? null : 8 + competenza + modMagia,
@@ -189,6 +194,48 @@ export function derive(entry, rules) {
  * @property {string|null} origineId  quale razza, quale classe
  * @property {number|null} livello    a che livello si ottiene (0 = da subito)
  */
+
+/**
+ * Il privilegio che aggiunge **metà** competenza, per difetto, a ogni prova che
+ * non includa già la competenza: il Factotum del bardo.
+ *
+ * Si riconosce dai privilegi che lo snapshot dichiara, non da una tabella di
+ * livelli scritta qui: dallo schema 2 il builder manda `featureEntries` con gli
+ * id dei suoi dati, e le schede più vecchie portano ancora i soli nomi inglesi
+ * in `featuresTraits`. Si guardano entrambi perché al tavolo arrivano schede di
+ * ogni età, e una scheda che sbaglia quattordici righe su diciotto non si nota
+ * finché non la si confronta con quella di carta.
+ *
+ * @param {Record<string, unknown>} s  lo snapshot
+ * @param {number} competenza  il bonus di competenza pieno
+ * @returns {number}
+ */
+export function mezzaCompetenza(s, competenza) {
+  const daVoci = lista(s['featureEntries'])
+    .some(v => MEZZA_COMPETENZA.has(stringa(oggetto(v)['id'])))
+  const daNomi = stringhe(s['featuresTraits']).some(n => MEZZA_COMPETENZA.has(n))
+  return daVoci || daNomi ? Math.floor(competenza / 2) : 0
+}
+
+const MEZZA_COMPETENZA = new Set(['jack-of-all-trades', 'Jack of All Trades'])
+
+/**
+ * Il nome di un'arma come va letto sulla scheda: col suo bonus magico.
+ *
+ * Il builder lo tiene a parte (`magicBonus`) perché attacco e danno lo hanno
+ * già dentro, e lo scrive accanto al nome nel riepilogo e in tutte e tre le
+ * schede PDF. Qui no: al tavolo la stessa spada appariva come «Spada Lunga»
+ * mentre sul foglio stampato c'era «Spada Lunga +1», e l'unico modo di sapere
+ * quale delle due si stesse tirando era ricordarselo.
+ *
+ * @param {string} nome
+ * @param {unknown} bonusMagico
+ * @returns {string}
+ */
+export function nomeArma(nome, bonusMagico) {
+  const n = intero(bonusMagico, 0)
+  return n > 0 ? `${nome} +${n}` : nome
+}
 
 /**
  * I privilegi e i tratti, resi stampabili.

@@ -398,3 +398,26 @@ test('duplicare dà una scheda nuova, non una copia della partita', async ({ pag
   expect(copia.snapId).toBeNull()
   expect(suo.snapId).toBeTruthy()
 })
+
+/**
+ * Il bonus magico di un'arma sta accanto al nome sul riepilogo del builder e su
+ * tutte e tre le schede PDF; qui non c'era. Al tavolo la stessa spada si
+ * leggeva «Spada Lunga» sullo schermo e «Spada Lunga +1» sul foglio, e con due
+ * armi dello stesso tipo non c'era modo di sapere quale si stesse tirando.
+ */
+test('un\'arma magica porta il suo +N accanto al nome', async ({ page }) => {
+  const scheda = JSON.parse(readFileSync('tests/fixtures/reale-dnd5e-chierico-3.json', 'utf8'))
+  // Attacco e danno il builder li scrive già col bonus dentro: qui si aggiunge
+  // solo il campo che dice *perché* quei numeri sono quelli.
+  scheda.weapons[0].magicBonus = 2
+  const nome = scheda.weapons[0].name
+  await importa(page, JSON.stringify(scheda))
+
+  await page.locator('.dc-pg__testa').first().click()
+  await page.locator('[data-sezioni] a', { hasText: /azioni/i }).click()
+
+  const azioni = page.locator('[data-sezione="azioni"]')
+  await expect(azioni.locator('.bsc-kv__label').first()).toHaveText(`${nome} +2`)
+  // e le armi comuni restano nude: nessun «+0» appiccicato a tutto
+  await expect(azioni.getByText('+0', { exact: false })).toHaveCount(0)
+})
