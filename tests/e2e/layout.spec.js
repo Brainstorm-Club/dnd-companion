@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 
 /**
  * Il layout: griglia, pager, temi.
@@ -258,5 +259,85 @@ test.describe('temi', () => {
     expect(viewport).toContain('viewport-fit=cover')
     expect(viewport).not.toContain('user-scalable=no')
     expect(viewport).not.toMatch(/maximum-scale=\s*1/)
+  })
+})
+
+/**
+ * WCAG 1.4.10 — reflow: a 320 px di larghezza il contenuto deve stare, senza
+ * chiedere di scorrere in orizzontale.
+ *
+ * Una rete c'era già («il pager non fa scorrere il corpo in orizzontale») e
+ * non ha visto niente, perché provava un caso **inventato** — una parola di
+ * 400 caratteri infilata nel pager — in un punto solo. A sfondare erano due
+ * righe **vere** della pagina Impostazioni, di 104 px, e i due viewport della
+ * suite sono 390 e 810: i 320 non li guardava nessuno.
+ *
+ * Qui non si inventa niente: si aprono le viste che l'app ha, col contenuto
+ * che ha, alla larghezza minima che le linee guida nominano. Quando cade dice
+ * anche *chi* sfora, perché «424 invece di 320» da solo non si corregge.
+ */
+const A_320 = ['/', '/#/dadi', '/#/prove', '/#/incantesimi', '/#/privilegi', '/#/razze', '/#/impostazioni']
+
+/** @param {import('@playwright/test').Page} page */
+async function sforamenti(page) {
+  await page.evaluate(() => new Promise(requestAnimationFrame))
+  return page.evaluate(() => {
+    const de = document.documentElement
+    const limite = de.clientWidth
+    const nome = (/** @type {Element} */ el) => {
+      const cls = typeof el.className === 'string' && el.className ? `.${el.className.split(' ')[0]}` : ''
+      const testo = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40)
+      return `${el.tagName.toLowerCase()}${cls} «${testo}»`
+    }
+    const colpevoli = [...document.querySelectorAll('#principale *')]
+      // Solo il più esterno di una catena annidata: elencare anche i figli
+      // riempie il messaggio di righe che raccontano lo stesso sforamento.
+      .filter(el => {
+        const r = el.getBoundingClientRect()
+        if (r.width === 0 || r.right <= limite + 1) return false
+        const p = el.parentElement
+        return !p || p.getBoundingClientRect().right <= limite + 1
+      })
+      .slice(0, 5).map(nome)
+    return { scroll: de.scrollWidth, client: limite, colpevoli }
+  })
+}
+
+test.describe('reflow a 320 px', () => {
+  for (const rotta of A_320) {
+    test(`${rotta}: il contenuto sta nei 320 px`, async ({ page }, info) => {
+      // La larghezza la impone il test: farlo girare anche sul tablet
+      // ripeterebbe lo stesso identico controllo con un nome diverso.
+      test.skip(info.project.name !== 'telefono', 'il viewport lo forza il test')
+      await page.setViewportSize({ width: 320, height: 640 })
+      await page.goto(rotta)
+      await expect(page.locator('#principale .dc-vista')).toBeVisible()
+      const { scroll, client, colpevoli } = await sforamenti(page)
+      expect(scroll, `sfora di ${scroll - client} px — ${colpevoli.join(' | ') || 'nessun elemento identificato'}`)
+        .toBeLessThanOrEqual(client)
+    })
+  }
+
+  test('e ci sta anche una scheda aperta, sezione per sezione', async ({ page }, info) => {
+    test.skip(info.project.name !== 'telefono', 'il viewport lo forza il test')
+    // È la vista più fitta dell'app, ed è quella fatta di righe chiave/valore:
+    // se un componente sfonda, sfonda qui.
+    await page.setViewportSize({ width: 320, height: 640 })
+    await page.goto('/#/libreria')
+    await expect(page.locator('#principale [data-vista="libreria"]')).toBeVisible()
+    const pannello = page.locator('#principale details.dc-import')
+    if (await pannello.count()) await pannello.first().locator('summary').click()
+    await page.locator('#principale textarea')
+      .fill(readFileSync('tests/fixtures/reale-dnd5e-chierico-3.json', 'utf8'))
+    await page.locator('#principale button', { hasText: /importa/i }).first().click()
+    await page.locator('.dc-pg__testa').first().click()
+
+    for (const sezione of ['gioco', 'prove', 'azioni', 'magia', 'privilegi', 'zaino', 'storia']) {
+      await page.locator(`[data-sezioni] a[href$="/${sezione}"]`).click()
+      await expect(page.locator(`[data-sezione="${sezione}"]`)).toBeVisible()
+      const { scroll, client, colpevoli } = await sforamenti(page)
+      expect(scroll, `${sezione}: sfora di ${scroll - client} px — ${colpevoli.join(' | ') || 'nessun elemento identificato'}`)
+        .toBeLessThanOrEqual(client)
+    }
   })
 })
