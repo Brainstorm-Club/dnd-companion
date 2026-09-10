@@ -17,15 +17,29 @@ import { STORAGE_KEY, SCHEMA_VERSION, migrate } from '../storage.js'
 import { setLang, getLang } from '../i18n.js'
 import { kv } from './parti.js'
 import { tieniAcceso, vibra } from '../schermo.js'
+import { loadRegistry, attribuzioni } from '../domain/packs.js'
 
 /** @typedef {import('./index.js').ViewCtx} ViewCtx */
 
 /** Gli URL creati per i salvataggi: si liberano quando la vista se ne va. */
 let daLiberare = /** @type {string[]} */ ([])
 
+/**
+ * Il registro, tenuto da parte fra un disegno e l'altro.
+ * @type {import('../domain/packs.js').PackRegistry|null}
+ */
+let registro = null
+
 /** @type {import('./index.js').View} */
 export default {
-  render(contenitore, ctx) {
+  async render(contenitore, ctx) {
+    // Le attribuzioni sono un obbligo di licenza per i due SRD e una questione
+    // di rispetto per gli altri tre pacchetti: si carica il registro *prima* di
+    // disegnare, non dopo, così non esiste un istante in cui la pagina dei
+    // crediti è visibile senza di esse.
+    if (!registro) {
+      try { registro = await loadRegistry() } catch { registro = null }
+    }
     disegna(contenitore, ctx)
   },
 
@@ -117,7 +131,7 @@ function disegna(contenitore, ctx) {
       collegamento('https://brainstorm-club.github.io/dnd-character-builder/',
         t('opz.builder'), t('opz.builderNota')),
     ]),
-    h('div', { class: 'bsc-prose', 'data-crediti': 'true' }, attribuzioni()),
+    h('div', { class: 'bsc-prose', 'data-crediti': 'true' }, crediti(t)),
   ]))
 }
 
@@ -278,26 +292,35 @@ function collegamento(href, titolo, nota) {
 }
 
 /**
- * Le attribuzioni CC-BY dei pacchetti inclusi.
+ * Le attribuzioni dei pacchetti, lette dal registro.
  *
- * Non è una cortesia: è la condizione della licenza con cui il testo delle
- * regole sta in questa app.
+ * Per i due SRD è la condizione della licenza CC-BY con cui il loro testo sta
+ * qui dentro. Per Brancalonia, Apocalisse e il grimorio di casa non è un
+ * obbligo di licenza: è dire di chi è il lavoro che stiamo mostrando, e vale
+ * lo stesso.
+ *
+ * Prima questa funzione aveva una tabella scritta a mano con dentro solo il
+ * 2014 e il 2024, mentre `data/packs.json` le portava già tutte e cinque: chi
+ * apriva i crediti per sapere da dove viene il materiale di Acheron Games non
+ * ci trovava niente.
+ *
+ * @param {(chiave: string) => string} t
  * @returns {Array<Node>}
  */
-function attribuzioni() {
+function crediti(t) {
+  // Un buco di rete non deve far sparire in silenzio un obbligo di licenza:
+  // se il registro non c'è lo si dice, invece di mostrare una pagina vuota che
+  // sembra a posto.
+  if (!registro) return [h('p', { class: 'bsc-prose' }, t('opz.creditiAssenti'))]
+
   /** @type {Array<Node>} */
   const out = []
-  for (const ed of EDITIONS) {
+  for (const a of attribuzioni(registro)) {
+    out.push(h('h3', { class: 'bsc-label' }, a.nome))
     // Prosa, non codice: `.bsc-code` non manda a capo (`white-space: pre`), ed
     // è giusto per una formula di dadi ma non per un paragrafo di licenza —
     // faceva scorrere le impostazioni in orizzontale su ogni telefono.
-    out.push(h('p', { class: 'bsc-prose dc-attribuzione', 'data-attribuzione': ed }, ATTRIBUZIONI[ed]))
+    out.push(h('p', { class: 'bsc-prose dc-attribuzione', 'data-attribuzione': a.id }, a.testo))
   }
   return out
-}
-
-/** @type {Record<string, string>} */
-const ATTRIBUZIONI = {
-  '2014': 'Questo lavoro include materiale del System Reference Document 5.1 ("SRD 5.1") di Wizards of the Coast LLC disponibile al sito https://dnd.wizards.com/it/resources/systems-reference-document. L\'SRD 5.1 è concesso in licenza sotto l\'Attribuzione 4.0 Internazionale di Creative Commons disponibile al sito https://creativecommons.org/licenses/by/4.0/legalcode.it.',
-  '2024': 'Quest\'opera include materiale tratto dal System Reference Document 5.2.1 ("SRD 5.2.1") di Wizards of the Coast LLC, disponibile all\'indirizzo https://www.dndbeyond.com/srd. Il SRD 5.2.1 è concesso in licenza ai sensi della licenza di attribuzione 4.0 Internazionale di Creative Commons, disponibile all\'indirizzo https://creativecommons.org/licenses/by/4.0/legalcode.',
 }

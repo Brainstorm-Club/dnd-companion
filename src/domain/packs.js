@@ -60,6 +60,26 @@ export function packForVariant(registro, variante) {
 }
 
 /**
+ * Le attribuzioni da mostrare, una per pacchetto, nell'ordine del registro.
+ *
+ * Stavano scritte a mano nella vista Impostazioni, in una tabella che conosceva
+ * solo i due SRD: Brancalonia e Apocalisse non comparivano, e il loro testo —
+ * che nel registro c'era già — non lo leggeva nessuno. Due elenchi della stessa
+ * cosa divergono sempre, e quello era già divergente.
+ *
+ * Elencandoli tutti la catena di ereditarietà si copre da sé: il grimorio di
+ * casa poggia su Brancalonia, e Brancalonia è nella lista sua.
+ *
+ * @param {PackRegistry} registro
+ * @returns {Array<{id: string, nome: string, testo: string}>}
+ */
+export function attribuzioni(registro) {
+  return registro.packs
+    .filter(p => typeof p.attribuzione === 'string' && p.attribuzione.trim() !== '')
+    .map(p => ({ id: p.id, nome: p.nome, testo: p.attribuzione }))
+}
+
+/**
  * Il pacchetto con questo id, o `null`.
  * @param {PackRegistry} registro
  * @param {string} id

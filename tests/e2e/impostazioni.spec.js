@@ -43,9 +43,37 @@ test.describe('impostazioni', () => {
   test('le attribuzioni CC-BY sono raggiungibili: è una condizione della licenza', async ({ page }) => {
     await page.goto('/#/impostazioni')
     const crediti = page.locator('[data-crediti]')
-    await expect(crediti.locator('[data-attribuzione="2014"]')).toContainText('SRD 5.1')
-    await expect(crediti.locator('[data-attribuzione="2024"]')).toContainText('SRD 5.2.1')
+    await expect(crediti.locator('[data-attribuzione="srd-2014"]')).toContainText('SRD 5.1')
+    await expect(crediti.locator('[data-attribuzione="srd-2024"]')).toContainText('SRD 5.2.1')
     await expect(crediti).toContainText('Creative Commons')
+  })
+
+  /**
+   * Per i pacchetti di Acheron Games non c'è un obbligo di licenza che ci
+   * costringa: c'è che stiamo mostrando il loro lavoro. La pagina dei crediti
+   * elencava solo i due SRD, e chi la apriva per sapere da dove viene
+   * Brancalonia non ci trovava niente.
+   */
+  test('e ci sono anche quelle dei pacchetti che non sono SRD', async ({ page }) => {
+    await page.goto('/#/impostazioni')
+    const crediti = page.locator('[data-crediti]')
+    for (const id of ['brancalonia', 'apocalisse', 'brancalonia-brainstorm']) {
+      await expect(crediti.locator(`[data-attribuzione="${id}"]`), id).toContainText('Acheron Games')
+    }
+  })
+
+  test('ogni pacchetto del registro ha la sua, senza doverla scrivere due volte', async ({ page }) => {
+    // Il registro è l'unica fonte: una tabella parallela nella vista divergeva,
+    // ed è così che l'attribuzione di Acheron era sparita per mesi.
+    await page.goto('/#/impostazioni')
+    const attesi = await page.evaluate(async () => {
+      const r = await fetch('data/packs.json').then(x => x.json())
+      return r.packs.map((p) => p.id)
+    })
+    // Il registro si carica prima di disegnare, ma `evaluateAll` non aspetta
+    // nessuno: senza `poll` legge la pagina un attimo prima e trova zero.
+    await expect.poll(() => page.locator('[data-crediti] [data-attribuzione]')
+      .evaluateAll(nodi => nodi.map(n => n.getAttribute('data-attribuzione')))).toEqual(attesi)
   })
 
   test('si salva una copia e si cancella tutto, con conferma', async ({ page }) => {

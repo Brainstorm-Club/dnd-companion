@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { packForVariant, missingPackMessage } from '../../src/domain/packs.js'
+import { packForVariant, missingPackMessage, attribuzioni } from '../../src/domain/packs.js'
 
 const registro = JSON.parse(readFileSync('data/packs.json', 'utf8'))
 
@@ -79,5 +79,47 @@ describe('registro dei pacchetti', () => {
     const m = missingPackMessage('pippo')
     expect(m).toContain('«pippo»')
     expect(m).not.toMatch(/errore|error/i)
+  })
+})
+
+/**
+ * L'attribuzione è la condizione della licenza CC-BY per i due SRD, e per gli
+ * altri tre è dire di chi è il lavoro che mostriamo. Stava scritta a mano nella
+ * vista Impostazioni, in una tabella che conosceva solo i due SRD: Acheron
+ * Games non compariva da nessuna parte, mentre il registro la portava già.
+ */
+describe('attribuzioni da mostrare', () => {
+  it('c\'è ogni pacchetto del registro, in quell\'ordine', () => {
+    // Se un domani si aggiunge un pacchetto senza attribuzione, questo test
+    // cade: è il punto: aggiungerne uno muto deve costare una decisione.
+    expect(attribuzioni(registro).map(a => a.id)).toEqual(registro.packs.map(p => p.id))
+  })
+
+  it('e nessuna è vuota o è solo il nome del pacchetto', () => {
+    for (const a of attribuzioni(registro)) {
+      expect(a.testo.length, a.id).toBeGreaterThan(80)
+      expect(a.nome.length, a.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('quelle dei due SRD portano la formula che la licenza richiede', () => {
+    const per = Object.fromEntries(attribuzioni(registro).map(a => [a.id, a.testo]))
+    expect(per['srd-2014']).toContain('SRD 5.1')
+    expect(per['srd-2014']).toContain('creativecommons.org/licenses/by/4.0')
+    expect(per['srd-2024']).toContain('SRD 5.2.1')
+    expect(per['srd-2024']).toContain('creativecommons.org/licenses/by/4.0')
+  })
+
+  it('e quelle dei pacchetti Acheron dicono di chi sono', () => {
+    const per = Object.fromEntries(attribuzioni(registro).map(a => [a.id, a.testo]))
+    expect(per['brancalonia']).toContain('Acheron Games')
+    expect(per['apocalisse']).toContain('Acheron Games')
+    // Il grimorio è roba nostra ma poggia sui loro incantesimi: deve dirlo.
+    expect(per['brancalonia-brainstorm']).toContain('Acheron Games')
+  })
+
+  it('un pacchetto senza attribuzione non finisce nell\'elenco a mani vuote', () => {
+    const monco = { v: 1, packs: [{ id: 'x', nome: 'X', attribuzione: '   ' }, ...registro.packs] }
+    expect(attribuzioni(monco).map(a => a.id)).not.toContain('x')
   })
 })
